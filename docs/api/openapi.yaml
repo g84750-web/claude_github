@@ -1,0 +1,457 @@
+openapi: 3.0.3
+info:
+  title: Templates API
+  description: API for managing and rendering reusable content templates.
+  version: 1.0.0
+
+servers:
+  - url: https://api.example.com/v1
+    description: Production
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Templates
+    description: Manage and render content templates
+
+paths:
+  /templates:
+    get:
+      summary: List templates
+      operationId: listTemplates
+      tags: [Templates]
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, archived]
+        - name: tags
+          in: query
+          description: Comma-separated list of tags to filter by
+          schema:
+            type: string
+        - name: q
+          in: query
+          description: Search query (matches name and description)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Paginated list of templates
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TemplateSummary'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      summary: Create a template
+      operationId: createTemplate
+      tags: [Templates]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TemplateCreate'
+      responses:
+        '201':
+          description: Template created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Template'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /templates/{id}:
+    parameters:
+      - $ref: '#/components/parameters/TemplateId'
+
+    get:
+      summary: Get a template
+      operationId: getTemplate
+      tags: [Templates]
+      responses:
+        '200':
+          description: Template details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Template'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      summary: Update a template
+      operationId: updateTemplate
+      tags: [Templates]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TemplateUpdate'
+      responses:
+        '200':
+          description: Updated template
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Template'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+    delete:
+      summary: Delete a template
+      operationId: deleteTemplate
+      tags: [Templates]
+      responses:
+        '204':
+          description: Template deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /templates/{id}/render:
+    parameters:
+      - $ref: '#/components/parameters/TemplateId'
+
+    post:
+      summary: Render a template
+      operationId: renderTemplate
+      tags: [Templates]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [variables]
+              properties:
+                variables:
+                  type: object
+                  description: Key-value pairs matching the template's variable keys
+                  additionalProperties: true
+                  example:
+                    name: Jane Doe
+                    product_name: Acme App
+      responses:
+        '200':
+          description: Rendered template content
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RenderResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /templates/{id}/preview:
+    parameters:
+      - $ref: '#/components/parameters/TemplateId'
+
+    get:
+      summary: Preview a template
+      operationId: previewTemplate
+      tags: [Templates]
+      responses:
+        '200':
+          description: Template preview with placeholder labels
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PreviewResult'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+
+  parameters:
+    TemplateId:
+      name: id
+      in: path
+      required: true
+      description: Template ID
+      schema:
+        type: string
+        example: tmpl_01H9XKZJ3F4Y5N6M7P8Q
+
+  schemas:
+    TemplateVariable:
+      type: object
+      required: [key, type]
+      properties:
+        key:
+          type: string
+          description: Variable name used as placeholder in content
+          example: name
+        type:
+          type: string
+          enum: [string, number, boolean, date]
+          example: string
+        required:
+          type: boolean
+          default: false
+        default:
+          description: Default value when variable is not provided
+        description:
+          type: string
+          example: Recipient's full name
+
+    Template:
+      type: object
+      properties:
+        id:
+          type: string
+          example: tmpl_01H9XKZJ3F4Y5N6M7P8Q
+        name:
+          type: string
+          example: Welcome Email
+        description:
+          type: string
+          example: Sent to new users upon registration
+        content:
+          type: string
+          example: "Hello, {{name}}! Welcome to {{product_name}}."
+        variables:
+          type: array
+          items:
+            $ref: '#/components/schemas/TemplateVariable'
+        tags:
+          type: array
+          items:
+            type: string
+          example: [email, onboarding]
+        status:
+          type: string
+          enum: [active, archived]
+          example: active
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-01-15T09:00:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2026-02-20T14:30:00Z"
+
+    TemplateSummary:
+      type: object
+      description: Abbreviated template object returned in list responses (no content or variables)
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          enum: [active, archived]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    TemplateCreate:
+      type: object
+      required: [name, content]
+      properties:
+        name:
+          type: string
+          maxLength: 255
+          example: Welcome Email
+        description:
+          type: string
+          maxLength: 1000
+        content:
+          type: string
+          example: "Hello, {{name}}! Welcome to {{product_name}}."
+        variables:
+          type: array
+          items:
+            $ref: '#/components/schemas/TemplateVariable'
+        tags:
+          type: array
+          items:
+            type: string
+
+    TemplateUpdate:
+      type: object
+      description: All fields optional; only provided fields are updated
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+          maxLength: 1000
+        content:
+          type: string
+        variables:
+          type: array
+          items:
+            $ref: '#/components/schemas/TemplateVariable'
+        tags:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          enum: [active, archived]
+
+    RenderResult:
+      type: object
+      properties:
+        template_id:
+          type: string
+          example: tmpl_01H9XKZJ3F4Y5N6M7P8Q
+        rendered:
+          type: string
+          example: "Hello, Jane Doe! Welcome to Acme App."
+        rendered_at:
+          type: string
+          format: date-time
+          example: "2026-04-07T10:05:00Z"
+
+    PreviewResult:
+      type: object
+      properties:
+        template_id:
+          type: string
+          example: tmpl_01H9XKZJ3F4Y5N6M7P8Q
+        name:
+          type: string
+          example: Welcome Email
+        preview:
+          type: string
+          description: Template content with variables shown as [key] labels
+          example: "Hello, [name]! Welcome to [product_name]."
+        variables:
+          type: array
+          items:
+            $ref: '#/components/schemas/TemplateVariable'
+
+    Pagination:
+      type: object
+      properties:
+        total:
+          type: integer
+          example: 42
+        limit:
+          type: integer
+          example: 20
+        next_cursor:
+          type: string
+          example: eyJpZCI6InRtcGxfMDFIOVhLWkoifQ==
+        has_more:
+          type: boolean
+          example: true
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              example: VALIDATION_ERROR
+            message:
+              type: string
+              example: The request body is invalid.
+            details:
+              type: array
+              items:
+                type: object
+                properties:
+                  field:
+                    type: string
+                  message:
+                    type: string
+
+  responses:
+    BadRequest:
+      description: Invalid request body or parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Missing or invalid authentication
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflict:
+      description: Resource already exists
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    UnprocessableEntity:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
