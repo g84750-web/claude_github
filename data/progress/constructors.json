@@ -1,0 +1,60 @@
+[
+  {
+    "id": "C001",
+    "name": "김철수",
+    "unit_id": "DEV",
+    "role": "백엔드 개발자",
+    "skill_level": "시니어",
+    "max_capacity": 100.0,
+    "current_projects": [
+      "P001",
+      "P002"
+    ]
+  },
+  {
+    "id": "C002",
+    "name": "이영희",
+    "unit_id": "DEV",
+    "role": "프론트엔드 개발자",
+    "skill_level": "미드",
+    "max_capacity": 100.0,
+    "current_projects": [
+      "P001"
+    ]
+  },
+  {
+    "id": "C003",
+    "name": "박민준",
+    "unit_id": "PM",
+    "role": "PM",
+    "skill_level": "리드",
+    "max_capacity": 100.0,
+    "current_projects": [
+      "P001",
+      "P002",
+      "P003"
+    ]
+  },
+  {
+    "id": "C004",
+    "name": "최지원",
+    "unit_id": "QA",
+    "role": "QA 엔지니어",
+    "skill_level": "미드",
+    "max_capacity": 100.0,
+    "current_projects": [
+      "P002"
+    ]
+  },
+  {
+    "id": "C005",
+    "name": "정수현",
+    "unit_id": "INFRA",
+    "role": "인프라 엔지니어",
+    "skill_level": "시니어",
+    "max_capacity": 100.0,
+    "current_projects": [
+      "P003"
+    ]
+  }
+]

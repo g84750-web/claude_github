@@ -1,0 +1,55 @@
+[
+  {
+    "constructor_id": "C001",
+    "week_start": "2026-05-04T00:00:00",
+    "allocated_capacity": 110.0,
+    "actual_used": 105.0,
+    "projects": {
+      "P001": 60.0,
+      "P002": 50.0
+    },
+    "notes": ""
+  },
+  {
+    "constructor_id": "C002",
+    "week_start": "2026-05-04T00:00:00",
+    "allocated_capacity": 75.0,
+    "actual_used": 70.0,
+    "projects": {
+      "P001": 75.0
+    },
+    "notes": ""
+  },
+  {
+    "constructor_id": "C003",
+    "week_start": "2026-05-04T00:00:00",
+    "allocated_capacity": 95.0,
+    "actual_used": 90.0,
+    "projects": {
+      "P001": 30.0,
+      "P002": 30.0,
+      "P003": 35.0
+    },
+    "notes": ""
+  },
+  {
+    "constructor_id": "C004",
+    "week_start": "2026-05-04T00:00:00",
+    "allocated_capacity": 45.0,
+    "actual_used": 40.0,
+    "projects": {
+      "P002": 45.0
+    },
+    "notes": ""
+  },
+  {
+    "constructor_id": "C005",
+    "week_start": "2026-05-04T00:00:00",
+    "allocated_capacity": 80.0,
+    "actual_used": 75.0,
+    "projects": {
+      "P003": 80.0
+    },
+    "notes": ""
+  }
+]

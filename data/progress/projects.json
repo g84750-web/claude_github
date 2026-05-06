@@ -1,0 +1,109 @@
+[
+  {
+    "id": "P001",
+    "name": "ERP 시스템 구축",
+    "unit_id": "DEV",
+    "phase": "개발",
+    "status": "진행중",
+    "start_date": "2026-03-07T12:02:35.913719",
+    "planned_end_date": "2026-07-05T12:02:35.913719",
+    "actual_end_date": null,
+    "progress_rate": 58.0,
+    "milestones": [
+      {
+        "id": "M1",
+        "name": "요구사항 확정",
+        "planned_date": "2026-03-27T12:02:35.913719",
+        "actual_date": "2026-03-29T12:02:35.913719",
+        "status": "completed"
+      },
+      {
+        "id": "M2",
+        "name": "설계 완료",
+        "planned_date": "2026-04-16T12:02:35.913719",
+        "actual_date": "2026-04-18T12:02:35.913719",
+        "status": "completed"
+      },
+      {
+        "id": "M3",
+        "name": "개발 완료",
+        "planned_date": "2026-05-26T12:02:35.913719",
+        "actual_date": null,
+        "status": "pending"
+      },
+      {
+        "id": "M4",
+        "name": "테스트 완료",
+        "planned_date": "2026-06-15T12:02:35.913719",
+        "actual_date": null,
+        "status": "pending"
+      }
+    ],
+    "assigned_constructors": [
+      "C001",
+      "C002",
+      "C003"
+    ],
+    "risks": [
+      "외부 API 연동 지연 - 중위험",
+      "인력 부족 - 저위험"
+    ],
+    "notes": ""
+  },
+  {
+    "id": "P002",
+    "name": "모바일 앱 개발",
+    "unit_id": "DEV",
+    "phase": "테스트",
+    "status": "진행중",
+    "start_date": "2026-02-05T12:02:35.913719",
+    "planned_end_date": "2026-05-16T12:02:35.913719",
+    "actual_end_date": null,
+    "progress_rate": 82.0,
+    "milestones": [],
+    "assigned_constructors": [
+      "C001",
+      "C004"
+    ],
+    "risks": [
+      "테스트 일정 촉박 - 고위험"
+    ],
+    "notes": ""
+  },
+  {
+    "id": "P003",
+    "name": "인프라 고도화",
+    "unit_id": "INFRA",
+    "phase": "설계",
+    "status": "진행중",
+    "start_date": "2026-04-16T12:02:35.913719",
+    "planned_end_date": "2026-07-25T12:02:35.913719",
+    "actual_end_date": null,
+    "progress_rate": 22.0,
+    "milestones": [],
+    "assigned_constructors": [
+      "C003",
+      "C005"
+    ],
+    "risks": [],
+    "notes": ""
+  },
+  {
+    "id": "P004",
+    "name": "레거시 마이그레이션",
+    "unit_id": "PM",
+    "phase": "요구분석",
+    "status": "지연",
+    "start_date": "2026-01-06T12:02:35.913719",
+    "planned_end_date": "2026-05-01T12:02:35.913719",
+    "actual_end_date": null,
+    "progress_rate": 35.0,
+    "milestones": [],
+    "assigned_constructors": [],
+    "risks": [
+      "일정 대폭 초과 - 고위험",
+      "데이터 정합성 - 고위험"
+    ],
+    "notes": ""
+  }
+]

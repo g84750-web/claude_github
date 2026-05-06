@@ -1,0 +1,93 @@
+[
+  {
+    "constructor_id": "C001",
+    "project_id": "P001",
+    "period_start": "2026-03-07T12:02:35.913719",
+    "period_end": "2026-04-06T12:02:35.913719",
+    "planned_items": 12,
+    "completed_items": 10,
+    "quality_score": 82.0,
+    "on_time_delivery": 88.0,
+    "bugs_introduced": 8,
+    "bugs_resolved": 7,
+    "notes": ""
+  },
+  {
+    "constructor_id": "C001",
+    "project_id": "P002",
+    "period_start": "2026-04-06T12:02:35.913719",
+    "period_end": "2026-05-06T12:02:35.913719",
+    "planned_items": 10,
+    "completed_items": 9,
+    "quality_score": 85.0,
+    "on_time_delivery": 90.0,
+    "bugs_introduced": 4,
+    "bugs_resolved": 4,
+    "notes": ""
+  },
+  {
+    "constructor_id": "C002",
+    "project_id": "P001",
+    "period_start": "2026-03-07T12:02:35.913719",
+    "period_end": "2026-04-06T12:02:35.913719",
+    "planned_items": 8,
+    "completed_items": 5,
+    "quality_score": 70.0,
+    "on_time_delivery": 72.0,
+    "bugs_introduced": 6,
+    "bugs_resolved": 4,
+    "notes": ""
+  },
+  {
+    "constructor_id": "C002",
+    "project_id": "P001",
+    "period_start": "2026-04-06T12:02:35.913719",
+    "period_end": "2026-05-06T12:02:35.913719",
+    "planned_items": 8,
+    "completed_items": 7,
+    "quality_score": 75.0,
+    "on_time_delivery": 80.0,
+    "bugs_introduced": 3,
+    "bugs_resolved": 3,
+    "notes": ""
+  },
+  {
+    "constructor_id": "C003",
+    "project_id": "P001",
+    "period_start": "2026-03-07T12:02:35.913719",
+    "period_end": "2026-04-06T12:02:35.913719",
+    "planned_items": 15,
+    "completed_items": 14,
+    "quality_score": 90.0,
+    "on_time_delivery": 95.0,
+    "bugs_introduced": 2,
+    "bugs_resolved": 2,
+    "notes": ""
+  },
+  {
+    "constructor_id": "C004",
+    "project_id": "P002",
+    "period_start": "2026-03-07T12:02:35.913719",
+    "period_end": "2026-05-06T12:02:35.913719",
+    "planned_items": 10,
+    "completed_items": 6,
+    "quality_score": 60.0,
+    "on_time_delivery": 60.0,
+    "bugs_introduced": 10,
+    "bugs_resolved": 6,
+    "notes": ""
+  },
+  {
+    "constructor_id": "C005",
+    "project_id": "P003",
+    "period_start": "2026-04-06T12:02:35.913719",
+    "period_end": "2026-05-06T12:02:35.913719",
+    "planned_items": 6,
+    "completed_items": 5,
+    "quality_score": 88.0,
+    "on_time_delivery": 92.0,
+    "bugs_introduced": 1,
+    "bugs_resolved": 1,
+    "notes": ""
+  }
+]
