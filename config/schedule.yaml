@@ -1,0 +1,90 @@
+# 보고 스케줄 설정
+schedule:
+  weekly:
+    # 매주 금요일 오후 5시까지 제출
+    deadline_day: "Friday"
+    deadline_time: "17:00"
+    reminder_times:
+      - day: "Wednesday"
+        time: "09:00"
+        message: "주간보고 제출 마감 2일 전입니다."
+      - day: "Friday"
+        time: "09:00"
+        message: "오늘 17:00까지 주간보고를 제출하세요."
+    review_deadline_hours: 24  # 제출 후 24시간 내 검토
+    feedback_deadline_hours: 48  # 검토 후 48시간 내 피드백
+
+  monthly:
+    # 매월 마지막 영업일 오후 5시까지 제출
+    deadline_day: "last_business_day"
+    deadline_time: "17:00"
+    reminder_days_before:
+      - days: 5
+        message: "월간보고 제출 마감 5일 전입니다."
+      - days: 2
+        message: "월간보고 제출 마감 2일 전입니다."
+      - days: 0
+        message: "오늘 17:00까지 월간보고를 제출하세요."
+    review_deadline_hours: 48
+    feedback_deadline_hours: 72
+
+# 검토 기준 설정
+review_criteria:
+  completeness:
+    weight: 30
+    description: "필수 항목 모두 작성 여부"
+    pass_threshold: 80  # 80% 이상 작성 시 통과
+
+  insight_quality:
+    weight: 30
+    description: "핵심 인사이트 수치 포함 여부"
+    pass_threshold: 70
+
+  action_items:
+    weight: 20
+    description: "실행 계획 및 다음 단계 명확성"
+    pass_threshold: 60
+
+  timeliness:
+    weight: 20
+    description: "기한 내 제출 여부"
+    on_time_score: 100
+    late_penalty_per_hour: 5  # 시간당 5점 감점
+
+# 피드백 자동화 규칙
+feedback_rules:
+  score_ranges:
+    excellent:
+      min: 90
+      max: 100
+      label: "우수"
+      action: "승인"
+    good:
+      min: 75
+      max: 89
+      label: "양호"
+      action: "승인_보완권고"
+    needs_improvement:
+      min: 60
+      max: 74
+      label: "보완필요"
+      action: "보완요청"
+    insufficient:
+      min: 0
+      max: 59
+      label: "미흡"
+      action: "재제출요청"
+
+# 알림 설정
+notifications:
+  channels:
+    - type: "console"
+      enabled: true
+    - type: "log_file"
+      enabled: true
+      path: "data/notifications.log"
+
+  escalation:
+    # 제출 미이행 시 에스컬레이션
+    hours_after_deadline: 2
+    escalate_to: "사업본부장"
