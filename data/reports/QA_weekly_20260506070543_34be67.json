@@ -1,0 +1,47 @@
+{
+  "id": "QA_weekly_20260506070543_34be67",
+  "unit_id": "QA",
+  "report_type": "weekly",
+  "status": "승인",
+  "submitter": "품질보증 유닛 유닛장",
+  "reviewer": "자동검토시스템",
+  "created_at": "2026-05-06T07:05:43.175509",
+  "submitted_at": "2026-05-06T07:05:43.175742",
+  "reviewed_at": "2026-05-06T07:05:43.181518",
+  "feedback_sent_at": "2026-05-06T07:05:43.182107",
+  "deadline": "2026-05-08T17:00:00",
+  "content": {
+    "unit_id": "QA",
+    "report_type": "weekly",
+    "period_start": "2026-05-01T00:00:00",
+    "period_end": "2026-05-07T23:59:59",
+    "insights": [
+      {
+        "metric": "업무 완료율",
+        "value": "80%",
+        "target": "85%",
+        "trend": "상승",
+        "comment": null
+      },
+      {
+        "metric": "이슈 해결 건수",
+        "value": "5건",
+        "target": "5건 이상",
+        "trend": "유지",
+        "comment": null
+      }
+    ],
+    "items": {
+      "테스트 진행 현황": "품질보증 유닛 테스트 진행 현황 작성 완료",
+      "발견 결함 현황": "품질보증 유닛 발견 결함 현황 작성 완료",
+      "품질 지표 요약": "품질보증 유닛 품질 지표 요약 작성 완료",
+      "차주 테스트 계획": "품질보증 유닛 차주 테스트 계획 작성 완료"
+    },
+    "action_items": [
+      "세부 실행 계획 추진",
+      "다음 주 진행 현황 보고"
+    ],
+    "risks": [],
+    "next_period_plan": "현행 계획 지속 추진"
+  }
+}
