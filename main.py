@@ -8,6 +8,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from src.automation import ReportAutomation
+from src.insights.trend_analyzer import TrendAnalyzer
 from src.models import InsightItem, ReportType
 
 
@@ -149,6 +150,30 @@ def cmd_review(args, auto: ReportAutomation):
         print("[오류] --id <보고서ID> 또는 --all 옵션이 필요합니다.")
 
 
+def cmd_stats(args, auto: ReportAutomation):
+    """통계 및 트렌드 분석 출력"""
+    analyzer = TrendAnalyzer()
+    reports = auto.manager.store.list_reports()
+    feedbacks = []
+    for r in reports:
+        fb = auto.manager.get_feedback(r.id)
+        if fb:
+            feedbacks.append(fb)
+
+    unit_names = {uid: auto._unit_name(uid) for uid in auto.units}
+    summary = analyzer.generate_summary_report(reports, feedbacks, unit_names)
+    print(summary)
+
+    if feedbacks and args.unit:
+        trend = analyzer.score_trend(feedbacks, args.unit)
+        if trend:
+            print(f"\n[{auto._unit_name(args.unit)} 점수 추이]")
+            for t in trend:
+                bar = "█" * int(t['score'] / 10)
+                print(f"  {t['date']}  {bar} {t['score']:.1f}점  ({t['action']})")
+        print()
+
+
 def cmd_remind(args, auto: ReportAutomation):
     """리마인더 발송"""
     count = auto.check_and_send_reminders()
@@ -242,6 +267,8 @@ def main():
   python main.py review --id <보고서ID>          # 특정 보고서 검토
   python main.py remind                         # 리마인더 발송
   python main.py escalate                       # 에스컬레이션 처리
+  python main.py stats                          # 통계 및 트렌드 분석
+  python main.py stats --unit PM               # PM 유닛 점수 추이
   python main.py demo                           # 전체 워크플로우 데모
         """
     )
@@ -253,6 +280,10 @@ def main():
     subparsers.add_parser("remind", help="리마인더 발송")
     subparsers.add_parser("escalate", help="에스컬레이션 처리")
     subparsers.add_parser("demo", help="전체 워크플로우 데모")
+
+    stats_p = subparsers.add_parser("stats", help="통계 및 트렌드 분석")
+    stats_p.add_argument("--unit", choices=["PM", "DEV", "INFRA", "QA", "BIZ", "SUPPORT"],
+                         help="특정 유닛 점수 추이 출력")
 
     create_p = subparsers.add_parser("create", help="보고서 초안 생성")
     create_p.add_argument("--unit", required=True,
@@ -283,6 +314,7 @@ def main():
         "review": cmd_review,
         "remind": cmd_remind,
         "escalate": cmd_escalate,
+        "stats": cmd_stats,
         "demo": cmd_demo,
     }
 

@@ -1,0 +1,30 @@
+# PKG 사업본부(구축) 업무보고 자동화 - crontab 설정 예시
+#
+# 설치 방법:
+#   crontab -e  를 실행 후 아래 내용을 붙여넣기
+#
+# 형식: 분 시 일 월 요일 명령어
+# ┌──── 분 (0-59)
+# │  ┌─ 시 (0-23)
+# │  │  ┌ 일 (1-31)
+# │  │  │  ┌ 월 (1-12)
+# │  │  │  │  ┌ 요일 (0=일요일, 5=금요일)
+# │  │  │  │  │
+
+# ── 매일 오전 9시: 리마인더 확인 및 자동 처리 ──
+0 9 * * 1-5 cd /home/user/claude_github && python runner.py --once >> data/cron.log 2>&1
+
+# ── 매일 오후 5시: 마감 시간 직후 처리 ──
+0 17 * * 1-5 cd /home/user/claude_github && python runner.py --once >> data/cron.log 2>&1
+
+# ── 매일 오후 7시: 에스컬레이션 확인 (미제출 2시간 초과) ──
+0 19 * * 1-5 cd /home/user/claude_github && python runner.py --once >> data/cron.log 2>&1
+
+# ── 매주 수요일 오전 9시: 주간보고 D-2일 리마인더 ──
+0 9 * * 3 cd /home/user/claude_github && python main.py remind >> data/cron.log 2>&1
+
+# ── 매주 금요일 오전 9시: 주간보고 당일 리마인더 ──
+0 9 * * 5 cd /home/user/claude_github && python main.py remind >> data/cron.log 2>&1
+
+# ── 매월 25일 오전 9시: 월간보고 D-5일 리마인더 ──
+0 9 25 * * cd /home/user/claude_github && python main.py remind >> data/cron.log 2>&1
