@@ -128,6 +128,13 @@ canvas{display:block}
 /* TAB CONTENT */
 .tab-content{display:none}
 .tab-content.active{display:block}
+
+/* MFG MODULE TABS */
+#mfg-module-bar{display:none;gap:4px;padding:8px 12px;background:#f8fafc;border-bottom:1px solid var(--border)}
+.mod-tab{padding:5px 14px;border-radius:20px;border:1px solid var(--border);background:#fff;font-size:11px;font-weight:600;cursor:pointer;color:var(--muted);transition:.12s;font-family:inherit}
+.mod-tab:hover{border-color:var(--c1);color:var(--c1)}
+.mod-tab.active{background:var(--c1);color:#fff;border-color:var(--c1)}
+.mod-label{font-size:10px;color:var(--muted);padding:8px 12px 2px;font-weight:600;letter-spacing:.04em}
 </style>
 </head>
 <body>
@@ -183,6 +190,13 @@ canvas{display:block}
     <div class="card">
       <div class="card-title">🖥️ ERP 화면 체험 — <span id="sim-screen-name">입력 화면</span></div>
       <div id="erp-sim">
+        <div id="mfg-module-bar">
+          <span class="mod-label">ERP 모듈 ▶</span>
+          <button class="mod-tab active" data-mod="sales" onclick="setMfgModule('sales')">🧾 영업관리</button>
+          <button class="mod-tab" data-mod="production" onclick="setMfgModule('production')">🏗️ 생산관리</button>
+          <button class="mod-tab" data-mod="purchase" onclick="setMfgModule('purchase')">📦 구매/자재</button>
+          <button class="mod-tab" data-mod="quality" onclick="setMfgModule('quality')">🔍 품질관리</button>
+        </div>
         <div id="erp-sim-header">
           <span id="sim-menu-path">구매관리 &gt; 발주서 입력</span>
           <span style="margin-left:auto;font-size:10px;color:#475569">시뮬레이션 모드</span>
@@ -298,61 +312,58 @@ const INDUSTRIES = {
   },
 
   manufacturing: {
-    name: '제조업', icon: '🏭',
+    name: '제조업 (냉동공조)', icon: '🏭',
     kpis: [
-      {label:'월 생산목표', value:'15,200', unit:'개', change:'+5.2%', up:true, color:'var(--c1)'},
+      {label:'이번달 수주건수', value:'28', unit:'건', change:'+3건', up:true, color:'var(--c1)'},
       {label:'생산달성율', value:'93.7', unit:'%', change:'+2.1%p', up:true, color:'var(--c2)'},
-      {label:'불량률', value:'0.8', unit:'%', change:'-0.3%p', up:true, color:'var(--c3)'},
-      {label:'재고회전율', value:'8.2', unit:'회/년', change:'+0.5', up:true, color:'var(--c5)'},
-      {label:'납기준수율', value:'96.4', unit:'%', change:'+1.2%p', up:true, color:'var(--c4)'},
+      {label:'불량률 (OQC)', value:'0.8', unit:'%', change:'-0.3%p', up:true, color:'var(--c3)'},
+      {label:'납기준수율', value:'96.4', unit:'%', change:'+1.2%p', up:true, color:'var(--c5)'},
+      {label:'자재출고 대기', value:'7', unit:'건', change:'-2건', up:true, color:'var(--c4)'},
     ],
-    steps: ['수주','생산계획','자재소요(MRP)','발주','생산실적','품질검사','출하','매출마감'],
+    steps: ['수주등록','생산계획','생산지시','자재출고','생산실적','품질검사','출하처리','매출마감'],
     flow: [
-      {name:'영업팀', step:'수주등록', dept:'영업부', desc:'고객 주문 접수\n납기 확인'},
-      {name:'생산팀', step:'생산계획', dept:'생산부', desc:'MPS 수립\n능력 계획'},
-      {name:'자재팀', step:'MRP실행', dept:'자재부', desc:'소요자재 산출\n발주지시'},
-      {name:'구매팀', step:'자재발주', dept:'구매부', desc:'구매 발주\n납기 관리'},
-      {name:'현장반장', step:'생산실적', dept:'제조현장', desc:'실적 입력\n공정 이동'},
-      {name:'품질팀', step:'품질검사', dept:'QC', desc:'IQC/PQC/OQC\n불량 처리'},
-      {name:'물류팀', step:'출하처리', dept:'물류부', desc:'피킹/포장\n출하 확인'},
-      {name:'회계팀', step:'매출마감', dept:'회계부', desc:'매출 계상\n수금 관리'},
+      {name:'영업팀', step:'수주등록', dept:'영업부', desc:'고객 주문 접수\n수주보고서 작성/배포\n납기일 확인 → 생산/구매 통보'},
+      {name:'생산관리', step:'생산계획', dept:'생산부', desc:'생산번호 부여 (P-L/A-년도-SEQ)\n월/주간 생산계획 수립\n생산우선순위 배정'},
+      {name:'생산관리', step:'생산지시', dept:'생산부', desc:'작업지시 등록 (ERP수주 연동)\n공정경로 전개 (판금→코일→팬→조립)\nBOM 소요자재 확정 → 자재청구'},
+      {name:'자재/구매', step:'자재출고', dept:'자재부', desc:'소요자재 창고→공정 출고\n사급자재 외주업체 관리\n부족자재 구매발주'},
+      {name:'제조현장', step:'생산실적', dept:'제조부', desc:'공정별 작업실적 등록\n작업자/투입시간 입력\n공정이동 → 최종 제품창고 입고'},
+      {name:'품질팀', step:'품질검사', dept:'QC부', desc:'수입검사 IQC (FAN/모터/BASE)\n공정검사 LQC (코일/판넬/팬)\n출하검사 OQC → 합격증명서'},
+      {name:'영업팀', step:'출하처리', dept:'영업부', desc:'출고의뢰 등록 (수주 연동)\n출하검사 완료 확인\n거래명세서 출력/출고처리'},
+      {name:'회계팀', step:'매출마감', dept:'회계부', desc:'매출 계상 (세금계산서)\n수금 관리/채권 등록\n원가 집계 (재료비/노무비/경비)'},
     ],
-    simMenu: '생산관리 > 작업지시 입력',
-    simTitle: '작업지시서',
+    simMenu: '영업관리 > 주문(수주)등록',
+    simTitle: '수주 등록',
     simFields: [
-      {label:'작업지시번호', value:'WO-2026-1234', type:'text', readonly:true},
-      {label:'지시일자', value:'2026-07-21', type:'date'},
-      {label:'제품코드', value:'PRD-A001', type:'text'},
-      {label:'제품명', value:'산업용 제어보드 A형', type:'text'},
-      {label:'지시수량', value:'500', type:'number'},
-      {label:'완료예정일', value:'2026-07-25', type:'date'},
+      {label:'주문번호', value:'P-L26-0847', type:'text', readonly:true},
+      {label:'주문일자', value:'2026-07-21', type:'date'},
+      {label:'고객(거래처)', value:'(주)엘지전자', type:'text'},
+      {label:'과세구분', value:'매출과세', type:'text', readonly:true},
+      {label:'납품처', value:'LG전자 청주공장', type:'text'},
+      {label:'영업담당자', value:'홍길동', type:'text'},
     ],
     simItems: [
-      ['기판 PCB A형', 'EA', '500', '3,200', '1,600,000', '완료'],
-      ['IC칩 MCU-32', 'EA', '2,000', '850', '1,700,000', '진행'],
-      ['커패시터 100uF', 'EA', '5,000', '45', '225,000', '완료'],
-      ['저항 10kΩ', 'EA', '10,000', '8', '80,000', '완료'],
+      ['ACU-1500','항온항습기 15KW','EA','3','12,000,000','진행'],
     ],
-    tableHeader: ['지시번호','제품명','지시수량','완료수량','불량수','상태'],
+    tableHeader: ['주문번호','고객','제품명','수량','납기일','상태'],
     tableData: [
-      ['WO-2026-1234','산업용 제어보드 A형','500','467','3','진행'],
-      ['WO-2026-1233','전원공급장치 B형','300','300','1','완료'],
-      ['WO-2026-1232','모터드라이버 C형','200','200','0','완료'],
-      ['WO-2026-1231','센서모듈 D형','1,000','950','8','진행'],
-      ['WO-2026-1230','통신모듈 E형','150','150','2','완료'],
+      ['P-L26-0847','(주)엘지전자','항온항습기 15KW','3','07-31','진행'],
+      ['P-A26-0821','서울대병원','청정항온기 5KW','2','07-15','완료'],
+      ['P-L26-0815','삼성전자(주)','방폭형 에어컨 10KW','5','07-10','완료'],
+      ['P-A26-0808','현대자동차','산업용냉동기 20RT','1','07-25','대기'],
+      ['P-L26-0801','LG이노텍','정밀항온기 3KW','4','07-05','완료'],
     ],
     trendLabel: ['1월','2월','3월','4월','5월','6월','7월'],
-    trendData: [13500,14200,13800,15000,14800,15500,14250],
-    trendName: '생산수량(개)',
-    pieLabels: ['A제품군','B제품군','C제품군','D제품군','기타'],
-    pieData: [40,28,18,10,4],
+    trendData: [18,22,19,26,24,28,25],
+    trendName: '수주건수',
+    pieLabels: ['항온항습기','정밀에어컨','산업용냉동','에어핸들링','기타'],
+    pieData: [38,28,18,12,4],
     alerts: [
-      {type:'warn', msg:'IC칩 MCU-32 재고 안전재고 미달'},
-      {type:'info', msg:'WO-2026-1234 진행률 93.4%'},
-      {type:'ok', msg:'7월 납기준수율 96.4% 달성'},
-      {type:'err', msg:'공정 3번 라인 불량률 상승 (2.1%)'},
+      {type:'warn', msg:'P-A26-0808 자재 납기 D-2 — 구매팀 즉시 확인 요망'},
+      {type:'info', msg:'P-L26-0847 코일 조립공정 진행중 (공정률 35%)'},
+      {type:'ok', msg:'7월 납기준수율 96.4% — 목표 95% 초과 달성'},
+      {type:'err', msg:'FAN 조립체 IQC 불량 발생 — 품질팀 조치중'},
     ],
-    approveShow: false,
+    approveShow: true,
   },
 
   distribution: {
@@ -528,9 +539,119 @@ const INDUSTRIES = {
 };
 
 // ══════════════════════════════════════════════
+//  제조업 ERP 모듈별 화면 데이터 (더존 ERP 기반)
+// ══════════════════════════════════════════════
+const MFG_MODULES = {
+  sales: {
+    menu: '영업관리 > 주문(수주)등록',
+    title: '수주 등록',
+    fields: [
+      {label:'주문번호', value:'P-L26-0847', type:'text', readonly:true},
+      {label:'주문일자', value:'2026-07-21', type:'date'},
+      {label:'고객(거래처)', value:'(주)엘지전자', type:'text'},
+      {label:'과세구분', value:'매출과세', type:'text', readonly:true},
+      {label:'납품처', value:'LG전자 청주공장', type:'text'},
+      {label:'영업담당자', value:'홍길동', type:'text'},
+    ],
+    items: [
+      ['ACU-1500 / 항온항습기 15KW', 'EA', '3', '12,000,000', '36,000,000', '진행'],
+    ],
+    tableHeader: ['주문번호','고객','제품명','수량','납기일','상태'],
+    tableData: [
+      ['P-L26-0847','(주)엘지전자','항온항습기 15KW','3','07-31','진행'],
+      ['P-A26-0821','서울대병원','청정항온기 5KW','2','07-15','완료'],
+      ['P-L26-0815','삼성전자(주)','방폭형 에어컨 10KW','5','07-10','완료'],
+      ['P-A26-0808','현대자동차','산업용냉동기 20RT','1','07-25','대기'],
+      ['P-L26-0801','LG이노텍','정밀항온기 3KW','4','07-05','완료'],
+    ],
+    approveShow: true,
+  },
+  production: {
+    menu: '생산관리 > 생산지시등록',
+    title: '생산(작업)지시 등록',
+    fields: [
+      {label:'작업지시번호', value:'WO-2026-0847', type:'text', readonly:true},
+      {label:'지시일자', value:'2026-07-21', type:'date'},
+      {label:'완료예정일', value:'2026-07-31', type:'date'},
+      {label:'고객(거래처)', value:'(주)엘지전자', type:'text'},
+      {label:'품번/품명', value:'ACU-1500 / 항온항습기 15KW', type:'text'},
+      {label:'지시수량', value:'3', type:'number'},
+    ],
+    items: [
+      ['팬(FAN) 조립체', 'EA', '9', '285,000', '2,565,000', '완료'],
+      ['코일 열교환기 A형', 'EA', '6', '420,000', '2,520,000', '진행'],
+      ['케이싱 판넬 세트', 'SET', '3', '180,000', '540,000', '완료'],
+      ['구동 모터 3.7kW', 'EA', '6', '320,000', '1,920,000', '대기'],
+    ],
+    tableHeader: ['지시번호','고객','제품명','지시수량','완료수','상태'],
+    tableData: [
+      ['WO-2026-0847','(주)엘지전자','항온항습기 15KW','3','0','진행'],
+      ['WO-2026-0821','서울대병원','청정항온기 5KW','2','2','완료'],
+      ['WO-2026-0815','삼성전자(주)','방폭형 에어컨 10KW','5','5','완료'],
+      ['WO-2026-0808','현대자동차','산업용냉동기 20RT','1','0','대기'],
+      ['WO-2026-0801','LG이노텍','정밀항온기 3KW','4','4','완료'],
+    ],
+    approveShow: false,
+  },
+  purchase: {
+    menu: '구매관리 > 구매발주',
+    title: '구매 발주서',
+    fields: [
+      {label:'발주번호', value:'PO-2026-3421', type:'text', readonly:true},
+      {label:'발주일자', value:'2026-07-21', type:'date'},
+      {label:'납기요청일', value:'2026-07-25', type:'date'},
+      {label:'공급업체', value:'(주)태광산업', type:'text'},
+      {label:'작업지시번호', value:'WO-2026-0847', type:'text', readonly:true},
+      {label:'구매담당자', value:'이구매', type:'text'},
+    ],
+    items: [
+      ['구동 모터 3.7kW', 'EA', '6', '320,000', '1,920,000', '대기'],
+      ['베어링 6205-2RS', 'EA', '12', '4,500', '54,000', '완료'],
+      ['H13 필터', 'EA', '6', '28,000', '168,000', '완료'],
+    ],
+    tableHeader: ['발주번호','공급업체','품목','수량','납기일','금액','상태'],
+    tableData: [
+      ['PO-2026-3421','(주)태광산업','구동모터 3.7kW','6','07-25','1,920,000','대기'],
+      ['PO-2026-3418','(주)삼성팬','FAN 조립체','12','07-20','3,420,000','완료'],
+      ['PO-2026-3415','서울모터','베어링 6205','24','07-18','108,000','완료'],
+      ['PO-2026-3411','한국필터','H13 필터','18','07-22','504,000','진행'],
+      ['PO-2026-3408','대한알루미늄','알루미늄 코일재','200kg','07-28','1,200,000','진행'],
+    ],
+    approveShow: false,
+  },
+  quality: {
+    menu: '품질관리 > 출하검사등록',
+    title: '출하검사 등록',
+    fields: [
+      {label:'검사번호', value:'QC-2026-0821', type:'text', readonly:true},
+      {label:'검사일자', value:'2026-07-21', type:'date'},
+      {label:'작업지시번호', value:'WO-2026-0821', type:'text', readonly:true},
+      {label:'고객(거래처)', value:'서울대병원', type:'text'},
+      {label:'검사담당자', value:'박품질', type:'text'},
+      {label:'최종판정', value:'합격', type:'text'},
+    ],
+    items: [
+      ['소음검사 (55dB 이하)', '기준', '52dB 측정', '-', '-', '완료'],
+      ['냉각능력 (5KW±5%)', '기준', '5.12KW', '-', '-', '완료'],
+      ['기밀 누설검사', '기준', '합격', '-', '-', '완료'],
+      ['전기안전 (AC내전압)', '기준', '합격', '-', '-', '완료'],
+    ],
+    tableHeader: ['검사번호','고객','제품','판정','검사일','불량수','상태'],
+    tableData: [
+      ['QC-2026-0821','서울대병원','청정항온기 5KW','합격','07-15','0','완료'],
+      ['QC-2026-0815','삼성전자','방폭형 에어컨 10KW','합격','07-09','1','완료'],
+      ['QC-2026-0847','(주)엘지전자','항온항습기 15KW','검사중','-','-','진행'],
+      ['QC-2026-0801','LG이노텍','정밀항온기 3KW','합격','07-04','0','완료'],
+    ],
+    approveShow: true,
+  },
+};
+
+// ══════════════════════════════════════════════
 //  STATE
 // ══════════════════════════════════════════════
 let currentInd = 'construction';
+let currentMfgModule = 'sales';
 let trendChart = null, pieChart = null;
 let simMode = 'query';  // new | query
 
@@ -616,10 +737,32 @@ function showFlowDetail(idx) {
 }
 
 function renderSimulator(d) {
-  document.getElementById('sim-menu-path').textContent = d.simMenu;
-  document.getElementById('sim-screen-name').textContent = d.simTitle;
-  document.getElementById('btn-approve').style.display = d.approveShow ? '' : 'none';
-  showQueryScreen(d);
+  const isMfg = currentInd === 'manufacturing';
+  document.getElementById('mfg-module-bar').style.display = isMfg ? 'flex' : 'none';
+  if (isMfg) {
+    setMfgModule(currentMfgModule);
+  } else {
+    document.getElementById('sim-menu-path').textContent = d.simMenu;
+    document.getElementById('sim-screen-name').textContent = d.simTitle;
+    document.getElementById('btn-approve').style.display = d.approveShow ? '' : 'none';
+    showQueryScreen(d);
+  }
+}
+
+function setMfgModule(key) {
+  currentMfgModule = key;
+  document.querySelectorAll('.mod-tab').forEach(t => t.classList.toggle('active', t.dataset.mod === key));
+  const m = MFG_MODULES[key];
+  document.getElementById('sim-menu-path').textContent = m.menu;
+  document.getElementById('sim-screen-name').textContent = m.title;
+  document.getElementById('btn-approve').style.display = m.approveShow ? '' : 'none';
+  const synthD = {
+    simMenu: m.menu, simTitle: m.title,
+    simFields: m.fields, simItems: m.items,
+    tableHeader: m.tableHeader, tableData: m.tableData,
+    approveShow: m.approveShow,
+  };
+  showQueryScreen(synthD);
 }
 
 function showQueryScreen(d) {
@@ -676,7 +819,11 @@ function addCommas(n) {
 }
 
 function simAction(act) {
-  const d = INDUSTRIES[currentInd];
+  let d = INDUSTRIES[currentInd];
+  if (currentInd === 'manufacturing') {
+    const m = MFG_MODULES[currentMfgModule];
+    d = {...d, simFields: m.fields, simItems: m.items, tableHeader: m.tableHeader, tableData: m.tableData};
+  }
   if (act === 'new') { showInputScreen(d); toast('신규 입력 화면으로 전환되었습니다'); }
   else if (act === 'query') { showQueryScreen(d); toast('조회 완료 — ' + d.tableData.length + '건'); }
   else if (act === 'save') { toast('✅ 저장되었습니다 (시뮬레이션)'); }
