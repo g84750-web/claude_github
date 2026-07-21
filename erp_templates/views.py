@@ -22,6 +22,15 @@ def app_view(request):
     return HttpResponse(content, content_type='text/html; charset=utf-8')
 
 
+def simulation_view(request):
+    """업종별 ERP 시뮬레이션 툴"""
+    import os
+    html_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'frontend', 'simulation.html')
+    with open(html_path, 'r', encoding='utf-8') as f:
+        content = f.read()
+    return HttpResponse(content, content_type='text/html; charset=utf-8')
+
+
 class ERPModuleViewSet(viewsets.ModelViewSet):
     queryset = ERPModule.objects.all()
     serializer_class = ERPModuleSerializer
