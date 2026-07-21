@@ -1,0 +1,82 @@
+[
+  {"model": "erp_templates.erpmodule", "pk": 1, "fields": {"name": "구매관리", "code": "PUR", "icon": "🛒", "order": 1}},
+  {"model": "erp_templates.erpmodule", "pk": 2, "fields": {"name": "영업관리", "code": "SAL", "icon": "📊", "order": 2}},
+  {"model": "erp_templates.erpmodule", "pk": 3, "fields": {"name": "재고관리", "code": "INV", "icon": "📦", "order": 3}},
+  {"model": "erp_templates.erpmodule", "pk": 4, "fields": {"name": "회계관리", "code": "ACC", "icon": "💰", "order": 4}},
+  {"model": "erp_templates.erpmodule", "pk": 5, "fields": {"name": "인사관리", "code": "HR", "icon": "👥", "order": 5}},
+
+  {"model": "erp_templates.menuitem", "pk": 1,  "fields": {"module": 1, "menu_type": "input",  "name": "발주서 입력",   "code": "PUR_PO",   "icon": "📝", "order": 1}},
+  {"model": "erp_templates.menuitem", "pk": 2,  "fields": {"module": 1, "menu_type": "input",  "name": "구매요청서",   "code": "PUR_REQ",  "icon": "📋", "order": 2}},
+  {"model": "erp_templates.menuitem", "pk": 3,  "fields": {"module": 1, "menu_type": "input",  "name": "입고 처리",    "code": "PUR_RCV",  "icon": "📦", "order": 3}},
+  {"model": "erp_templates.menuitem", "pk": 4,  "fields": {"module": 1, "menu_type": "input",  "name": "계약서 입력",  "code": "PUR_CON",  "icon": "🤝", "order": 4}},
+  {"model": "erp_templates.menuitem", "pk": 5,  "fields": {"module": 1, "menu_type": "output", "name": "발주 현황",    "code": "PUR_RPT1", "icon": "📊", "order": 1}},
+  {"model": "erp_templates.menuitem", "pk": 6,  "fields": {"module": 1, "menu_type": "output", "name": "입고 현황",    "code": "PUR_RPT2", "icon": "📈", "order": 2}},
+  {"model": "erp_templates.menuitem", "pk": 7,  "fields": {"module": 1, "menu_type": "output", "name": "거래처 현황",  "code": "PUR_RPT3", "icon": "🏭", "order": 3}},
+
+  {"model": "erp_templates.menuitem", "pk": 8,  "fields": {"module": 2, "menu_type": "input",  "name": "견적서 입력",  "code": "SAL_QT",   "icon": "💼", "order": 1}},
+  {"model": "erp_templates.menuitem", "pk": 9,  "fields": {"module": 2, "menu_type": "input",  "name": "수주 입력",    "code": "SAL_ORD",  "icon": "📝", "order": 2}},
+  {"model": "erp_templates.menuitem", "pk": 10, "fields": {"module": 2, "menu_type": "input",  "name": "출하 지시",    "code": "SAL_SHP",  "icon": "🚚", "order": 3}},
+  {"model": "erp_templates.menuitem", "pk": 11, "fields": {"module": 2, "menu_type": "output", "name": "수주 현황",    "code": "SAL_RPT1", "icon": "📊", "order": 1}},
+  {"model": "erp_templates.menuitem", "pk": 12, "fields": {"module": 2, "menu_type": "output", "name": "매출 현황",    "code": "SAL_RPT2", "icon": "📈", "order": 2}},
+  {"model": "erp_templates.menuitem", "pk": 13, "fields": {"module": 2, "menu_type": "output", "name": "거래처별 매출","code": "SAL_RPT3", "icon": "🏢", "order": 3}},
+
+  {"model": "erp_templates.menuitem", "pk": 14, "fields": {"module": 3, "menu_type": "input",  "name": "입고 등록",    "code": "INV_IN",   "icon": "📥", "order": 1}},
+  {"model": "erp_templates.menuitem", "pk": 15, "fields": {"module": 3, "menu_type": "input",  "name": "출고 등록",    "code": "INV_OUT",  "icon": "📤", "order": 2}},
+  {"model": "erp_templates.menuitem", "pk": 16, "fields": {"module": 3, "menu_type": "output", "name": "재고 현황",    "code": "INV_RPT1", "icon": "📦", "order": 1}},
+  {"model": "erp_templates.menuitem", "pk": 17, "fields": {"module": 3, "menu_type": "output", "name": "이동 현황",    "code": "INV_RPT2", "icon": "🔄", "order": 2}},
+
+  {"model": "erp_templates.menuitem", "pk": 18, "fields": {"module": 4, "menu_type": "input",  "name": "전표 입력",    "code": "ACC_VCH",  "icon": "📄", "order": 1}},
+  {"model": "erp_templates.menuitem", "pk": 19, "fields": {"module": 4, "menu_type": "input",  "name": "세금계산서",   "code": "ACC_TAX",  "icon": "🧾", "order": 2}},
+  {"model": "erp_templates.menuitem", "pk": 20, "fields": {"module": 4, "menu_type": "output", "name": "원장 현황",    "code": "ACC_RPT1", "icon": "📒", "order": 1}},
+  {"model": "erp_templates.menuitem", "pk": 21, "fields": {"module": 4, "menu_type": "output", "name": "손익 현황",    "code": "ACC_RPT2", "icon": "💹", "order": 2}},
+
+  {"model": "erp_templates.menuitem", "pk": 22, "fields": {"module": 5, "menu_type": "input",  "name": "인사 발령",    "code": "HR_APT",   "icon": "👤", "order": 1}},
+  {"model": "erp_templates.menuitem", "pk": 23, "fields": {"module": 5, "menu_type": "input",  "name": "급여 입력",    "code": "HR_SAL",   "icon": "💵", "order": 2}},
+  {"model": "erp_templates.menuitem", "pk": 24, "fields": {"module": 5, "menu_type": "output", "name": "급여 명세서",  "code": "HR_RPT1",  "icon": "📑", "order": 1}},
+  {"model": "erp_templates.menuitem", "pk": 25, "fields": {"module": 5, "menu_type": "output", "name": "인원 현황",    "code": "HR_RPT2",  "icon": "👥", "order": 2}},
+
+  {"model": "erp_templates.erpvariable", "pk": 1,  "fields": {"category": "company",   "key": "COMPANY_NAME",   "label": "회사명",       "description": "회사 공식 명칭",        "sample_value": "(주)한국전자"}},
+  {"model": "erp_templates.erpvariable", "pk": 2,  "fields": {"category": "company",   "key": "COMPANY_ADDR",   "label": "회사주소",     "description": "회사 사업장 주소",      "sample_value": "서울시 강남구 테헤란로 123"}},
+  {"model": "erp_templates.erpvariable", "pk": 3,  "fields": {"category": "company",   "key": "COMPANY_TEL",    "label": "전화번호",     "description": "회사 대표전화",        "sample_value": "02-1234-5678"}},
+  {"model": "erp_templates.erpvariable", "pk": 4,  "fields": {"category": "company",   "key": "COMPANY_FAX",    "label": "팩스번호",     "description": "회사 팩스번호",        "sample_value": "02-1234-5679"}},
+  {"model": "erp_templates.erpvariable", "pk": 5,  "fields": {"category": "company",   "key": "CEO_NAME",       "label": "대표자명",     "description": "대표이사 성명",        "sample_value": "홍길동"}},
+  {"model": "erp_templates.erpvariable", "pk": 6,  "fields": {"category": "company",   "key": "BIZ_NO",         "label": "사업자번호",   "description": "사업자등록번호",       "sample_value": "123-45-67890"}},
+
+  {"model": "erp_templates.erpvariable", "pk": 7,  "fields": {"category": "purchase",  "key": "PO_NO",          "label": "발주번호",     "description": "발주서 일련번호",      "sample_value": "PO-2024-0001"}},
+  {"model": "erp_templates.erpvariable", "pk": 8,  "fields": {"category": "purchase",  "key": "PO_DATE",        "label": "발주일자",     "description": "발주 처리 일자",       "sample_value": "2024-01-15"}},
+  {"model": "erp_templates.erpvariable", "pk": 9,  "fields": {"category": "purchase",  "key": "PO_SUPPLIER",    "label": "공급업체명",   "description": "납품 공급업체 이름",   "sample_value": "(주)공급상사"}},
+  {"model": "erp_templates.erpvariable", "pk": 10, "fields": {"category": "purchase",  "key": "PO_TOTAL",       "label": "발주금액(합계)","description": "발주서 총 금액",      "sample_value": "1,500,000"}},
+  {"model": "erp_templates.erpvariable", "pk": 11, "fields": {"category": "purchase",  "key": "PO_ITEM_NAME",   "label": "품목명",       "description": "발주 품목 이름",       "sample_value": "노트북 A모델"}},
+  {"model": "erp_templates.erpvariable", "pk": 12, "fields": {"category": "purchase",  "key": "PO_QTY",         "label": "발주수량",     "description": "발주 수량",            "sample_value": "10"}},
+  {"model": "erp_templates.erpvariable", "pk": 13, "fields": {"category": "purchase",  "key": "PO_UNIT_PRICE",  "label": "단가",         "description": "품목 단가",            "sample_value": "150,000"}},
+  {"model": "erp_templates.erpvariable", "pk": 14, "fields": {"category": "purchase",  "key": "PO_DELIVERY_DATE","label":"납기일",        "description": "납품 요청 일자",       "sample_value": "2024-01-30"}},
+
+  {"model": "erp_templates.erpvariable", "pk": 15, "fields": {"category": "sales",     "key": "QT_NO",          "label": "견적번호",     "description": "견적서 일련번호",      "sample_value": "QT-2024-0001"}},
+  {"model": "erp_templates.erpvariable", "pk": 16, "fields": {"category": "sales",     "key": "QT_DATE",        "label": "견적일자",     "description": "견적서 작성일",        "sample_value": "2024-01-10"}},
+  {"model": "erp_templates.erpvariable", "pk": 17, "fields": {"category": "sales",     "key": "CUSTOMER_NAME",  "label": "거래처명",     "description": "고객사 이름",          "sample_value": "(주)고객사"}},
+  {"model": "erp_templates.erpvariable", "pk": 18, "fields": {"category": "sales",     "key": "SALES_TOTAL",    "label": "견적금액(합계)","description": "견적서 총 금액",      "sample_value": "3,300,000"}},
+  {"model": "erp_templates.erpvariable", "pk": 19, "fields": {"category": "sales",     "key": "SALES_REP",      "label": "담당영업",     "description": "담당 영업사원",        "sample_value": "김영업"}},
+  {"model": "erp_templates.erpvariable", "pk": 20, "fields": {"category": "sales",     "key": "VALID_DATE",     "label": "견적유효기간", "description": "견적서 유효 기한",    "sample_value": "30일"}},
+
+  {"model": "erp_templates.erpvariable", "pk": 21, "fields": {"category": "inventory", "key": "ITEM_CODE",      "label": "품목코드",     "description": "재고 품목 코드",       "sample_value": "ITM-00123"}},
+  {"model": "erp_templates.erpvariable", "pk": 22, "fields": {"category": "inventory", "key": "ITEM_NAME",      "label": "품목명",       "description": "재고 품목 이름",       "sample_value": "사무용 의자"}},
+  {"model": "erp_templates.erpvariable", "pk": 23, "fields": {"category": "inventory", "key": "STOCK_QTY",      "label": "재고수량",     "description": "현재 재고 수량",       "sample_value": "250"}},
+  {"model": "erp_templates.erpvariable", "pk": 24, "fields": {"category": "inventory", "key": "WAREHOUSE",      "label": "창고명",       "description": "재고 보관 창고",       "sample_value": "서울 물류창고"}},
+
+  {"model": "erp_templates.erpvariable", "pk": 25, "fields": {"category": "accounting","key": "INVOICE_NO",     "label": "전표번호",     "description": "회계 전표 번호",       "sample_value": "ACC-2024-1001"}},
+  {"model": "erp_templates.erpvariable", "pk": 26, "fields": {"category": "accounting","key": "ACCOUNT_NM",     "label": "계정과목",     "description": "회계 계정과목 이름",   "sample_value": "외상매입금"}},
+  {"model": "erp_templates.erpvariable", "pk": 27, "fields": {"category": "accounting","key": "TAX_AMOUNT",     "label": "세액",         "description": "부가가치세 세액",      "sample_value": "150,000"}},
+  {"model": "erp_templates.erpvariable", "pk": 28, "fields": {"category": "accounting","key": "SUPPLY_AMOUNT",  "label": "공급가액",     "description": "부가세 제외 공급금액", "sample_value": "1,500,000"}},
+
+  {"model": "erp_templates.erpvariable", "pk": 29, "fields": {"category": "hr",        "key": "EMP_NO",         "label": "사원번호",     "description": "직원 사원번호",        "sample_value": "EMP-0042"}},
+  {"model": "erp_templates.erpvariable", "pk": 30, "fields": {"category": "hr",        "key": "EMP_NAME",       "label": "사원명",       "description": "직원 이름",            "sample_value": "이사원"}},
+  {"model": "erp_templates.erpvariable", "pk": 31, "fields": {"category": "hr",        "key": "DEPT_NAME",      "label": "부서명",       "description": "소속 부서",            "sample_value": "개발1팀"}},
+  {"model": "erp_templates.erpvariable", "pk": 32, "fields": {"category": "hr",        "key": "POSITION",       "label": "직급",         "description": "직원 직급",            "sample_value": "과장"}},
+  {"model": "erp_templates.erpvariable", "pk": 33, "fields": {"category": "hr",        "key": "SALARY",         "label": "기본급",       "description": "월 기본급여",          "sample_value": "3,500,000"}},
+  {"model": "erp_templates.erpvariable", "pk": 34, "fields": {"category": "hr",        "key": "PAY_DATE",       "label": "급여지급일",   "description": "급여 지급 날짜",       "sample_value": "2024-01-25"}},
+
+  {"model": "erp_templates.erpvariable", "pk": 35, "fields": {"category": "common",    "key": "TODAY",          "label": "오늘날짜",     "description": "문서 출력 날짜 (자동)", "sample_value": "2024-01-15"}},
+  {"model": "erp_templates.erpvariable", "pk": 36, "fields": {"category": "common",    "key": "PAGE_NO",        "label": "페이지번호",   "description": "인쇄 페이지 번호",    "sample_value": "1"}},
+  {"model": "erp_templates.erpvariable", "pk": 37, "fields": {"category": "common",    "key": "TOTAL_PAGE",     "label": "전체페이지",   "description": "총 인쇄 페이지 수",   "sample_value": "3"}},
+  {"model": "erp_templates.erpvariable", "pk": 38, "fields": {"category": "common",    "key": "DOC_TITLE",      "label": "문서제목",     "description": "문서 상단 타이틀",    "sample_value": "발주서"}}
+]

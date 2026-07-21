@@ -1,0 +1,14 @@
+{
+  "name": "ERP 인쇄양식 에디터",
+  "short_name": "ERP 에디터",
+  "description": "ERP 인쇄양식 관리 및 편집 도구",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#2563eb",
+  "lang": "ko",
+  "icons": [
+    {"src": "/static/icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "/static/icon-512.png", "sizes": "512x512", "type": "image/png"}
+  ]
+}
