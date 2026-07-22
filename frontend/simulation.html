@@ -198,6 +198,8 @@ canvas{display:block}
           <button class="mod-tab" data-mod="quality" onclick="setMfgModule('quality')">🔍 출하검사(OQC)</button>
           <button class="mod-tab" data-mod="iqc" onclick="setMfgModule('iqc')">🔬 수입검사(IQC)</button>
           <button class="mod-tab" data-mod="svc" onclick="setMfgModule('svc')">🛠️ SVC관리</button>
+          <button class="mod-tab" data-mod="master" onclick="setMfgModule('master')">📂 마스터기준정보</button>
+          <button class="mod-tab" data-mod="config" onclick="setMfgModule('config')">⚙️ 공통환경설정</button>
         </div>
         <div id="erp-sim-header">
           <span id="sim-menu-path">구매관리 &gt; 발주서 입력</span>
@@ -710,6 +712,76 @@ const MFG_MODULES = {
       ['SVC-2026-1829','(주)A공장','대형항온기','유상','07-05','김서비스','반려'],
     ],
     approveShow: false,
+  },
+
+  // ── 마스터기준정보등록 ────────────────────────────────────────────────────
+  master: {
+    menu: '기초정보관리 > 품목 마스터 등록',
+    title: '품목 마스터 등록',
+    fields: [
+      {label:'품번(도번)', value:'ACU-1500-A', type:'text', readonly:true},
+      {label:'품명', value:'항온항습기 15KW A형', type:'text'},
+      {label:'규격', value:'W900×D650×H1800 / R-410A', type:'text'},
+      {label:'계정구분', value:'제품 (완제품)', type:'text', readonly:true},
+      {label:'조달구분', value:'생산 (자체제작)', type:'text', readonly:true},
+      {label:'품목군', value:'항온항습기 (AHU)', type:'text'},
+      {label:'재고단위', value:'EA', type:'text'},
+      {label:'표준원가', value:'7,850,000', type:'text'},
+      {label:'검사여부', value:'출하검사 (OQC)', type:'text', readonly:true},
+      {label:'BOM버전', value:'V3.2 (2026-05)', type:'text', readonly:true},
+    ],
+    items: [
+      // BOM 구성품목 (더존 ERP 품목등록 > BOM 기반)
+      ['구동모터 3.7kW (M-001)', '원재료', '구매', '2 EA', '640,000', '완료'],
+      ['코일 열교환기 A형 (C-201)', '원재료', '구매', '2 EA', '840,000', '완료'],
+      ['팬(FAN) 조립체 (F-101)', '반제품', '구매', '3 EA', '855,000', '완료'],
+      ['케이싱 판넬 세트 (P-301)', '원재료', '구매', '1 SET', '180,000', '완료'],
+      ['H13 헤파필터 (PF-501)', '소모품', '구매', '2 EA', '56,000', '완료'],
+    ],
+    tableHeader: ['품번','품명','계정구분','조달구분','표준원가','검사여부','상태'],
+    tableData: [
+      ['ACU-1500-A','항온항습기 15KW A형','제품','생산','7,850,000','OQC','완료'],
+      ['ACU-0500-B','청정항온기 5KW B형','제품','생산','5,200,000','OQC','완료'],
+      ['M-001','구동모터 3.7kW','원재료','구매','320,000','IQC','완료'],
+      ['C-201','코일 열교환기 A형','원재료','구매','420,000','IQC','완료'],
+      ['F-101','팬(FAN) 조립체','반제품','구매','285,000','IQC','완료'],
+      ['B-201','BASE 판금품','반제품','외주','95,000','IQC','반려'],
+    ],
+    approveShow: false,
+  },
+
+  // ── 공통환경/모듈별설정 ────────────────────────────────────────────────────
+  config: {
+    menu: '시스템관리 > 사용자 및 권한 관리',
+    title: '사용자 권한 설정',
+    fields: [
+      {label:'사용자ID', value:'user001', type:'text'},
+      {label:'사용자명', value:'홍길동', type:'text'},
+      {label:'소속부서', value:'영업부', type:'text'},
+      {label:'직급', value:'대리', type:'text'},
+      {label:'권한그룹', value:'영업 일반 사용자 (R/W)', type:'text'},
+      {label:'사용여부', value:'사용', type:'text', readonly:true},
+      {label:'최종접속일', value:'2026-07-21', type:'date', readonly:true},
+      {label:'비밀번호 변경일', value:'2026-06-01', type:'date', readonly:true},
+    ],
+    items: [
+      // 모듈별 접근 권한 현황
+      ['영업관리 모듈', '허용', '조회/입력/수정/출력', '승인 제외', '-', '완료'],
+      ['구매관리 모듈', '허용', '조회만 (Read Only)', '-', '-', '완료'],
+      ['생산관리 모듈', '불허', '-', '-', '-', '반려'],
+      ['품질관리 모듈', '허용', '조회만 (Read Only)', '-', '-', '완료'],
+      ['시스템관리', '불허', '-', '-', '-', '반려'],
+    ],
+    tableHeader: ['사용자ID','성명','부서','권한그룹','최종접속','사용여부','상태'],
+    tableData: [
+      ['user001','홍길동','영업부','영업일반(R/W)','07-21','사용','완료'],
+      ['user002','김생산','생산부','생산관리(R/W)','07-20','사용','완료'],
+      ['user003','박구매','구매부','구매관리(R/W)','07-19','사용','완료'],
+      ['user004','이품질','품질부','품질관리(R/W)','07-18','사용','완료'],
+      ['admin001','이관리','IT부','시스템관리자(ALL)','07-21','사용','완료'],
+      ['user005','최영업','영업부','영업일반(R/W)','07-10','미사용','반려'],
+    ],
+    approveShow: true,
   },
 };
 
