@@ -143,8 +143,8 @@ canvas{display:block}
 <div id="top-header">
   <div class="logo">🏭 <span>업종별</span> ERP 시뮬레이션 툴</div>
   <nav>
-    <a href="/">ERP 양식 에디터</a>
     <a href="/simulation/" class="active">시뮬레이션</a>
+    <a href="/">ERP 양식 에디터</a>
     <a href="/admin/">관리자</a>
   </nav>
 </div>
@@ -195,7 +195,9 @@ canvas{display:block}
           <button class="mod-tab active" data-mod="sales" onclick="setMfgModule('sales')">🧾 영업관리</button>
           <button class="mod-tab" data-mod="production" onclick="setMfgModule('production')">🏗️ 생산관리</button>
           <button class="mod-tab" data-mod="purchase" onclick="setMfgModule('purchase')">📦 구매/자재</button>
-          <button class="mod-tab" data-mod="quality" onclick="setMfgModule('quality')">🔍 품질관리</button>
+          <button class="mod-tab" data-mod="quality" onclick="setMfgModule('quality')">🔍 출하검사(OQC)</button>
+          <button class="mod-tab" data-mod="iqc" onclick="setMfgModule('iqc')">🔬 수입검사(IQC)</button>
+          <button class="mod-tab" data-mod="svc" onclick="setMfgModule('svc')">🛠️ SVC관리</button>
         </div>
         <div id="erp-sim-header">
           <span id="sim-menu-path">구매관리 &gt; 발주서 입력</span>
@@ -620,30 +622,94 @@ const MFG_MODULES = {
     approveShow: false,
   },
   quality: {
-    menu: '품질관리 > 출하검사등록',
-    title: '출하검사 등록',
+    menu: '영업관리 > 출고검사등록 (OQC)',
+    title: '출하검사(OQC) 등록',
     fields: [
-      {label:'검사번호', value:'QC-2026-0821', type:'text', readonly:true},
+      {label:'검사번호', value:'OQC-2026-0821', type:'text', readonly:true},
       {label:'검사일자', value:'2026-07-21', type:'date'},
-      {label:'작업지시번호', value:'WO-2026-0821', type:'text', readonly:true},
       {label:'고객(거래처)', value:'서울대병원', type:'text'},
+      {label:'납품처', value:'서울대병원 의공학센터', type:'text'},
       {label:'검사담당자', value:'박품질', type:'text'},
-      {label:'최종판정', value:'합격', type:'text'},
+      {label:'최종판정', value:'합격', type:'text', readonly:true},
     ],
     items: [
-      ['소음검사 (55dB 이하)', '기준', '52dB 측정', '-', '-', '완료'],
-      ['냉각능력 (5KW±5%)', '기준', '5.12KW', '-', '-', '완료'],
-      ['기밀 누설검사', '기준', '합격', '-', '-', '완료'],
-      ['전기안전 (AC내전압)', '기준', '합격', '-', '-', '완료'],
+      ['소음검사 (55dB 이하)', '검사유형 Q01', '52dB — 합격', '합격', '0', '완료'],
+      ['냉각능력검사 (5KW±5%)', '검사유형 Q02', '5.12KW — 합격', '합격', '0', '완료'],
+      ['기밀·누설검사', '검사유형 Q03', '누설 없음 — 합격', '합격', '0', '완료'],
+      ['전기안전검사 (AC내전압)', '검사유형 Q04', '합격', '합격', '0', '완료'],
+      ['외관검사', '검사유형 Q05', '도장 이상 없음', '합격', '0', '완료'],
     ],
     tableHeader: ['검사번호','고객','제품','판정','검사일','불량수','상태'],
     tableData: [
-      ['QC-2026-0821','서울대병원','청정항온기 5KW','합격','07-15','0','완료'],
-      ['QC-2026-0815','삼성전자','방폭형 에어컨 10KW','합격','07-09','1','완료'],
-      ['QC-2026-0847','(주)엘지전자','항온항습기 15KW','검사중','-','-','진행'],
-      ['QC-2026-0801','LG이노텍','정밀항온기 3KW','합격','07-04','0','완료'],
+      ['OQC-2026-0821','서울대병원','청정항온기 5KW','합격','07-15','0','완료'],
+      ['OQC-2026-0815','삼성전자','방폭형 에어컨 10KW','합격','07-09','1','완료'],
+      ['OQC-2026-0847','(주)엘지전자','항온항습기 15KW','검사중','-','-','진행'],
+      ['OQC-2026-0801','LG이노텍','정밀항온기 3KW','합격','07-04','0','완료'],
+      ['OQC-2026-0798','현대자동차','산업용냉동기 20RT','합격','07-01','0','완료'],
     ],
     approveShow: true,
+  },
+
+  // ── 수입검사(IQC) — 품질관리 PPT (ACE-품질-001) ─────────────────────────
+  iqc: {
+    menu: '구매관리 > 입고검사등록 (IQC)',
+    title: '수입검사(IQC) 등록',
+    fields: [
+      {label:'검사번호', value:'IQC-2026-0634', type:'text', readonly:true},
+      {label:'검사일자', value:'2026-07-21', type:'date'},
+      {label:'발주기간(조회)', value:'2026-07-15 ~ 2026-07-21', type:'text'},
+      {label:'공급업체(발주처)', value:'(주)태광산업', type:'text'},
+      {label:'입고창고', value:'원자재창고 A동', type:'text'},
+      {label:'검사담당자', value:'박품질', type:'text'},
+    ],
+    items: [
+      // 검사품목: FAN, 모터, BASE(업체제작), 필터, 가습기, 히터 (PPT ACE-품질-001)
+      ['구동모터 3.7kW (M-001)', '전수검사', '합격 — 전류·소음·진동 기준 내', '합격', '0', '완료'],
+      ['FAN 조립체 (F-101)', '샘플검사(10%)', '합격 — 외관·소음·풍량 기준 내', '합격', '0', '완료'],
+      ['H13 헤파필터 (PF-501)', '전수검사', '합격 — 포집효율 99.97% 이상', '합격', '0', '완료'],
+      ['BASE 판금품 (B-201)', '전수검사', '불합격 — 용접부 균열 3건 발생', '불합격', '3', '반려'],
+    ],
+    tableHeader: ['검사번호','공급업체','품목','검사구분','합격여부','불량수','상태'],
+    tableData: [
+      ['IQC-2026-0634','(주)태광산업','구동모터 3.7kW','전수검사','합격','0','완료'],
+      ['IQC-2026-0631','(주)삼성팬','FAN 조립체 F-101','샘플검사','합격','0','완료'],
+      ['IQC-2026-0628','한국필터','H13 헤파필터','전수검사','합격','0','완료'],
+      ['IQC-2026-0625','외주가공A','BASE 판금품 B-201','전수검사','불합격','3','반려'],
+      ['IQC-2026-0622','서울모터','베어링 6205-2RS','샘플검사','합격','0','완료'],
+    ],
+    approveShow: true,
+  },
+
+  // ── SVC관리 — SVC 매뉴얼 PPT (ACE-SVC-001~003) ────────────────────────
+  svc: {
+    menu: 'SVC관리 > 서비스접수등록',
+    title: 'A/S 서비스 접수 등록',
+    fields: [
+      {label:'상담번호', value:'SVC-2026-1847', type:'text', readonly:true},
+      {label:'상담일자/시간', value:'2026-07-21', type:'date'},
+      {label:'고객(거래처)', value:'서울대병원', type:'text'},
+      {label:'서비스센터', value:'ACE 서울 서비스센터', type:'text'},
+      {label:'제품(품번)', value:'청정항온기 5KW — P-A26-0821', type:'text'},
+      {label:'유/무상 구분', value:'무상 (A/S 2년, 2024-07~2026-07)', type:'text', readonly:true},
+      {label:'방문요청일', value:'2026-07-22', type:'date'},
+      {label:'서비스담당', value:'이A/S', type:'text'},
+    ],
+    items: [
+      // 증상코드 · 조치 — 더존 ERP 서비스접수등록 화면 기반 (PPT Slide 11)
+      ['압축기 이상 소음', '증상 S01', '베어링 마모 — 압축기 교체 필요', '이A/S', '-', '진행'],
+      ['냉매 누설 의심', '증상 S02', '냉매 가스 충전 검토 예정', '이A/S', '-', '진행'],
+      ['전원부 이상 없음', '증상 E01', '전원·전압·전류 기준 정상', '이A/S', '-', '완료'],
+      ['헤파필터 오염', '증상 F01', '필터(PF-501) 교체 완료', '이A/S', '-', '완료'],
+    ],
+    tableHeader: ['상담번호','고객','제품','유/무상','방문요청일','담당','상태'],
+    tableData: [
+      ['SVC-2026-1847','서울대병원','청정항온기 5KW','무상','07-22','이A/S','진행'],
+      ['SVC-2026-1843','현대자동차','산업용냉동기 20RT','유상','07-18','김서비스','완료'],
+      ['SVC-2026-1840','LG이노텍','정밀항온기 3KW','무상','07-15','박엔지','완료'],
+      ['SVC-2026-1835','삼성전자','방폭형에어컨 10KW','유상','07-10','이A/S','완료'],
+      ['SVC-2026-1829','(주)A공장','대형항온기','유상','07-05','김서비스','반려'],
+    ],
+    approveShow: false,
   },
 };
 
@@ -763,6 +829,7 @@ function setMfgModule(key) {
     approveShow: m.approveShow,
   };
   showQueryScreen(synthD);
+  renderTable(synthD);
 }
 
 function showQueryScreen(d) {
