@@ -1525,8 +1525,8 @@ const CASE_PROFILES = {
       {label:'목표달성율',val:Math.round(p*87+rnd(5)),max:100,budget:Math.round(p*90),c:'#8b5cf6'},
     ],
     salesMonths:['1월','2월','3월','4월','5월','6월','7월'],
-    salesPlan:[420,450,480,500,520,510,500],salesActual:[412,449,493,487,509,516,0],
-    salesLabel:'수주액(백만원)',
+    salesPlan:[67,65,72,75,76,78,76],salesActual:[65,62,71,72,74,76,0],
+    salesLabel:'월별 수주액(억원)',
     todos:(min)=>[
       {id:'m1',text:'오전 수주 현황 검토 (10건)',auto:min>600},
       {id:'m2',text:'생산지시서 AI 자동 승인 확인',auto:min>660},
@@ -3031,7 +3031,7 @@ function renderEISDashboard() {
         <div class="eis-kpi" style="border-top-color:${k.c}">
           <span class="ek-badge ${k.badge}">${k.bl}</span>
           <div class="ek-label">${k.label}</div>
-          <div class="ek-val">${k.val}<span style="font-size:11px">${k.unit}</span></div>
+          <div class="ek-val" style="color:${k.c}">${k.val}<span style="font-size:11px;color:${k.c}99">${k.unit}</span></div>
           <div class="ek-sub">${k.sub}</div>
         </div>`).join('')}
     </div>
