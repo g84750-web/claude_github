@@ -186,6 +186,74 @@ canvas{display:block}
 .scen-tech{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
 .tech-tag{padding:3px 10px;border-radius:12px;font-size:10px;font-weight:700;background:var(--c1l);color:var(--c1);border:1px solid #bfdbfe}
 .scen-desc{font-size:12px;line-height:1.9;color:#334155;background:#f8fafc;border-radius:7px;padding:11px 14px;border:1px solid var(--border)}
+
+/* ── 수평 타임라인 ── */
+.ai-tl-horiz{display:grid;grid-template-columns:1fr 28px 1fr 28px 1fr;align-items:start;gap:0}
+.tl-phase-col{padding:4px 10px}
+.tl-phase-dot{width:26px;height:26px;border-radius:50%;border:2.5px solid;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;margin-bottom:6px}
+.tl-phase-connector{display:flex;align-items:flex-start;justify-content:center;padding-top:7px;color:#94a3b8;font-size:18px;font-weight:300}
+.tl-phase-title{font-size:11px;font-weight:800;margin-bottom:2px}
+.tl-phase-period{font-size:9px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
+
+/* ── AI 탭 시스템 ── */
+.ai-tab-bar{display:flex;gap:4px;background:#f1f5f9;border:1px solid var(--border);border-radius:var(--radius) var(--radius) 0 0;padding:8px 12px;flex-wrap:wrap}
+.ai-tab-btn{padding:6px 14px;border-radius:6px;border:1px solid transparent;background:transparent;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;transition:.15s;font-family:inherit}
+.ai-tab-btn:hover{background:var(--c1l);color:var(--c1)}
+.ai-tab-btn.active{background:var(--c1);color:#fff;border-color:var(--c1)}
+.ai-tab-btn.eis-btn.active{background:linear-gradient(135deg,#0f172a,#1e3a5f);border-color:#2d4a6e}
+.ai-tab-panel{background:var(--card);border:1px solid var(--border);border-top:none;border-radius:0 0 var(--radius) var(--radius);padding:20px;min-height:280px}
+
+/* ── KPI 다차원 차트 탭 ── */
+.ai-chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:768px){.ai-chart-grid{grid-template-columns:1fr}}
+.ai-chart-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px}
+.ai-chart-card canvas{width:100%!important;height:200px!important}
+
+/* ── 데이터표 탭 ── */
+.kpi-data-table{width:100%;border-collapse:collapse;font-size:12px}
+.kpi-data-table th{background:#0f172a;color:#e2e8f0;padding:9px 12px;text-align:left;font-size:10px;font-weight:700;letter-spacing:.05em}
+.kpi-data-table td{padding:8px 12px;border-bottom:1px solid #f1f5f9;color:var(--text)}
+.kpi-data-table tr:hover td{background:#f8fafc}
+.kpi-data-table .num{text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
+.kpi-data-table .improve{color:var(--c2)}
+.kpi-data-table .pct-bar{display:inline-block;height:6px;border-radius:3px;background:var(--c1);margin-left:6px;vertical-align:middle}
+
+/* ── EIS 대시보드 ── */
+.eis-header{display:flex;align-items:center;gap:16px;margin-bottom:16px;padding:12px 18px;background:linear-gradient(135deg,#0f172a,#1e3a5f);border-radius:var(--radius);color:#e2e8f0;flex-wrap:wrap}
+.eis-clock{font-size:30px;font-weight:900;color:#60a5fa;font-variant-numeric:tabular-nums;letter-spacing:3px}
+.eis-clock-label{font-size:9px;color:#475569;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px}
+.eis-sim-badge{background:#10b98120;border:1px solid #10b98140;color:#34d399;padding:3px 10px;border-radius:12px;font-size:10px;font-weight:700}
+.eis-kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:14px}
+.eis-kpi{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:11px 13px;border-top:3px solid var(--c1);position:relative;overflow:hidden}
+.eis-kpi .ek-label{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.eis-kpi .ek-val{font-size:22px;font-weight:900;color:var(--text);line-height:1;font-variant-numeric:tabular-nums}
+.eis-kpi .ek-sub{font-size:10px;color:var(--muted);margin-top:3px}
+.eis-kpi .ek-badge{position:absolute;top:8px;right:8px;padding:2px 7px;border-radius:8px;font-size:9px;font-weight:800}
+.eis-kpi .ek-badge.good{background:#d1fae5;color:#065f46}.eis-kpi .ek-badge.warn{background:#fef3c7;color:#92400e}.eis-kpi .ek-badge.danger{background:#fee2e2;color:#991b1b}
+.eis-mid-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px}
+@media(max-width:900px){.eis-mid-grid{grid-template-columns:1fr}}
+.eis-panel{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;min-height:160px}
+.eis-panel-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:8px}
+.eis-alert-item{display:flex;align-items:flex-start;gap:7px;padding:5px 0;border-bottom:1px solid #f1f5f9;font-size:11px;line-height:1.5}
+.eis-alert-item:last-child{border-bottom:none}
+.eis-alert-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.eis-todo-item{display:flex;align-items:center;gap:7px;padding:5px 0;font-size:11px;cursor:pointer;user-select:none}
+.eis-todo-cb{width:15px;height:15px;border-radius:3px;border:2px solid var(--c1);display:flex;align-items:center;justify-content:center;font-size:9px;flex-shrink:0;transition:.15s}
+.eis-todo-cb.done{background:var(--c2);border-color:var(--c2);color:#fff}
+.eis-sched-item{padding:5px 0 5px 9px;border-left:3px solid var(--c1);margin-bottom:5px;font-size:11px}
+.eis-sched-time{font-size:9px;color:var(--muted);font-weight:700;margin-bottom:1px}
+.eis-bottom-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+@media(max-width:900px){.eis-bottom-grid{grid-template-columns:1fr}}
+.eis-chart-box{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px}
+.eis-gauge-row{display:flex;flex-direction:column;gap:10px}
+.eis-gauge{display:grid;grid-template-columns:82px 1fr 44px;align-items:center;gap:8px}
+.eis-gauge-label{font-size:11px;color:var(--text);font-weight:600}
+.eis-gauge-bar{height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden}
+.eis-gauge-fill{height:100%;border-radius:4px;transition:width .8s ease}
+.eis-gauge-pct{font-size:11px;font-weight:800;text-align:right;font-variant-numeric:tabular-nums}
+.eis-trend-tabs{display:flex;gap:4px;flex-wrap:wrap}
+.eis-trend-btn{padding:3px 10px;border-radius:6px;border:1px solid var(--border);background:var(--card);font-size:10px;font-weight:700;cursor:pointer;color:var(--muted);transition:.12s;font-family:inherit}
+.eis-trend-btn.active{background:var(--c1);color:#fff;border-color:var(--c1)}
 </style>
 </head>
 <body>
@@ -307,13 +375,24 @@ canvas{display:block}
     <div id="ai-kpi-grid" class="ai-kpi-grid"></div>
   </div>
 
-  <!-- AI 타임라인 + 시나리오 -->
-  <div id="ai-bottom-row" style="display:none">
-    <div class="card" style="min-width:0">
-      <div class="card-title">📅 AI 자동화 실행 타임라인</div>
-      <div id="ai-timeline-wrap" class="ai-tl-wrap"></div>
+  <!-- AI 타임라인 (KPI 카드 바로 아래, 전폭 수평) -->
+  <div class="card" id="ai-timeline-card" style="display:none;margin-bottom:20px">
+    <div class="card-title">📅 AI 자동화 실행 타임라인</div>
+    <div id="ai-timeline-wrap" class="ai-tl-horiz"></div>
+  </div>
+
+  <!-- AI 하단 탭 영역 -->
+  <div id="ai-tabs-area" style="display:none;margin-bottom:20px">
+    <div class="ai-tab-bar">
+      <button class="ai-tab-btn active" data-tab="scenario" onclick="setAiTab('scenario')">📋 AI 구현 시나리오</button>
+      <button class="ai-tab-btn" data-tab="chart" onclick="setAiTab('chart')">📊 KPI 다차원 차트</button>
+      <button class="ai-tab-btn" data-tab="datatable" onclick="setAiTab('datatable')">🗃️ 데이터표</button>
+      <button class="ai-tab-btn eis-btn" data-tab="eis" onclick="setAiTab('eis')">🖥️ EIS 실시간 대시보드</button>
     </div>
-    <div id="ai-scenario-wrap" style="min-width:0"></div>
+    <div id="ai-tab-scenario" class="ai-tab-panel"><div id="ai-scenario-wrap"></div></div>
+    <div id="ai-tab-chart" class="ai-tab-panel" style="display:none"><div id="ai-chart-wrap" class="ai-chart-grid"></div></div>
+    <div id="ai-tab-datatable" class="ai-tab-panel" style="display:none"><div id="ai-datatable-wrap"></div></div>
+    <div id="ai-tab-eis" class="ai-tab-panel" style="display:none"><div id="eis-dashboard"></div></div>
   </div>
 </main>
 
@@ -1269,15 +1348,21 @@ function renderAlerts(d) {
 // ══════════════════════════════════════════════
 function renderAISection(moduleKey) {
   const dashCard = document.getElementById('ai-dashboard-card');
-  const bottomRow = document.getElementById('ai-bottom-row');
+  const tlCard = document.getElementById('ai-timeline-card');
+  const tabsArea = document.getElementById('ai-tabs-area');
   const ai = AI_MODULE_DATA[moduleKey];
   if (!ai) {
     dashCard.style.display = 'none';
-    bottomRow.style.display = 'none';
+    tlCard.style.display = 'none';
+    tabsArea.style.display = 'none';
+    stopEISSim();
     return;
   }
+  stopEISSim();
+  ['rpa-bar','time','radar','roi'].forEach(k => { if (eisCharts[k]) { eisCharts[k].destroy(); delete eisCharts[k]; } });
   dashCard.style.display = '';
-  bottomRow.style.display = 'grid';
+  tlCard.style.display = '';
+  tabsArea.style.display = '';
   document.getElementById('ai-dash-module').textContent = '— ' + (MFG_MODULES[moduleKey] ? MFG_MODULES[moduleKey].title : '');
 
   const tlColors = ['var(--c1)', 'var(--c2)', 'var(--c5)'];
@@ -1298,40 +1383,411 @@ function renderAISection(moduleKey) {
       <span class="rpa-badge ${cls}">${lbl}</span>
     </div>`;
   }).join('');
-  // 애니메이션: width 0→target
   requestAnimationFrame(() => {
-    document.querySelectorAll('.rpa-bar-fill').forEach(el => {
-      el.style.width = el.dataset.target + '%';
-    });
+    document.querySelectorAll('.rpa-bar-fill').forEach(el => { el.style.width = el.dataset.target + '%'; });
   });
 
-  // 타임라인
-  document.getElementById('ai-timeline-wrap').innerHTML = ai.timeline.map((t, i) => `
-    <div class="tl-row">
-      <div class="tl-period">${t.period}</div>
-      <div style="display:flex;flex-direction:column;align-items:center">
-        <div class="tl-dot" style="border-color:${tlColors[i] || 'var(--c1)'};color:${tlColors[i] || 'var(--c1)'}">${i + 1}</div>
-        ${i < ai.timeline.length - 1 ? '<div class="tl-connector"></div>' : ''}
+  // 타임라인 (수평 3단계)
+  document.getElementById('ai-timeline-wrap').innerHTML = ai.timeline.map((t, i) => {
+    const connector = i < ai.timeline.length - 1
+      ? `<div class="tl-phase-connector">→</div>` : '';
+    return `<div class="tl-phase-col">
+      <div class="tl-phase-dot" style="border-color:${tlColors[i]||'var(--c1)'};color:${tlColors[i]||'var(--c1)'}">${i+1}</div>
+      <div class="tl-phase-title" style="color:${tlColors[i]||'var(--c1)'}">${t.phase} — ${t.label}</div>
+      <div class="tl-phase-period">${t.period}</div>
+      ${t.items.map(it=>`<div class="tl-task" style="border-color:${tlColors[i]||'var(--c1)'}">${it}</div>`).join('')}
+    </div>${connector}`;
+  }).join('');
+
+  // 시나리오 탭 콘텐츠
+  document.getElementById('ai-scenario-wrap').innerHTML = `
+    <div class="scen-cols">
+      <div class="scen-col asis"><h5>🔴 AS-IS — 기존 ERP 방식</h5><ul>${ai.asIs.map(s=>`<li>${s}</li>`).join('')}</ul></div>
+      <div class="scen-col tobe"><h5>🟢 TO-BE — AI 자동화 방식</h5><ul>${ai.toBe.map(s=>`<li>${s}</li>`).join('')}</ul></div>
+    </div>
+    <div class="scen-tech" style="margin-top:12px">${ai.techs.map(t=>`<span class="tech-tag">${t}</span>`).join('')}</div>
+    <div class="scen-desc" style="margin-top:10px">${ai.desc}</div>
+  `;
+
+  // 현재 탭 유지
+  setAiTab(currentAiTab);
+}
+
+// ══════════════════════════════════════════════
+//  AI 탭 시스템
+// ══════════════════════════════════════════════
+let currentAiTab = 'scenario';
+let eisTimer = null;
+let eisSimMinutes = 9 * 60;
+let eisCharts = {};
+let eisTrendPeriod = 'month';
+let eisTodoState = {};
+
+function setAiTab(tab) {
+  currentAiTab = tab;
+  document.querySelectorAll('.ai-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.querySelectorAll('.ai-tab-panel').forEach(p => p.style.display = 'none');
+  const panel = document.getElementById('ai-tab-' + tab);
+  if (panel) panel.style.display = '';
+  if (tab === 'chart') renderAIKPIChart(currentMfgModule);
+  if (tab === 'datatable') renderAIDataTable(currentMfgModule);
+  if (tab === 'eis') startEISSim();
+  else stopEISSim();
+}
+
+// ══════════════════════════════════════════════
+//  KPI 다차원 차트 탭
+// ══════════════════════════════════════════════
+function parseMinutes(s) {
+  if (!s || s === '실시간' || s === '자동' || s === '완전자동') return 0;
+  const m = s.match(/\d+/); return m ? parseInt(m[0]) : 1;
+}
+
+function renderAIKPIChart(moduleKey) {
+  const ai = AI_MODULE_DATA[moduleKey];
+  if (!ai) return;
+  const wrap = document.getElementById('ai-chart-wrap');
+  wrap.innerHTML = `
+    <div class="ai-chart-card"><div class="card-title" style="margin-bottom:10px">📊 단계별 RPA 자동화율</div><canvas id="c-rpa-bar"></canvas></div>
+    <div class="ai-chart-card"><div class="card-title" style="margin-bottom:10px">⏱️ AS-IS vs TO-BE 처리시간 절감</div><canvas id="c-time"></canvas></div>
+    <div class="ai-chart-card"><div class="card-title" style="margin-bottom:10px">🕸️ AI 자동화 역량 레이더</div><canvas id="c-radar"></canvas></div>
+    <div class="ai-chart-card"><div class="card-title" style="margin-bottom:10px">📈 단계별 ROI 예측 추이</div><canvas id="c-roi"></canvas></div>
+  `;
+  ['rpa-bar','time','radar','roi'].forEach(k => { if (eisCharts[k]) { eisCharts[k].destroy(); delete eisCharts[k]; } });
+
+  eisCharts['rpa-bar'] = new Chart(document.getElementById('c-rpa-bar').getContext('2d'), {
+    type:'bar',
+    data:{labels:ai.rpaKpis.map(k=>k.step), datasets:[{label:'RPA 자동화율(%)',
+      data:ai.rpaKpis.map(k=>k.rpa),
+      backgroundColor:ai.rpaKpis.map(k=>k.rpa>=80?'rgba(16,185,129,.8)':k.rpa>=60?'rgba(37,99,235,.8)':'rgba(245,158,11,.8)'),
+      borderRadius:5, borderSkipped:false}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{y:{min:0,max:100,grid:{color:'#f1f5f9'},ticks:{font:{size:10}}},x:{grid:{display:false},ticks:{font:{size:9}}}}}
+  });
+
+  eisCharts['time'] = new Chart(document.getElementById('c-time').getContext('2d'), {
+    type:'bar',
+    data:{labels:ai.rpaKpis.map(k=>k.step), datasets:[
+      {label:'AS-IS',data:ai.rpaKpis.map(k=>parseMinutes(k.asIs)),backgroundColor:'rgba(239,68,68,.7)',borderRadius:3},
+      {label:'TO-BE',data:ai.rpaKpis.map(k=>parseMinutes(k.toBe)),backgroundColor:'rgba(16,185,129,.7)',borderRadius:3},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'top',labels:{font:{size:10},boxWidth:10}}},
+      scales:{y:{grid:{color:'#f1f5f9'},ticks:{font:{size:10}},title:{display:true,text:'분(min)',font:{size:9}}},x:{grid:{display:false},ticks:{font:{size:9}}}}}
+  });
+
+  const avgRpa = ai.rpaKpis.reduce((a,k)=>a+k.rpa,0)/ai.rpaKpis.length;
+  const dims = ['데이터 자동화','프로세스 효율','오류 감소','처리속도','비용절감'];
+  eisCharts['radar'] = new Chart(document.getElementById('c-radar').getContext('2d'), {
+    type:'radar',
+    data:{labels:dims, datasets:[
+      {label:'AS-IS',data:[28,22,35,18,12],borderColor:'#ef4444',backgroundColor:'rgba(239,68,68,.1)',pointBackgroundColor:'#ef4444',borderWidth:2},
+      {label:'TO-BE(AI)',data:dims.map((_,i)=>Math.min(95, avgRpa*(0.88+i*0.04))),borderColor:'#10b981',backgroundColor:'rgba(16,185,129,.1)',pointBackgroundColor:'#10b981',borderWidth:2},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'top',labels:{font:{size:10},boxWidth:10}}},
+      scales:{r:{min:0,max:100,ticks:{font:{size:9},stepSize:25},pointLabels:{font:{size:9}}}}}
+  });
+
+  eisCharts['roi'] = new Chart(document.getElementById('c-roi').getContext('2d'), {
+    type:'line',
+    data:{labels:['도입전','1단계','2단계','3단계','6개월후','1년후'], datasets:[
+      {label:'ROI(%)',data:[0,18,52,90,155,240],borderColor:'#2563eb',backgroundColor:'rgba(37,99,235,.08)',fill:true,tension:.4,borderWidth:2,pointRadius:4,pointBackgroundColor:'#2563eb'},
+      {label:'BEP(100%)',data:[100,100,100,100,100,100],borderColor:'#f59e0b',borderDash:[5,4],borderWidth:1.5,pointRadius:0},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'top',labels:{font:{size:10},boxWidth:10}}},
+      scales:{y:{grid:{color:'#f1f5f9'},ticks:{font:{size:10}}},x:{grid:{display:false},ticks:{font:{size:10}}}}}
+  });
+}
+
+// ══════════════════════════════════════════════
+//  데이터표 탭
+// ══════════════════════════════════════════════
+function renderAIDataTable(moduleKey) {
+  const ai = AI_MODULE_DATA[moduleKey];
+  if (!ai) return;
+  const avgRpa = Math.round(ai.rpaKpis.reduce((a,k)=>a+k.rpa,0)/ai.rpaKpis.length);
+  const avgSaving = Math.round(ai.rpaKpis.reduce((a,k) => {
+    const asis=parseMinutes(k.asIs), tobe=parseMinutes(k.toBe);
+    return a + (asis>0?(asis-tobe)/asis*100:95);
+  }, 0) / ai.rpaKpis.length);
+  const rows = ai.rpaKpis.map((k,i) => {
+    const asis=parseMinutes(k.asIs), tobe=parseMinutes(k.toBe);
+    const saving = asis>0?Math.round((asis-tobe)/asis*100):95;
+    const lvlCls = k.rpa>=80?'완료':k.rpa>=60?'진행':'대기';
+    return `<tr><td>${i+1}</td><td><b>${k.step}</b></td><td>${k.label}</td>
+      <td class="num" style="color:#ef4444">${k.asIs}</td><td class="num" style="color:#10b981">${k.toBe}</td>
+      <td class="num improve">↓ ${saving}%</td>
+      <td class="num">${k.rpa}% <span class="pct-bar" style="width:${Math.round(k.rpa*0.55)}px"></span></td>
+      <td><span class="badge ${lvlCls}">${k.rpa>=80?'HIGH':k.rpa>=60?'MED':'LOW'}</span></td></tr>`;
+  });
+  document.getElementById('ai-datatable-wrap').innerHTML = `
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px">
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 16px">
+        <div style="font-size:9px;color:#064e3b;font-weight:800;text-transform:uppercase;letter-spacing:.06em">평균 RPA 자동화율</div>
+        <div style="font-size:26px;font-weight:900;color:#065f46">${avgRpa}<span style="font-size:12px">%</span></div>
       </div>
-      <div class="tl-body">
-        <div class="tl-phase-name" style="color:${tlColors[i] || 'var(--c1)'}">${t.phase} — ${t.label}</div>
-        ${t.items.map(it => `<div class="tl-task" style="border-color:${tlColors[i] || 'var(--c1)'}">${it}</div>`).join('')}
+      <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 16px">
+        <div style="font-size:9px;color:#1e3a8a;font-weight:800;text-transform:uppercase;letter-spacing:.06em">평균 처리시간 절감율</div>
+        <div style="font-size:26px;font-weight:900;color:#1e40af">${avgSaving}<span style="font-size:12px">%</span></div>
+      </div>
+      <div style="flex:1;min-width:200px;background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:10px 16px">
+        <div style="font-size:9px;color:#78350f;font-weight:800;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">적용 AI 기술 스택</div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap">${ai.techs.map(t=>`<span class="tech-tag">${t}</span>`).join('')}</div>
       </div>
     </div>
-  `).join('');
-
-  // 시나리오 박스
-  document.getElementById('ai-scenario-wrap').innerHTML = `
-    <div class="card ai-scenario-box" style="height:100%;display:flex;flex-direction:column">
-      <div class="card-title">📋 AI 구현 시나리오 · 프로세스 설명</div>
-      <div class="scen-cols">
-        <div class="scen-col asis"><h5>🔴 AS-IS — 기존 ERP 방식</h5><ul>${ai.asIs.map(s => `<li>${s}</li>`).join('')}</ul></div>
-        <div class="scen-col tobe"><h5>🟢 TO-BE — AI 자동화 방식</h5><ul>${ai.toBe.map(s => `<li>${s}</li>`).join('')}</ul></div>
-      </div>
-      <div class="scen-tech">${ai.techs.map(t => `<span class="tech-tag">${t}</span>`).join('')}</div>
-      <div class="scen-desc">${ai.desc}</div>
+    <div style="overflow-x:auto">
+      <table class="kpi-data-table">
+        <thead><tr><th>#</th><th>업무 단계</th><th>AI 자동화 기술</th><th>AS-IS 시간</th><th>TO-BE 시간</th><th>절감율</th><th>자동화율</th><th>레벨</th></tr></thead>
+        <tbody>${rows.join('')}</tbody>
+      </table>
+    </div>
+    <div style="margin-top:14px;background:#f8fafc;border-radius:8px;padding:13px 16px;border:1px solid var(--border);font-size:12px;line-height:1.9;color:#334155">
+      <b style="color:var(--c1)">📝 AI 구현 프로세스 설명</b><br>${ai.desc}
     </div>
   `;
+}
+
+// ══════════════════════════════════════════════
+//  EIS 실시간 대시보드 (하루 100배속 시뮬레이션)
+// ══════════════════════════════════════════════
+function getEISSnap(min) {
+  const p = Math.max(0, Math.min(1, (min - 540) / 540));
+  const rnd = r => (Math.random() - 0.5) * r;
+  const salesPct = Math.round(p * 87 + rnd(5));
+  const cashDelta = Math.round(p * 290 + rnd(35));
+  const opRate = Math.round(88 + rnd(6));
+  const defect = Math.round((1.8 + rnd(0.5)) * 10) / 10;
+  const matCost = Math.round((38.5 + rnd(1.5)) * 10) / 10;
+  const labCost = Math.round((22.3 + rnd(1.0)) * 10) / 10;
+  const profit = Math.round((12.8 - matCost * 0.08 + rnd(1.2)) * 10) / 10;
+  const prodQty = Math.round(p * 185 + rnd(8));
+  const alerts = [];
+  if (opRate < 85) alerts.push({type:'warn', dept:'생산', msg:`설비 가동률 ${opRate}% — 목표 85% 미달`});
+  if (defect > 2.0) alerts.push({type:'danger', dept:'품질', msg:`불량률 ${defect}% — 기준치(2.0%) 초과, 즉시 조치 필요`});
+  if (salesPct < Math.round(p * 78)) alerts.push({type:'warn', dept:'영업', msg:`목표달성 ${salesPct}% — 진도율 대비 부진, 추가 수주 필요`});
+  if (cashDelta > 150) alerts.push({type:'info', dept:'자금', msg:`오늘 매출 입금 ₩${cashDelta}M 확인 완료`});
+  alerts.push({type:'info', dept:'AI', msg:`RPA: 수주 ${Math.round(p*18+2)}건 자동 등록 · 발주 ${Math.round(p*7)}건 EDI 발송`});
+  if (Math.random() > 0.5) alerts.push({type:'ok', dept:'구매', msg:`MRP 자동 실행 완료 — 발주 ${Math.round(p*5+1)}건 승인 대기`});
+  return {salesPct, cashBalance:1850+cashDelta, opRate, defect, matCost, labCost, profit, prodQty, planQty:200, alerts, progress:Math.round(p*100)};
+}
+
+function startEISSim() {
+  if (!document.getElementById('eis-dashboard')) return;
+  stopEISSim();
+  eisSimMinutes = 9 * 60;
+  renderEISDashboard();
+  eisTimer = setInterval(() => {
+    eisSimMinutes += 8;
+    if (eisSimMinutes >= 18 * 60) eisSimMinutes = 9 * 60;
+    renderEISDashboard();
+  }, 3000);
+}
+
+function stopEISSim() {
+  if (eisTimer) { clearInterval(eisTimer); eisTimer = null; }
+  ['eis-sales','eis-trend'].forEach(k => { if (eisCharts[k]) { eisCharts[k].destroy(); delete eisCharts[k]; } });
+}
+
+function setEisTrend(period) {
+  eisTrendPeriod = period;
+  document.querySelectorAll('.eis-trend-btn').forEach(b => b.classList.toggle('active', b.dataset.p === period));
+  renderEISTrendChart();
+}
+
+function toggleEisTodo(id) {
+  eisTodoState[id] = !eisTodoState[id];
+  const cb = document.getElementById('todo-cb-' + id);
+  if (cb) { cb.classList.toggle('done', eisTodoState[id]); cb.textContent = eisTodoState[id] ? '✓' : ''; }
+  const label = document.getElementById('todo-label-' + id);
+  if (label) label.style.cssText = eisTodoState[id] ? 'text-decoration:line-through;color:var(--muted)' : '';
+}
+
+function renderEISDashboard() {
+  const el = document.getElementById('eis-dashboard');
+  if (!el) return;
+  ['eis-sales','eis-trend'].forEach(k => { if (eisCharts[k]) { eisCharts[k].destroy(); delete eisCharts[k]; } });
+
+  const snap = getEISSnap(eisSimMinutes);
+  const hh = String(Math.floor(eisSimMinutes/60)).padStart(2,'0');
+  const mm = String(eisSimMinutes%60).padStart(2,'0');
+  const alertDot = {ok:'#10b981',info:'#2563eb',warn:'#f59e0b',danger:'#ef4444'};
+
+  const todos = [
+    {id:'t1',text:'오전 수주 현황 검토',auto:eisSimMinutes>600},
+    {id:'t2',text:'생산지시서 승인 처리 (AI 자동완료)',auto:eisSimMinutes>660},
+    {id:'t3',text:'협력사 발주서 확인',auto:false},
+    {id:'t4',text:'품질 불량 보고서 확인',auto:eisSimMinutes>780},
+    {id:'t5',text:'영업 실적 보고 (16:00)',auto:eisSimMinutes>960},
+  ];
+  todos.forEach(t => { if (eisTodoState[t.id] === undefined) eisTodoState[t.id] = t.auto; });
+
+  const sched = [
+    {time:'09:30',title:'영업팀 주간 수주 회의',place:'대회의실'},
+    {time:'11:00',title:'생산부 공정 점검',place:'제조1동'},
+    {time:'14:00',title:'품질 월간 리뷰',place:'품질실'},
+    {time:'16:00',title:'경영진 실적 보고',place:'임원실'},
+  ];
+
+  el.innerHTML = `
+    <div class="eis-header">
+      <div>
+        <div class="eis-clock-label">시뮬레이션 시각 (100배속)</div>
+        <div class="eis-clock">${hh}:${mm}</div>
+      </div>
+      <div style="flex:1;padding:0 16px;min-width:140px">
+        <div style="font-size:9px;color:#64748b;font-weight:700;margin-bottom:4px">업무 진행률 (09:00→18:00)</div>
+        <div style="height:7px;background:#1e3a5f;border-radius:4px;overflow:hidden">
+          <div style="width:${snap.progress}%;height:100%;background:linear-gradient(90deg,#10b981,#2563eb);transition:width .8s ease"></div>
+        </div>
+        <div style="font-size:9px;color:#475569;margin-top:3px">${snap.progress}% 경과</div>
+      </div>
+      <div style="text-align:right">
+        <div class="eis-sim-badge">● LIVE 시뮬레이션</div>
+        <div style="font-size:9px;color:#475569;margin-top:5px">3초마다 갱신 · 8분씩 진행</div>
+      </div>
+    </div>
+
+    <div class="eis-kpi-row">
+      ${[
+        {label:'영업 목표달성',val:snap.salesPct,unit:'%',sub:`목표 ₩500M · 진도 ${snap.progress}%`,c:'#2563eb',badge:snap.salesPct>=75?'good':snap.salesPct>=50?'warn':'danger',bl:snap.salesPct>=75?'달성':'부진'},
+        {label:'설비 가동률',val:snap.opRate,unit:'%',sub:`생산 ${snap.prodQty}/${snap.planQty}건 완료`,c:'#10b981',badge:snap.opRate>=85?'good':'warn',bl:snap.opRate>=85?'정상':'주의'},
+        {label:'불량률',val:snap.defect,unit:'%',sub:'기준치 2.0% 이하',c:'#f59e0b',badge:snap.defect<=2?'good':'danger',bl:snap.defect<=2?'정상':'경고'},
+        {label:'자금 잔액',val:snap.cashBalance,unit:'M',sub:`전일比 +${snap.cashBalance-1850}M`,c:'#8b5cf6',badge:'good',bl:'양호'},
+        {label:'재료비율',val:snap.matCost,unit:'%',sub:'예산 38.0%',c:'#0891b2',badge:snap.matCost<=38.5?'good':'warn',bl:snap.matCost<=38.5?'정상':'주의'},
+        {label:'영업이익(예측)',val:snap.profit,unit:'%',sub:'AI 실시간 예측',c:'#7c3aed',badge:snap.profit>=12?'good':'warn',bl:snap.profit>=12?'양호':'검토'},
+      ].map(k=>`
+        <div class="eis-kpi" style="border-top-color:${k.c}">
+          <span class="ek-badge ${k.badge}">${k.bl}</span>
+          <div class="ek-label">${k.label}</div>
+          <div class="ek-val">${k.val}<span style="font-size:11px">${k.unit}</span></div>
+          <div class="ek-sub">${k.sub}</div>
+        </div>`).join('')}
+    </div>
+
+    <div class="eis-mid-grid">
+      <div class="eis-panel">
+        <div class="eis-panel-title">🔔 알림 · 경고 · 정보</div>
+        ${snap.alerts.slice(0,6).map(a=>`
+          <div class="eis-alert-item">
+            <div class="eis-alert-dot" style="background:${alertDot[a.type]}"></div>
+            <div><span style="font-size:9px;font-weight:700;color:${alertDot[a.type]}">[${a.dept}]</span> ${a.msg}</div>
+          </div>`).join('')}
+      </div>
+      <div class="eis-panel">
+        <div class="eis-panel-title">✅ 오늘 할일 (TO-DO)</div>
+        ${todos.map(t=>`
+          <div class="eis-todo-item" onclick="toggleEisTodo('${t.id}')">
+            <div class="eis-todo-cb ${eisTodoState[t.id]?'done':''}" id="todo-cb-${t.id}">${eisTodoState[t.id]?'✓':''}</div>
+            <span id="todo-label-${t.id}" style="${eisTodoState[t.id]?'text-decoration:line-through;color:var(--muted)':''}">${t.text}</span>
+          </div>`).join('')}
+      </div>
+      <div class="eis-panel">
+        <div class="eis-panel-title">📅 오늘 일정</div>
+        ${sched.map(s=>{
+          const sMin = parseInt(s.time)*60 + parseInt(s.time.split(':')[1]);
+          const past = eisSimMinutes > sMin+30;
+          const active = !past && Math.abs(eisSimMinutes-sMin)<30;
+          const c = active?'var(--c2)':past?'#cbd5e1':'var(--c1)';
+          return `<div class="eis-sched-item" style="border-color:${c}">
+            <div class="eis-sched-time" style="color:${c}">${s.time} ${active?'▶ 진행중':past?'✓ 완료':''}</div>
+            <div style="${past?'color:var(--muted)':''}">${s.title}</div>
+            <div style="font-size:9px;color:var(--muted)">${s.place}</div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+
+    <div class="eis-bottom-grid">
+      <div class="eis-chart-box">
+        <div class="card-title" style="margin-bottom:10px">📊 영업계획 vs 실적 · 이익예측</div>
+        <canvas id="chart-eis-sales" style="width:100%!important;height:170px!important"></canvas>
+      </div>
+      <div class="eis-chart-box">
+        <div class="card-title" style="margin-bottom:10px">💰 원가 · 이익 · 운영 지표 게이지</div>
+        <div class="eis-gauge-row">
+          ${[
+            {label:'재료비율',val:snap.matCost,max:50,budget:38,c:'#ef4444'},
+            {label:'인건비율',val:snap.labCost,max:35,budget:22,c:'#f59e0b'},
+            {label:'영업이익율',val:snap.profit,max:25,budget:12,c:'#10b981'},
+            {label:'설비가동률',val:snap.opRate,max:100,budget:85,c:'#2563eb'},
+            {label:'목표달성율',val:snap.salesPct,max:100,budget:Math.round(snap.progress*0.9),c:'#8b5cf6'},
+          ].map(g=>`
+            <div class="eis-gauge">
+              <div class="eis-gauge-label">${g.label}</div>
+              <div>
+                <div style="font-size:8px;color:var(--muted);display:flex;justify-content:space-between;margin-bottom:2px"><span>0</span><span>목표 ${g.budget}%</span><span>${g.max}%</span></div>
+                <div class="eis-gauge-bar"><div class="eis-gauge-fill" style="width:${Math.min(100,g.val/g.max*100).toFixed(1)}%;background:${g.c}"></div></div>
+              </div>
+              <div class="eis-gauge-pct" style="color:${g.c}">${g.val}%</div>
+            </div>`).join('')}
+        </div>
+      </div>
+    </div>
+
+    <div class="eis-chart-box">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap">
+        <div class="card-title" style="margin:0">📈 주/월/분기/반기/연간 흐름 · 사이클 추이 분석</div>
+        <div class="eis-trend-tabs">
+          ${[['week','주간'],['month','월간'],['quarter','분기'],['half','반기'],['year','연간']].map(([p,l])=>
+            `<button class="eis-trend-btn ${eisTrendPeriod===p?'active':''}" data-p="${p}" onclick="setEisTrend('${p}')">${l}</button>`).join('')}
+        </div>
+      </div>
+      <canvas id="chart-eis-trend" style="width:100%!important;height:190px!important"></canvas>
+    </div>
+  `;
+
+  setTimeout(() => { renderEISSalesChart(snap); renderEISTrendChart(); }, 60);
+}
+
+function renderEISSalesChart(snap) {
+  const el = document.getElementById('chart-eis-sales');
+  if (!el) return;
+  const months = ['1월','2월','3월','4월','5월','6월','7월'];
+  const plan = [420,450,480,500,520,510,500];
+  const actual = [412,449,493,487,509,516,Math.round(500*snap.salesPct/100)];
+  const profit = actual.map(v=>Math.round(v*snap.profit/100));
+  eisCharts['eis-sales'] = new Chart(el.getContext('2d'), {
+    type:'bar',
+    data:{labels:months, datasets:[
+      {label:'영업계획',data:plan,backgroundColor:'rgba(37,99,235,.2)',borderColor:'#2563eb',borderWidth:1.5,borderRadius:3},
+      {type:'line',label:'영업실적',data:actual,borderColor:'#10b981',backgroundColor:'rgba(16,185,129,.08)',fill:true,tension:.3,borderWidth:2,pointRadius:3,pointBackgroundColor:'#10b981'},
+      {type:'line',label:'이익예측',data:profit,borderColor:'#8b5cf6',borderDash:[4,3],borderWidth:1.5,pointRadius:2,fill:false,tension:.3},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'top',labels:{font:{size:10},boxWidth:10}}},
+      scales:{y:{grid:{color:'#f8fafc'},ticks:{font:{size:10}}},x:{grid:{display:false},ticks:{font:{size:10}}}}}
+  });
+}
+
+function renderEISTrendChart() {
+  const el = document.getElementById('chart-eis-trend');
+  if (!el) return;
+  if (eisCharts['eis-trend']) { eisCharts['eis-trend'].destroy(); delete eisCharts['eis-trend']; }
+  const cfgs = {
+    week:{labels:['월','화','수','목','금','토','일'],sets:[
+      {l:'매출',d:[45,52,48,61,58,42,35],c:'#2563eb'},{l:'원가',d:[17,19,18,22,20,15,13],c:'#ef4444'},{l:'이익',d:[5.2,6.8,6.1,8.5,7.9,5.5,4.8],c:'#10b981'}]},
+    month:{labels:['1월','2월','3월','4월','5월','6월','7월'],sets:[
+      {l:'매출',d:[410,448,492,487,508,516,498],c:'#2563eb'},{l:'원가',d:[155,168,185,178,190,194,185],c:'#ef4444'},{l:'이익',d:[52,58,64,63,68,70,66],c:'#10b981'}]},
+    quarter:{labels:['1Q','2Q','3Q(예측)','4Q(예측)'],sets:[
+      {l:'매출',d:[1350,1508,1542,1620],c:'#2563eb'},{l:'원가',d:[508,564,580,607],c:'#ef4444'},{l:'이익',d:[174,196,203,216],c:'#10b981'}]},
+    half:{labels:['상반기','하반기(예)','전년上','전년下'],sets:[
+      {l:'매출',d:[2858,3162,2540,2820],c:'#2563eb'},{l:'원가',d:[1072,1185,980,1085],c:'#ef4444'},{l:'이익',d:[370,418,318,368],c:'#10b981'}]},
+    year:{labels:['2021','2022','2023','2024','2025','2026(예)'],sets:[
+      {l:'매출',d:[4850,5200,5580,5920,6100,6318],c:'#2563eb'},{l:'원가',d:[1940,2050,2150,2250,2280,2362],c:'#ef4444'},{l:'이익',d:[612,686,738,802,850,908],c:'#10b981'}]},
+  };
+  const cfg = cfgs[eisTrendPeriod];
+  eisCharts['eis-trend'] = new Chart(el.getContext('2d'), {
+    type:'line',
+    data:{labels:cfg.labels, datasets:cfg.sets.map(d=>({
+      label:d.l, data:d.d, borderColor:d.c, backgroundColor:d.c+'18',
+      fill:d.l==='이익', tension:.35, borderWidth:2, pointRadius:3, pointBackgroundColor:d.c,
+    }))},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'top',labels:{font:{size:10},boxWidth:10}}},
+      scales:{y:{grid:{color:'#f8fafc'},ticks:{font:{size:10}}},x:{grid:{display:false},ticks:{font:{size:10}}}}}
+  });
 }
 
 // ══════════════════════════════════════════════
