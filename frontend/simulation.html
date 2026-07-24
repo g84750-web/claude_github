@@ -135,6 +135,57 @@ canvas{display:block}
 .mod-tab:hover{border-color:var(--c1);color:var(--c1)}
 .mod-tab.active{background:var(--c1);color:#fff;border-color:var(--c1)}
 .mod-label{font-size:10px;color:var(--muted);padding:8px 12px 2px;font-weight:600;letter-spacing:.04em}
+
+/* ── AI KPI 대시보드 ── */
+#ai-dashboard-card{display:none}
+.ai-kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.ai-kpi-card{background:linear-gradient(145deg,#0f172a,#1e2d45);border-radius:var(--radius);padding:14px 16px;position:relative;overflow:hidden;border:1px solid #2d4a6e}
+.ai-step-name{font-size:9px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px}
+.ai-step-label{font-size:12px;font-weight:600;color:#e2e8f0;margin-bottom:10px;line-height:1.4;min-height:32px}
+.rpa-bar-wrap{height:6px;background:#1e3a5f;border-radius:3px;margin-bottom:8px;overflow:hidden}
+.rpa-bar-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,#10b981,#2563eb);transition:width 1s ease}
+.rpa-pct-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+.rpa-pct{font-size:22px;font-weight:900;color:#f1f5f9}
+.rpa-pct small{font-size:11px;color:#64748b;font-weight:600}
+.rpa-sublabel{font-size:9px;color:#475569;font-weight:700;letter-spacing:.04em}
+.rpa-times{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.rpa-time-box{background:#0b1425;border-radius:5px;padding:5px 8px;border:1px solid #2d4a6e}
+.rpa-time-label{font-size:9px;color:#64748b;font-weight:700;margin-bottom:2px}
+.rpa-time-val{font-size:12px;font-weight:800}
+.rpa-time-val.asis{color:#f87171}
+.rpa-time-val.tobe{color:#34d399}
+.rpa-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:9px;font-weight:800;margin-top:8px;letter-spacing:.04em}
+.rpa-badge.high{background:#10b98118;color:#34d399;border:1px solid #10b98130}
+.rpa-badge.med{background:#3b82f618;color:#93c5fd;border:1px solid #3b82f630}
+.rpa-badge.low{background:#f59e0b18;color:#fcd34d;border:1px solid #f59e0b30}
+
+/* ── AI 하단 영역 (타임라인 + 시나리오) ── */
+#ai-bottom-row{display:none;grid-template-columns:270px 1fr;gap:20px;margin-bottom:20px}
+.ai-tl-wrap{display:flex;flex-direction:column;gap:0}
+.tl-row{display:grid;grid-template-columns:56px 18px 1fr;align-items:start;gap:0 8px;position:relative}
+.tl-dot{width:18px;height:18px;border-radius:50%;border:2.5px solid;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;flex-shrink:0}
+.tl-connector{width:2px;background:#e2e8f0;flex:1;min-height:20px;margin:0 auto}
+.tl-period{font-size:9px;font-weight:700;color:var(--muted);text-align:right;padding-top:1px;white-space:nowrap}
+.tl-body{padding-bottom:14px}
+.tl-phase-name{font-size:11px;font-weight:800;margin-bottom:5px}
+.tl-task{font-size:11px;color:#475569;background:#f8fafc;border-radius:4px;padding:3px 9px;margin-bottom:3px;border-left:2px solid}
+.ai-scenario-box{border-radius:var(--radius);border:1px solid var(--border);overflow:hidden}
+.ai-scen-header{background:#0f172a;color:#e2e8f0;padding:10px 16px;display:flex;gap:10px;align-items:center;font-size:12px;font-weight:700}
+.ai-scen-body{padding:14px 16px}
+.scen-cols{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.scen-col{border-radius:8px;padding:11px 13px}
+.scen-col.asis{background:#fef2f2;border-left:3px solid #ef4444}
+.scen-col.tobe{background:#f0fdf4;border-left:3px solid #10b981}
+.scen-col h5{font-size:11px;font-weight:700;margin-bottom:7px}
+.scen-col.asis h5{color:#b91c1c}
+.scen-col.tobe h5{color:#065f46}
+.scen-col li{font-size:11px;line-height:1.6;color:var(--text);list-style:none;display:flex;align-items:flex-start;gap:5px}
+.scen-col li::before{content:'→';flex-shrink:0;font-weight:700}
+.scen-col.asis li::before{color:#ef4444}
+.scen-col.tobe li::before{color:#10b981}
+.scen-tech{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.tech-tag{padding:3px 10px;border-radius:12px;font-size:10px;font-weight:700;background:var(--c1l);color:var(--c1);border:1px solid #bfdbfe}
+.scen-desc{font-size:12px;line-height:1.9;color:#334155;background:#f8fafc;border-radius:7px;padding:11px 14px;border:1px solid var(--border)}
 </style>
 </head>
 <body>
@@ -246,6 +297,24 @@ canvas{display:block}
       <div class="card-title">🔔 업무 알림</div>
       <div id="alert-list" style="display:flex;flex-direction:column;gap:8px"></div>
     </div>
+  </div>
+
+  <!-- AI KPI 대시보드 -->
+  <div class="card" id="ai-dashboard-card" style="margin-bottom:20px">
+    <div class="card-title">🤖 단계별 AI 기반 자동화 KPI 대시보드 &nbsp;
+      <span id="ai-dash-module" style="font-weight:500;color:var(--c1);font-size:11px;text-transform:none;letter-spacing:0"></span>
+      <span style="margin-left:auto;font-size:10px;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">RPA 자동화율 · AS-IS→TO-BE 시간 비교</span>
+    </div>
+    <div id="ai-kpi-grid" class="ai-kpi-grid"></div>
+  </div>
+
+  <!-- AI 타임라인 + 시나리오 -->
+  <div id="ai-bottom-row" style="display:none">
+    <div class="card" style="min-width:0">
+      <div class="card-title">📅 AI 자동화 실행 타임라인</div>
+      <div id="ai-timeline-wrap" class="ai-tl-wrap"></div>
+    </div>
+    <div id="ai-scenario-wrap" style="min-width:0"></div>
   </div>
 </main>
 
@@ -788,6 +857,148 @@ const MFG_MODULES = {
 // ══════════════════════════════════════════════
 //  STATE
 // ══════════════════════════════════════════════
+// ══════════════════════════════════════════════
+//  AI 자동화 모듈 데이터
+// ══════════════════════════════════════════════
+const AI_MODULE_DATA = {
+  sales: {
+    rpaKpis: [
+      {step:'이메일·FAX 수신', rpa:90, label:'AI 이메일 파서 자동 분류', asIs:'20분', toBe:'1분'},
+      {step:'수주서 데이터 추출', rpa:85, label:'OCR 핵심 정보 자동 인식', asIs:'60분', toBe:'3분'},
+      {step:'ERP 수주 등록', rpa:75, label:'API 자동 등록·데이터 검증', asIs:'120분', toBe:'5분'},
+      {step:'수주보고서 배포', rpa:88, label:'RPA 자동 생성·이메일 발송', asIs:'60분', toBe:'3분'},
+    ],
+    asIs:['담당자가 이메일/FAX 수주서를 수동 확인 (20분/건)','PDF를 보며 ERP에 일일이 수작업 입력 (120분)','오입력 발생 시 수정·재확인 반복 (오류율 3.2%)','Excel로 수주보고서 수작업 작성 후 이메일 배포'],
+    toBe:['AI가 수신 이메일 자동 분류·수주서 파일 추출 (1분)','OCR 엔진이 주문정보·수량·단가 자동 인식 (3분)','ERP API 자동 등록 + AI 데이터 검증 (오류율 0.1%)','RPA가 보고서 자동 생성·관련 부서 일괄 발송 (3분)'],
+    techs:['AI OCR','RPA (Power Automate)','ERP REST API','NLP 이메일 분류'],
+    desc:'영업팀이 하루 수십 건 처리하던 수주 입력 업무를 AI+RPA가 자동화합니다. 이메일로 수신된 주문서를 AI가 읽고 OCR로 데이터를 추출해 ERP에 자동 등록합니다. 총 처리시간이 4시간→12분으로 단축되고 담당자는 예외 건 검토·승인에만 집중할 수 있습니다.',
+    timeline:[
+      {phase:'1단계', label:'AI OCR 도입', period:'1~2개월', items:['이메일 파서 구축','OCR 모델 학습','ERP API 연동']},
+      {phase:'2단계', label:'RPA 자동화', period:'3~4개월', items:['보고서 자동 생성','부서 자동 배포','오류 자동 보정']},
+      {phase:'3단계', label:'AI 고도화', period:'5~6개월', items:['납기 리스크 예측','온톨로지 기반 검색','전자결재 연동']},
+    ],
+  },
+  production: {
+    rpaKpis: [
+      {step:'수요예측·생산계획', rpa:60, label:'AI 수요예측 기반 자동 계획 수립', asIs:'4시간', toBe:'30분'},
+      {step:'BOM 소요자재 전개', rpa:95, label:'ERP BOM 자동 전개·자재 청구', asIs:'2시간', toBe:'5분'},
+      {step:'작업지시 등록', rpa:75, label:'수주 연동 자동 지시 생성', asIs:'1시간', toBe:'10분'},
+      {step:'생산실적 집계', rpa:80, label:'IoT 센서 실시간 자동 집계', asIs:'1시간', toBe:'실시간'},
+    ],
+    asIs:['생산관리자가 수동으로 수요 예측·계획 수립 (4시간)','BOM 소요자재를 도면 보며 수작업 전개 (2시간)','수주 건별 작업지시서 수동 작성·인쇄 배포 (1시간)','공정별 작업 실적을 수기 기록 후 ERP 입력 (1시간)'],
+    toBe:['AI 수요예측 모델이 생산계획 초안 자동 생성 (30분)','ERP BOM 자동 전개·소요자재 산출 (5분)','수주 ERP 연동으로 작업지시 자동 생성 (10분)','IoT 게이트웨이가 공정 실적 실시간 자동 집계'],
+    techs:['AI 수요예측 (LSTM 모델)','IoT 게이트웨이','ERP BOM API','MES 연동'],
+    desc:'AI가 과거 수주 패턴을 학습해 생산계획을 자동으로 수립하고, BOM 전개·작업지시 발행이 ERP와 연동되어 자동화됩니다. 공정 현장에 IoT 센서를 부착하면 실적이 실시간으로 ERP에 집계되어 생산 현황을 즉시 파악할 수 있습니다.',
+    timeline:[
+      {phase:'1단계', label:'ERP-MES 연동', period:'1~2개월', items:['BOM 자동 전개 구축','작업지시 자동화','실적 API 연동']},
+      {phase:'2단계', label:'IoT 현장 적용', period:'3~4개월', items:['센서 설치·연결','실시간 대시보드','이상 알림 설정']},
+      {phase:'3단계', label:'AI 예측 고도화', period:'5~8개월', items:['수요예측 모델 학습','생산 최적화 AI','온톨로지 구축']},
+    ],
+  },
+  purchase: {
+    rpaKpis: [
+      {step:'재고 부족 감지', rpa:85, label:'AI 재고 모니터링·자동 알림', asIs:'주1회 수동', toBe:'실시간'},
+      {step:'MRP 발주 요청', rpa:70, label:'MRP 자동 실행·발주 초안 생성', asIs:'3시간', toBe:'자동'},
+      {step:'공급사 선정·발주', rpa:65, label:'AI 최적 공급사 자동 선정', asIs:'2시간', toBe:'30분'},
+      {step:'발주서 발송', rpa:90, label:'RPA EDI·이메일 자동 발송', asIs:'30분', toBe:'3분'},
+    ],
+    asIs:['재고 현황을 주 1회 수작업으로 확인 (부족 시 뒤늦게 인지)','MRP 결과를 담당자가 수동 검토·발주 결정 (3시간)','공급사 전화·이메일로 단가 협의 후 수동 선정 (2시간)','발주서를 Excel 작성 후 FAX/이메일 수동 발송 (30분)'],
+    toBe:['AI가 재고 수준 실시간 모니터링·부족 즉시 알림','MRP 자동 실행→발주 초안 자동 생성 (담당자 확인만)','AI가 단가·납기·품질이력 기반 최적 공급사 자동 선정','RPA가 EDI 또는 이메일로 발주서 자동 발송 (3분)'],
+    techs:['MRP 자동화','AI 공급사 선정','RPA (EDI 연동)','재고 AI 모니터링'],
+    desc:'재고 부족을 AI가 실시간 감지하고, MRP 자동 실행으로 필요 자재와 수량을 계산합니다. AI가 과거 거래 이력·단가·납기를 분석해 최적 공급사를 자동 추천하고, RPA가 발주서를 EDI 또는 이메일로 즉시 발송합니다. 발주 처리 시간이 5시간 30분→30분대로 단축됩니다.',
+    timeline:[
+      {phase:'1단계', label:'재고 자동화', period:'1~2개월', items:['실시간 재고 모니터링','부족 알림 설정','MRP 자동 실행']},
+      {phase:'2단계', label:'발주 자동화', period:'3~4개월', items:['AI 공급사 선정','RPA 발주서 발송','EDI 포털 연동']},
+      {phase:'3단계', label:'AI 최적화', period:'5~6개월', items:['수요 연동 예측 발주','공급사 평가 자동화','원가 최적화 AI']},
+    ],
+  },
+  quality: {
+    rpaKpis: [
+      {step:'출하검사 접수', rpa:70, label:'수주 연동 자동 검사의뢰 생성', asIs:'30분', toBe:'자동'},
+      {step:'검사 수행·측정', rpa:65, label:'IoT 계측기 측정값 자동 수집', asIs:'2시간', toBe:'45분'},
+      {step:'합/불 판정', rpa:80, label:'AI 기준값 자동 판정', asIs:'30분', toBe:'즉시'},
+      {step:'성적서 발행', rpa:88, label:'ERP 자동 검사성적서 생성', asIs:'1시간', toBe:'5분'},
+    ],
+    asIs:['영업팀이 출하통보서를 수작업으로 품질팀에 전달','검사원이 수동으로 측정 후 수기 기록 (2시간)','측정값을 보며 담당자가 수동으로 합/불 판정','Excel로 검사성적서 수작업 작성·서명·첨부 (1시간)'],
+    toBe:['수주 ERP 연동으로 출하검사 의뢰 자동 생성','IoT 계측기 측정값 자동 수집·ERP 즉시 등록 (45분)','AI가 기준값 대비 자동 합/불 판정 (즉시)','ERP에서 검사성적서 자동 생성·PDF 출력 (5분)'],
+    techs:['IoT 계측기 연동','AI 자동 판정','ERP OQC 모듈','PDF 자동 생성'],
+    desc:'출하검사 흐름 전체를 디지털화합니다. 수주 정보가 자동으로 검사 의뢰를 만들고, IoT 계측기 측정값이 ERP에 자동 등록됩니다. AI가 규격 기준과 비교해 즉시 합격/불합격을 판정하고, 합격 제품의 검사성적서를 ERP가 자동으로 발행합니다.',
+    timeline:[
+      {phase:'1단계', label:'ERP OQC 구축', period:'1~2개월', items:['수주 연동 자동화','검사의뢰 자동 생성','성적서 자동 발행']},
+      {phase:'2단계', label:'IoT 계측 연동', period:'3~4개월', items:['계측기 API 연결','측정값 자동 수집','실시간 판정 알림']},
+      {phase:'3단계', label:'AI 품질 예측', period:'5~7개월', items:['불량 패턴 학습','공정 품질 예측','협력사 평가 자동화']},
+    ],
+  },
+  iqc: {
+    rpaKpis: [
+      {step:'입고 정보 조회', rpa:85, label:'발주 연동 자동 검사대상 추출', asIs:'15분', toBe:'자동'},
+      {step:'IQC 검사 수행', rpa:55, label:'AI 비전+IoT 계측 보조', asIs:'2시간', toBe:'50분'},
+      {step:'합/불 자동 판정', rpa:80, label:'AI 기준값 대비 자동 판정', asIs:'20분', toBe:'즉시'},
+      {step:'불량 처리·통보', rpa:75, label:'RPA 업체 자동 통보·대책 요청', asIs:'1시간', toBe:'10분'},
+    ],
+    asIs:['입고 발주서를 수작업으로 확인하며 검사 대상 파악','검사원이 FAN·모터·BASE를 일일이 수동 측정 (2시간)','측정값을 보며 수동으로 합/불 판정 후 수기 기록','불합격 시 전화·이메일로 업체에 수동 통보 (1시간)'],
+    toBe:['발주 ERP 연동으로 검사대상 품목·수량 자동 조회','AI 비전 카메라+IoT 계측으로 검사 보조 (50분)','AI가 측정값·기준값 비교 후 즉시 합/불 판정','RPA가 불합격 내역·대책요청서 업체 자동 발송 (10분)'],
+    techs:['AI 비전 검사','IoT 계측기 API','RPA 업체 통보','IQC 자동 판정 AI'],
+    desc:'수입검사(IQC)의 핵심인 FAN·모터·BASE 검사를 AI 비전 카메라와 IoT 계측기가 보조합니다. 발주 데이터 연동으로 검사 대상을 자동 파악하고, 검사 결과는 ERP에 즉시 등록됩니다. 불합격 발생 시 RPA가 부적합보고서와 대책요청서를 공급사에 자동 발송합니다.',
+    timeline:[
+      {phase:'1단계', label:'ERP IQC 연동', period:'1~2개월', items:['발주 자동 연동','검사유형 등록','불량코드 관리']},
+      {phase:'2단계', label:'AI 비전 도입', period:'3~5개월', items:['카메라 설치','AI 모델 학습','자동 판정 구축']},
+      {phase:'3단계', label:'공급사 연계', period:'6~7개월', items:['EDI 불합격 통보','공급사 평가 자동화','품질이력 온톨로지']},
+    ],
+  },
+  svc: {
+    rpaKpis: [
+      {step:'SVC 접수', rpa:88, label:'AI 챗봇 24시간 자동 접수', asIs:'15분 대기', toBe:'2분'},
+      {step:'엔지니어 배정', rpa:72, label:'AI 위치·전문성 최적 배정', asIs:'30분', toBe:'5분'},
+      {step:'SVC 처리', rpa:55, label:'IoT 원격 진단 지원', asIs:'3시간', toBe:'1.5시간'},
+      {step:'마감·청구 처리', rpa:82, label:'RPA 자동 청구서 생성·ERP 연동', asIs:'45분', toBe:'5분'},
+    ],
+    asIs:['고객이 전화로 A/S 신청 (평균 15분 대기·상담)','담당자가 수동으로 엔지니어 위치 확인 후 배정 (30분)','엔지니어 방문 처리 후 수동으로 결과 입력 (45분)','유상 청구서를 수작업 작성 후 회계 처리 (45분)'],
+    toBe:['AI 챗봇이 24시간 SVC 자동 접수·분류 (2분)','AI가 거리·전문분야·일정을 분석해 최적 엔지니어 자동 배정','IoT 원격 진단으로 사전 원인 파악→방문 최소화','RPA가 청구서 자동 생성·ERP 매출 자동 등록 (5분)'],
+    techs:['AI 챗봇 (Kakao·웹)','IoT 원격 진단','RPA 청구 자동화','AI 최적 배정 알고리즘'],
+    desc:'고객이 앱·카카오톡으로 A/S를 신청하면 AI 챗봇이 즉시 접수하고 증상을 자동 분류합니다. AI가 엔지니어의 위치·전문분야·현재 일정을 종합해 최적 담당자를 자동 배정합니다. 처리 완료 후 RPA가 유/무상 여부에 따라 청구서를 자동 생성하고 ERP에 즉시 반영합니다.',
+    timeline:[
+      {phase:'1단계', label:'AI 챗봇 구축', period:'1~2개월', items:['접수 챗봇 개발','SVC 분류 AI 학습','ERP 접수 연동']},
+      {phase:'2단계', label:'배정 자동화', period:'3~4개월', items:['최적 배정 알고리즘','엔지니어 앱 연동','실시간 현황 대시보드']},
+      {phase:'3단계', label:'IoT 원격 진단', period:'5~7개월', items:['IoT 센서 설치','원격 진단 AI','예방 정비 예측']},
+    ],
+  },
+  master: {
+    rpaKpis: [
+      {step:'거래처 등록', rpa:72, label:'사업자번호 API 자동 조회·등록', asIs:'20분', toBe:'3분'},
+      {step:'품목 마스터 등록', rpa:68, label:'AI 품목 분류·코드 자동 부여', asIs:'15분', toBe:'3분'},
+      {step:'BOM 구성 등록', rpa:55, label:'도면 분석 AI BOM 초안 생성', asIs:'2시간', toBe:'30분'},
+      {step:'마스터 정합성 검증', rpa:88, label:'AI 실시간 중복·오류 자동 감지', asIs:'주 2시간', toBe:'실시간'},
+    ],
+    asIs:['담당자가 사업자번호 조회 후 거래처 정보 수동 입력 (20분)','품목코드를 규칙 기억에 의존해 수동 부여 (오류 잦음)','도면을 보며 BOM을 수작업으로 구성 (2시간/건)','마스터 중복·오류를 주간 수동 점검 (2시간)'],
+    toBe:['사업자번호 입력→국세청 API로 거래처 정보 자동 조회','AI가 품목 특성 분석해 분류·코드 자동 생성 (3분)','AI가 도면 텍스트 인식→BOM 초안 자동 생성 (30분)','AI가 실시간 중복·오류 감지·즉시 담당자 알림'],
+    techs:['국세청 API 연동','AI 품목 분류','OCR 도면 분석 AI','마스터 데이터 AI 검증'],
+    desc:'마스터기준정보 등록의 반복 작업을 AI가 자동화합니다. 거래처는 사업자번호 입력만으로 국세청 API에서 정보를 자동 조회하고, 품목은 AI가 특성을 분석해 코드를 자동 부여합니다. BOM은 도면 OCR로 초안을 자동 생성하며, 실시간 정합성 검증으로 데이터 품질을 유지합니다.',
+    timeline:[
+      {phase:'1단계', label:'API 자동화', period:'1~2개월', items:['국세청 API 연동','품목 자동 분류','코드 자동 채번']},
+      {phase:'2단계', label:'AI BOM 생성', period:'3~5개월', items:['도면 OCR 구축','BOM 초안 AI 생성','검토·승인 워크플로']},
+      {phase:'3단계', label:'정합성 AI', period:'6~7개월', items:['실시간 중복 검사','온톨로지 마스터 DB','변경 이력 자동 관리']},
+    ],
+  },
+  config: {
+    rpaKpis: [
+      {step:'사용자 계정 생성', rpa:90, label:'HR 시스템 연동 자동 계정 프로비저닝', asIs:'30분', toBe:'자동'},
+      {step:'권한 설정', rpa:65, label:'AI 역할 기반 자동 권한 추천', asIs:'1시간', toBe:'10분'},
+      {step:'코드·설정 관리', rpa:82, label:'변경 사항 전 모듈 자동 전파', asIs:'2시간', toBe:'즉시'},
+      {step:'보안·백업', rpa:95, label:'자동 백업·이상 접근 AI 탐지', asIs:'수동 주1회', toBe:'완전자동'},
+    ],
+    asIs:['IT팀이 신규 입사자 계정을 수동 생성 (30분/건)','부서장이 전화·이메일로 권한 요청·IT팀 수동 설정 (1시간)','공통코드 변경 시 모든 모듈에 수작업 반영 (2시간)','DB 백업 수동 실행 (주 1회, 장애 시 복구 지연)'],
+    toBe:['인사시스템과 연동해 입사 즉시 자동 계정 생성·활성화','AI가 부서·직급 기반으로 권한 그룹 자동 추천 (10분)','공통코드 변경 즉시 전 모듈 자동 전파·동기화','자동 일일 백업 + AI 이상 접근 시도 실시간 탐지·차단'],
+    techs:['HR-ERP SSO 연동','RBAC 자동화 AI','자동 백업 스케줄러','이상 접근 탐지 AI'],
+    desc:'ERP 시스템 운영 관리 업무를 자동화합니다. HR 시스템과 SSO로 연동해 신규 입사자 계정이 자동 생성되고, AI가 역할에 맞는 권한을 자동 추천합니다. 공통코드 변경이 전 모듈에 즉시 전파되며, AI가 이상 접근을 실시간 탐지해 보안 사고를 예방합니다.',
+    timeline:[
+      {phase:'1단계', label:'계정 자동화', period:'1~2개월', items:['HR-ERP SSO 연동','자동 계정 프로비저닝','권한 그룹 정비']},
+      {phase:'2단계', label:'운영 자동화', period:'3~4개월', items:['코드 변경 자동 전파','자동 백업 스케줄','모니터링 대시보드']},
+      {phase:'3단계', label:'AI 보안 강화', period:'5~6개월', items:['이상 접근 AI 탐지','접근 로그 온톨로지','자동 보안 리포트']},
+    ],
+  },
+};
+
 let currentInd = 'construction';
 let currentMfgModule = 'sales';
 let trendChart = null, pieChart = null;
@@ -884,6 +1095,8 @@ function renderSimulator(d) {
     document.getElementById('sim-screen-name').textContent = d.simTitle;
     document.getElementById('btn-approve').style.display = d.approveShow ? '' : 'none';
     showQueryScreen(d);
+    document.getElementById('ai-dashboard-card').style.display = 'none';
+    document.getElementById('ai-bottom-row').style.display = 'none';
   }
 }
 
@@ -902,6 +1115,7 @@ function setMfgModule(key) {
   };
   showQueryScreen(synthD);
   renderTable(synthD);
+  renderAISection(key);
 }
 
 function showQueryScreen(d) {
@@ -1049,6 +1263,76 @@ function renderAlerts(d) {
       ${icons[a.type]} ${a.msg}
     </div>
   `).join('');
+}
+
+// ══════════════════════════════════════════════
+//  AI KPI 대시보드 렌더
+// ══════════════════════════════════════════════
+function renderAISection(moduleKey) {
+  const dashCard = document.getElementById('ai-dashboard-card');
+  const bottomRow = document.getElementById('ai-bottom-row');
+  const ai = AI_MODULE_DATA[moduleKey];
+  if (!ai) {
+    dashCard.style.display = 'none';
+    bottomRow.style.display = 'none';
+    return;
+  }
+  dashCard.style.display = '';
+  bottomRow.style.display = 'grid';
+  document.getElementById('ai-dash-module').textContent = '— ' + (MFG_MODULES[moduleKey] ? MFG_MODULES[moduleKey].title : '');
+
+  const tlColors = ['var(--c1)', 'var(--c2)', 'var(--c5)'];
+
+  // RPA KPI 카드
+  document.getElementById('ai-kpi-grid').innerHTML = ai.rpaKpis.map(k => {
+    const cls = k.rpa >= 80 ? 'high' : k.rpa >= 60 ? 'med' : 'low';
+    const lbl = k.rpa >= 80 ? 'HIGH AUTOMATION' : k.rpa >= 60 ? 'MED AUTOMATION' : 'LOW AUTOMATION';
+    return `<div class="ai-kpi-card">
+      <div class="ai-step-name">${k.step}</div>
+      <div class="ai-step-label">${k.label}</div>
+      <div class="rpa-bar-wrap"><div class="rpa-bar-fill" style="width:0%" data-target="${k.rpa}"></div></div>
+      <div class="rpa-pct-row"><span class="rpa-pct">${k.rpa}<small>%</small></span><span class="rpa-sublabel">RPA 자동화율</span></div>
+      <div class="rpa-times">
+        <div class="rpa-time-box"><div class="rpa-time-label">AS-IS</div><div class="rpa-time-val asis">${k.asIs}</div></div>
+        <div class="rpa-time-box"><div class="rpa-time-label">TO-BE</div><div class="rpa-time-val tobe">${k.toBe}</div></div>
+      </div>
+      <span class="rpa-badge ${cls}">${lbl}</span>
+    </div>`;
+  }).join('');
+  // 애니메이션: width 0→target
+  requestAnimationFrame(() => {
+    document.querySelectorAll('.rpa-bar-fill').forEach(el => {
+      el.style.width = el.dataset.target + '%';
+    });
+  });
+
+  // 타임라인
+  document.getElementById('ai-timeline-wrap').innerHTML = ai.timeline.map((t, i) => `
+    <div class="tl-row">
+      <div class="tl-period">${t.period}</div>
+      <div style="display:flex;flex-direction:column;align-items:center">
+        <div class="tl-dot" style="border-color:${tlColors[i] || 'var(--c1)'};color:${tlColors[i] || 'var(--c1)'}">${i + 1}</div>
+        ${i < ai.timeline.length - 1 ? '<div class="tl-connector"></div>' : ''}
+      </div>
+      <div class="tl-body">
+        <div class="tl-phase-name" style="color:${tlColors[i] || 'var(--c1)'}">${t.phase} — ${t.label}</div>
+        ${t.items.map(it => `<div class="tl-task" style="border-color:${tlColors[i] || 'var(--c1)'}">${it}</div>`).join('')}
+      </div>
+    </div>
+  `).join('');
+
+  // 시나리오 박스
+  document.getElementById('ai-scenario-wrap').innerHTML = `
+    <div class="card ai-scenario-box" style="height:100%;display:flex;flex-direction:column">
+      <div class="card-title">📋 AI 구현 시나리오 · 프로세스 설명</div>
+      <div class="scen-cols">
+        <div class="scen-col asis"><h5>🔴 AS-IS — 기존 ERP 방식</h5><ul>${ai.asIs.map(s => `<li>${s}</li>`).join('')}</ul></div>
+        <div class="scen-col tobe"><h5>🟢 TO-BE — AI 자동화 방식</h5><ul>${ai.toBe.map(s => `<li>${s}</li>`).join('')}</ul></div>
+      </div>
+      <div class="scen-tech">${ai.techs.map(t => `<span class="tech-tag">${t}</span>`).join('')}</div>
+      <div class="scen-desc">${ai.desc}</div>
+    </div>
+  `;
 }
 
 // ══════════════════════════════════════════════
