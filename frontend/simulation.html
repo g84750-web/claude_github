@@ -272,6 +272,54 @@ canvas{display:block}
 .roadmap-task-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;margin-top:2px}
 @media(max-width:768px){.roadmap-grid{grid-template-columns:1fr}.arch-grid{grid-template-columns:1fr}}
 
+/* ── 케이스 프로파일 리뉴얼 ── */
+.cp-new{border-radius:12px;border:1.5px solid;padding:16px 20px}
+.cp-header-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px}
+.cp-name-badge{font-size:18px;font-weight:800}
+.cp-live-chip{font-size:10px;font-weight:700;color:#fff;padding:3px 10px;border-radius:10px}
+.cp-meta{font-size:11px;color:var(--muted);margin-bottom:4px}
+.cp-erp-line{font-size:11px;font-weight:600;margin-top:6px}
+.cp-body-grid{display:grid;grid-template-columns:1fr auto;gap:16px;align-items:start;margin-top:10px}
+.cp-stats-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.cp-stat-card{background:rgba(255,255,255,.9);border-radius:8px;padding:9px 14px;text-align:center;border:1px solid rgba(0,0,0,.08);min-width:88px}
+.cp-stat-icon{font-size:15px;margin-bottom:2px}
+.cp-stat-val{font-size:16px;font-weight:800;line-height:1.1}
+.cp-stat-lbl{font-size:10px;color:var(--muted);margin-top:2px}
+.cp-ba-btn{cursor:pointer;border:1.5px solid;border-radius:6px;padding:6px 14px;font-size:11px;font-weight:700;background:rgba(255,255,255,.9);transition:.15s;white-space:nowrap}
+.cp-ba-panel{display:none;margin-top:14px;padding-top:12px;border-top:1px solid rgba(0,0,0,.1)}
+.ba-grid{display:grid;grid-template-columns:1fr 36px 1fr;gap:10px;align-items:start}
+.ba-col{font-size:11px;padding:10px 13px;border-radius:8px}
+.ba-col.before{background:#fef2f2;border-left:3px solid #ef4444}
+.ba-col.after{background:#f0fdf4;border-left:3px solid #10b981}
+.ba-col h6{font-size:10px;font-weight:800;margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em}
+.ba-col.before h6{color:#b91c1c}.ba-col.after h6{color:#065f46}
+.ba-col li{list-style:none;padding:2px 0;display:flex;align-items:flex-start;gap:4px;line-height:1.5;color:var(--text)}
+.ba-col li::before{content:'·';flex-shrink:0;font-weight:700}
+.ba-col.before li::before{color:#ef4444}.ba-col.after li::before{color:#10b981}
+.ba-arrows-col{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:8px;padding-top:28px}
+.ba-arrow{font-size:18px;color:#2563eb;animation:ba-pulse 1.8s ease-in-out infinite}
+.ba-arrow:nth-child(2){animation-delay:.45s}.ba-arrow:nth-child(3){animation-delay:.9s}.ba-arrow:nth-child(4){animation-delay:1.35s}
+@keyframes ba-pulse{0%,100%{opacity:.15;transform:translateX(-5px)}50%{opacity:1;transform:translateX(5px)}}
+/* OQC Timeline */
+.oqc-wf-bar{display:flex;align-items:center;background:#f8fafc;border-radius:8px;padding:10px 14px;overflow-x:auto;margin-bottom:12px;gap:0}
+.oqc-wf-step{display:flex;flex-direction:column;align-items:center;min-width:72px;flex-shrink:0}
+.oqc-wf-dot{width:22px;height:22px;border-radius:50%;border:2px solid;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;margin-bottom:3px;transition:.3s}
+.oqc-wf-dot.done{background:var(--c2);border-color:var(--c2);color:#fff}
+.oqc-wf-dot.active{background:var(--c1);border-color:var(--c1);color:#fff;animation:wf-pulse 1.5s ease-in-out infinite}
+.oqc-wf-dot.pending{background:#fff;border-color:#cbd5e1;color:#94a3b8}
+.oqc-wf-lbl{font-size:8px;font-weight:700;text-align:center;line-height:1.3;color:var(--muted)}
+.oqc-wf-val{font-size:8px;color:var(--c1);text-align:center;font-weight:700}
+.oqc-wf-conn{flex:1;height:2px;background:#e2e8f0;flex-shrink:0;min-width:14px}
+.oqc-wf-conn.done{background:var(--c2)}
+@keyframes wf-pulse{0%,100%{box-shadow:0 0 0 0 rgba(37,99,235,.5)}70%{box-shadow:0 0 0 6px rgba(37,99,235,0)}}
+.oqc-notify{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;padding:5px 10px;border-radius:6px;margin-bottom:8px;border:1px solid}
+.oqc-notify.warn{background:#fef3c7;border-color:#f59e0b;color:#92400e}
+.oqc-notify.info{background:#dbeafe;border-color:#2563eb;color:#1d4ed8}
+.oqc-notify.ok{background:#d1fae5;border-color:#10b981;color:#065f46}
+.oqc-progress-wrap{margin-bottom:12px}
+.oqc-progress-bar{height:10px;background:#e2e8f0;border-radius:5px;overflow:hidden;margin:4px 0}
+.oqc-progress-fill{height:100%;background:linear-gradient(90deg,var(--c1),var(--c2));border-radius:5px;transition:width 1s ease}
+
 /* ── EIS 대시보드 ── */
 .eis-header{display:flex;align-items:center;gap:16px;margin-bottom:16px;padding:12px 18px;background:linear-gradient(135deg,#0f172a,#1e3a5f);border-radius:var(--radius);color:#e2e8f0;flex-wrap:wrap}
 .eis-clock{font-size:30px;font-weight:900;color:#60a5fa;font-variant-numeric:tabular-nums;letter-spacing:3px}
@@ -530,35 +578,35 @@ const INDUSTRIES = {
     ],
     steps: ['수주등록','생산계획','생산지시','자재출고','생산실적','품질검사','출하처리','매출마감'],
     flow: [
-      {name:'영업팀', step:'수주등록', dept:'영업부', desc:'고객 주문 접수\n수주보고서 작성/배포\n납기일 확인 → 생산/구매 통보'},
-      {name:'생산관리', step:'생산계획', dept:'생산부', desc:'생산번호 부여 (P-L/A-년도-SEQ)\n월/주간 생산계획 수립\n생산우선순위 배정'},
-      {name:'생산관리', step:'생산지시', dept:'생산부', desc:'작업지시 등록 (ERP수주 연동)\n공정경로 전개 (판금→코일→팬→조립)\nBOM 소요자재 확정 → 자재청구'},
-      {name:'자재/구매', step:'자재출고', dept:'자재부', desc:'소요자재 창고→공정 출고\n사급자재 외주업체 관리\n부족자재 구매발주'},
-      {name:'제조현장', step:'생산실적', dept:'제조부', desc:'공정별 작업실적 등록\n작업자/투입시간 입력\n공정이동 → 최종 제품창고 입고'},
-      {name:'품질팀', step:'품질검사', dept:'QC부', desc:'수입검사 IQC (FAN/모터/BASE)\n공정검사 LQC (코일/판넬/팬)\n출하검사 OQC → 합격증명서'},
-      {name:'영업팀', step:'출하처리', dept:'영업부', desc:'출고의뢰 등록 (수주 연동)\n출하검사 완료 확인\n거래명세서 출력/출고처리'},
-      {name:'회계팀', step:'매출마감', dept:'회계부', desc:'매출 계상 (세금계산서)\n수금 관리/채권 등록\n원가 집계 (재료비/노무비/경비)'},
+      {name:'영업팀', step:'수주등록', dept:'영업부', desc:'고객 주문 접수\n수주보고서 작성/배포\n납기일 확인 → 생산/구매 통보', aiNote:'OCR AI 수주서 자동인식 5분 → 생산/자재팀 자동 알림발송'},
+      {name:'생산관리', step:'생산계획', dept:'생산부', desc:'생산번호 자동부여 (ERP연동)\n월/주간 AI 생산계획 수립\n생산우선순위 AI 최적배정', aiNote:'AI 수요예측 기반 생산계획 자동수립 → 자재소요 자동산출 (BOM 자동전개)'},
+      {name:'생산관리', step:'생산지시', dept:'생산부', desc:'작업지시 등록 (ERP수주 연동)\n공정경로 전개 (판금→코일→팬→조립)\nBOM 소요자재 확정 → 자재청구', aiNote:'수주 ERP 연동 작업지시 자동생성 → 자재청구 즉시 발행'},
+      {name:'자재/구매', step:'자재출고', dept:'자재부', desc:'소요자재 창고→공정 출고\n사급자재 외주업체 관리\n부족자재 AI 자동발주', aiNote:'재고 실시간 모니터링 → AI MRP 자동발주 → EDI 공급사 자동발송'},
+      {name:'제조현장', step:'생산실적', dept:'제조부', desc:'IoT 설비 실시간 실적 자동집계\n불량 발생 즉시 AI 알림\n공정이동 → 최종 제품창고 입고', aiNote:'IoT 센서 실적 자동수집 → 불량 패턴 AI 분석 → 품질팀 즉시 알림'},
+      {name:'품질팀', step:'품질검사', dept:'QC부', desc:'수입검사 IQC (FAN/모터/BASE)\n공정검사 LQC (코일/판넬/팬)\n출하검사 OQC → 합격증명서', aiNote:'IoT 계측기 측정값 자동수집 → AI 합/불 자동판정 → 성적서 자동발행'},
+      {name:'영업팀', step:'출하처리', dept:'영업부', desc:'출고의뢰 자동생성 (OQC 합격 연동)\n출하검사 완료 자동확인\n거래명세서 자동출력/출고확정', aiNote:'OQC 합격 즉시 출고지시 자동생성 → 거래명세서 자동발행 → 납품처 SMS 알림'},
+      {name:'회계팀', step:'매출마감', dept:'회계부', desc:'매출 계상 (전자세금계산서)\nAI 수금 예측·채권 자동등록\nAI 원가 실시간 집계', aiNote:'전자세금계산서 자동발행 → AI 미수금 예측 → 원가 자동집계 (재료/노무/경비)'},
     ],
     simMenu: '영업관리 > 주문(수주)등록',
     simTitle: '수주 등록',
     simFields: [
       {label:'주문번호', value:'P-L26-0847', type:'text', readonly:true},
       {label:'주문일자', value:'2026-07-21', type:'date'},
-      {label:'고객(거래처)', value:'(주)엘지전자', type:'text'},
+      {label:'고객(거래처)', value:'(주)ABC전자', type:'text'},
       {label:'과세구분', value:'매출과세', type:'text', readonly:true},
-      {label:'납품처', value:'LG전자 청주공장', type:'text'},
-      {label:'영업담당자', value:'홍길동', type:'text'},
+      {label:'납품처', value:'ABC전자 구미공장', type:'text'},
+      {label:'영업담당자', value:'홍담당', type:'text'},
     ],
     simItems: [
       ['ACU-1500','항온항습기 15KW','EA','3','12,000,000','진행'],
     ],
     tableHeader: ['주문번호','고객','제품명','수량','납기일','상태'],
     tableData: [
-      ['P-L26-0847','(주)엘지전자','항온항습기 15KW','3','07-31','진행'],
-      ['P-A26-0821','서울대병원','청정항온기 5KW','2','07-15','완료'],
-      ['P-L26-0815','삼성전자(주)','방폭형 에어컨 10KW','5','07-10','완료'],
-      ['P-A26-0808','현대자동차','산업용냉동기 20RT','1','07-25','대기'],
-      ['P-L26-0801','LG이노텍','정밀항온기 3KW','4','07-05','완료'],
+      ['P-L26-0847','(주)ABC전자','항온항습기 15KW','3','07-31','진행'],
+      ['P-A26-0821','ABC병원','청정항온기 5KW','2','07-15','완료'],
+      ['P-L26-0815','(주)ABC반도체','방폭형 에어컨 10KW','5','07-10','완료'],
+      ['P-A26-0808','ABC자동차','산업용냉동기 20RT','1','07-25','대기'],
+      ['P-L26-0801','ABC부품','정밀항온기 3KW','4','07-05','완료'],
     ],
     trendLabel: ['1월','2월','3월','4월','5월','6월','7월'],
     trendData: [18,22,19,26,24,28,25],
@@ -756,21 +804,21 @@ const MFG_MODULES = {
     fields: [
       {label:'주문번호', value:'P-L26-0847', type:'text', readonly:true},
       {label:'주문일자', value:'2026-07-21', type:'date'},
-      {label:'고객(거래처)', value:'(주)엘지전자', type:'text'},
+      {label:'고객(거래처)', value:'(주)ABC전자', type:'text'},
       {label:'과세구분', value:'매출과세', type:'text', readonly:true},
-      {label:'납품처', value:'LG전자 청주공장', type:'text'},
-      {label:'영업담당자', value:'홍길동', type:'text'},
+      {label:'납품처', value:'ABC전자 구미공장', type:'text'},
+      {label:'영업담당자', value:'홍담당', type:'text'},
     ],
     items: [
       ['ACU-1500 / 항온항습기 15KW', 'EA', '3', '12,000,000', '36,000,000', '진행'],
     ],
     tableHeader: ['주문번호','고객','제품명','수량','납기일','상태'],
     tableData: [
-      ['P-L26-0847','(주)엘지전자','항온항습기 15KW','3','07-31','진행'],
-      ['P-A26-0821','서울대병원','청정항온기 5KW','2','07-15','완료'],
-      ['P-L26-0815','삼성전자(주)','방폭형 에어컨 10KW','5','07-10','완료'],
-      ['P-A26-0808','현대자동차','산업용냉동기 20RT','1','07-25','대기'],
-      ['P-L26-0801','LG이노텍','정밀항온기 3KW','4','07-05','완료'],
+      ['P-L26-0847','(주)ABC전자','항온항습기 15KW','3','07-31','진행'],
+      ['P-A26-0821','ABC병원','청정항온기 5KW','2','07-15','완료'],
+      ['P-L26-0815','(주)ABC반도체','방폭형 에어컨 10KW','5','07-10','완료'],
+      ['P-A26-0808','ABC자동차','산업용냉동기 20RT','1','07-25','대기'],
+      ['P-L26-0801','ABC부품','정밀항온기 3KW','4','07-05','완료'],
     ],
     approveShow: true,
   },
@@ -781,7 +829,7 @@ const MFG_MODULES = {
       {label:'작업지시번호', value:'WO-2026-0847', type:'text', readonly:true},
       {label:'지시일자', value:'2026-07-21', type:'date'},
       {label:'완료예정일', value:'2026-07-31', type:'date'},
-      {label:'고객(거래처)', value:'(주)엘지전자', type:'text'},
+      {label:'고객(거래처)', value:'(주)ABC전자', type:'text'},
       {label:'품번/품명', value:'ACU-1500 / 항온항습기 15KW', type:'text'},
       {label:'지시수량', value:'3', type:'number'},
     ],
@@ -793,11 +841,11 @@ const MFG_MODULES = {
     ],
     tableHeader: ['지시번호','고객','제품명','지시수량','완료수','상태'],
     tableData: [
-      ['WO-2026-0847','(주)엘지전자','항온항습기 15KW','3','0','진행'],
-      ['WO-2026-0821','서울대병원','청정항온기 5KW','2','2','완료'],
-      ['WO-2026-0815','삼성전자(주)','방폭형 에어컨 10KW','5','5','완료'],
-      ['WO-2026-0808','현대자동차','산업용냉동기 20RT','1','0','대기'],
-      ['WO-2026-0801','LG이노텍','정밀항온기 3KW','4','4','완료'],
+      ['WO-2026-0847','(주)ABC전자','항온항습기 15KW','3','0','진행'],
+      ['WO-2026-0821','ABC병원','청정항온기 5KW','2','2','완료'],
+      ['WO-2026-0815','(주)ABC반도체','방폭형 에어컨 10KW','5','5','완료'],
+      ['WO-2026-0808','ABC자동차','산업용냉동기 20RT','1','0','대기'],
+      ['WO-2026-0801','ABC부품','정밀항온기 3KW','4','4','완료'],
     ],
     approveShow: false,
   },
@@ -808,9 +856,9 @@ const MFG_MODULES = {
       {label:'발주번호', value:'PO-2026-3421', type:'text', readonly:true},
       {label:'발주일자', value:'2026-07-21', type:'date'},
       {label:'납기요청일', value:'2026-07-25', type:'date'},
-      {label:'공급업체', value:'(주)태광산업', type:'text'},
+      {label:'공급업체', value:'(주)ABC자재', type:'text'},
       {label:'작업지시번호', value:'WO-2026-0847', type:'text', readonly:true},
-      {label:'구매담당자', value:'이구매', type:'text'},
+      {label:'구매담당자', value:'이구매팀장', type:'text'},
     ],
     items: [
       ['구동 모터 3.7kW', 'EA', '6', '320,000', '1,920,000', '대기'],
@@ -819,41 +867,52 @@ const MFG_MODULES = {
     ],
     tableHeader: ['발주번호','공급업체','품목','수량','납기일','금액','상태'],
     tableData: [
-      ['PO-2026-3421','(주)태광산업','구동모터 3.7kW','6','07-25','1,920,000','대기'],
-      ['PO-2026-3418','(주)삼성팬','FAN 조립체','12','07-20','3,420,000','완료'],
-      ['PO-2026-3415','서울모터','베어링 6205','24','07-18','108,000','완료'],
-      ['PO-2026-3411','한국필터','H13 필터','18','07-22','504,000','진행'],
-      ['PO-2026-3408','대한알루미늄','알루미늄 코일재','200kg','07-28','1,200,000','진행'],
+      ['PO-2026-3421','(주)ABC자재','구동모터 3.7kW','6','07-25','1,920,000','대기'],
+      ['PO-2026-3418','(주)ABC팬','FAN 조립체','12','07-20','3,420,000','완료'],
+      ['PO-2026-3415','ABC모터','베어링 6205','24','07-18','108,000','완료'],
+      ['PO-2026-3411','ABC필터','H13 필터','18','07-22','504,000','진행'],
+      ['PO-2026-3408','ABC알루미늄','알루미늄 코일재','200kg','07-28','1,200,000','진행'],
     ],
     approveShow: false,
   },
   quality: {
-    menu: '영업관리 > 출고검사등록 (OQC)',
+    menu: '품질관리 > 출하검사(OQC) 등록',
     title: '출하검사(OQC) 등록',
+    waitCount: 3,
     fields: [
       {label:'검사번호', value:'OQC-2026-0821', type:'text', readonly:true},
       {label:'검사일자', value:'2026-07-21', type:'date'},
-      {label:'고객(거래처)', value:'서울대병원', type:'text'},
-      {label:'납품처', value:'서울대병원 의공학센터', type:'text'},
-      {label:'검사담당자', value:'박품질', type:'text'},
+      {label:'고객(거래처)', value:'ABC병원', type:'text'},
+      {label:'납품처', value:'ABC병원 의공학센터', type:'text'},
+      {label:'검사구분', value:'출하검사(OQC)', type:'select', options:['출하검사(OQC)','공정검사(LQC)','수입검사(IQC)']},
+      {label:'검사담당자', value:'박품질팀장', type:'text'},
+      {label:'불량코드', value:'-', type:'select', options:['-','B01:치수불량','B02:도장불량','B03:기능불량','B04:소음불량','B05:누설불량']},
       {label:'최종판정', value:'합격', type:'text', readonly:true},
     ],
     items: [
-      ['소음검사 (55dB 이하)', '검사유형 Q01', '52dB — 합격', '합격', '0', '완료'],
-      ['냉각능력검사 (5KW±5%)', '검사유형 Q02', '5.12KW — 합격', '합격', '0', '완료'],
-      ['기밀·누설검사', '검사유형 Q03', '누설 없음 — 합격', '합격', '0', '완료'],
-      ['전기안전검사 (AC내전압)', '검사유형 Q04', '합격', '합격', '0', '완료'],
-      ['외관검사', '검사유형 Q05', '도장 이상 없음', '합격', '0', '완료'],
+      ['소음검사 (55dB이하)', 'Q01', '52dB', '합격', '0', '-', '완료'],
+      ['냉각능력 (5KW±5%)', 'Q02', '5.12KW', '합격', '0', '-', '완료'],
+      ['기밀·누설검사', 'Q03', '누설없음', '합격', '0', '-', '완료'],
+      ['전기안전(AC내전압)', 'Q04', '1,500V OK', '합격', '0', '-', '완료'],
+      ['외관·도장검사', 'Q05', '이상없음', '합격', '0', '-', '완료'],
     ],
-    tableHeader: ['검사번호','고객','제품','판정','검사일','불량수','상태'],
+    tableHeader: ['검사번호','고객','제품','검사구분','판정','불량수','상태'],
     tableData: [
-      ['OQC-2026-0821','서울대병원','청정항온기 5KW','합격','07-15','0','완료'],
-      ['OQC-2026-0815','삼성전자','방폭형 에어컨 10KW','합격','07-09','1','완료'],
-      ['OQC-2026-0847','(주)엘지전자','항온항습기 15KW','검사중','-','-','진행'],
-      ['OQC-2026-0801','LG이노텍','정밀항온기 3KW','합격','07-04','0','완료'],
-      ['OQC-2026-0798','현대자동차','산업용냉동기 20RT','합격','07-01','0','완료'],
+      ['OQC-2026-0821','ABC병원','청정항온기 5KW','출하(OQC)','합격','0','완료'],
+      ['OQC-2026-0815','(주)ABC반도체','방폭형 에어컨 10KW','출하(OQC)','합격','1','완료'],
+      ['OQC-2026-0808','ABC자동차','산업용냉동기 20RT','출하(OQC)','검사중','0','진행'],
+      ['OQC-2026-0801','ABC부품','정밀항온기 3KW','출하(OQC)','합격','0','완료'],
+      ['OQC-2026-0798','(주)ABC전자','냉동기 15RT','출하(OQC)','대기','0','대기'],
     ],
     approveShow: true,
+    oqcWorkflow: [
+      {step:'출고지시', val:'3건', status:'done'},
+      {step:'OQC 대기', val:'3건', status:'active'},
+      {step:'검사진행', val:'0건', status:'pending'},
+      {step:'합격확정', val:'0건', status:'pending'},
+      {step:'출고확정', val:'0건', status:'pending'},
+    ],
+    oqcProgress: 35,
   },
 
   // ── 수입검사(IQC) — 품질관리 PPT (ACE-품질-001) ─────────────────────────
@@ -864,9 +923,9 @@ const MFG_MODULES = {
       {label:'검사번호', value:'IQC-2026-0634', type:'text', readonly:true},
       {label:'검사일자', value:'2026-07-21', type:'date'},
       {label:'발주기간(조회)', value:'2026-07-15 ~ 2026-07-21', type:'text'},
-      {label:'공급업체(발주처)', value:'(주)태광산업', type:'text'},
+      {label:'공급업체(발주처)', value:'(주)ABC자재', type:'text'},
       {label:'입고창고', value:'원자재창고 A동', type:'text'},
-      {label:'검사담당자', value:'박품질', type:'text'},
+      {label:'검사담당자', value:'박품질팀장', type:'text'},
     ],
     items: [
       // 검사품목: FAN, 모터, BASE(업체제작), 필터, 가습기, 히터 (PPT ACE-품질-001)
@@ -877,11 +936,11 @@ const MFG_MODULES = {
     ],
     tableHeader: ['검사번호','공급업체','품목','검사구분','합격여부','불량수','상태'],
     tableData: [
-      ['IQC-2026-0634','(주)태광산업','구동모터 3.7kW','전수검사','합격','0','완료'],
-      ['IQC-2026-0631','(주)삼성팬','FAN 조립체 F-101','샘플검사','합격','0','완료'],
-      ['IQC-2026-0628','한국필터','H13 헤파필터','전수검사','합격','0','완료'],
+      ['IQC-2026-0634','(주)ABC자재','구동모터 3.7kW','전수검사','합격','0','완료'],
+      ['IQC-2026-0631','(주)ABC팬','FAN 조립체 F-101','샘플검사','합격','0','완료'],
+      ['IQC-2026-0628','ABC필터','H13 헤파필터','전수검사','합격','0','완료'],
       ['IQC-2026-0625','외주가공A','BASE 판금품 B-201','전수검사','불합격','3','반려'],
-      ['IQC-2026-0622','서울모터','베어링 6205-2RS','샘플검사','합격','0','완료'],
+      ['IQC-2026-0622','ABC모터','베어링 6205-2RS','샘플검사','합격','0','완료'],
     ],
     approveShow: true,
   },
@@ -893,7 +952,7 @@ const MFG_MODULES = {
     fields: [
       {label:'상담번호', value:'SVC-2026-1847', type:'text', readonly:true},
       {label:'상담일자/시간', value:'2026-07-21', type:'date'},
-      {label:'고객(거래처)', value:'서울대병원', type:'text'},
+      {label:'고객(거래처)', value:'ABC병원', type:'text'},
       {label:'서비스센터', value:'ACE 서울 서비스센터', type:'text'},
       {label:'제품(품번)', value:'청정항온기 5KW — P-A26-0821', type:'text'},
       {label:'유/무상 구분', value:'무상 (A/S 2년, 2024-07~2026-07)', type:'text', readonly:true},
@@ -909,10 +968,10 @@ const MFG_MODULES = {
     ],
     tableHeader: ['상담번호','고객','제품','유/무상','방문요청일','담당','상태'],
     tableData: [
-      ['SVC-2026-1847','서울대병원','청정항온기 5KW','무상','07-22','이A/S','진행'],
-      ['SVC-2026-1843','현대자동차','산업용냉동기 20RT','유상','07-18','김서비스','완료'],
-      ['SVC-2026-1840','LG이노텍','정밀항온기 3KW','무상','07-15','박엔지','완료'],
-      ['SVC-2026-1835','삼성전자','방폭형에어컨 10KW','유상','07-10','이A/S','완료'],
+      ['SVC-2026-1847','ABC병원','청정항온기 5KW','무상','07-22','이A/S','진행'],
+      ['SVC-2026-1843','ABC자동차','산업용냉동기 20RT','유상','07-18','김서비스','완료'],
+      ['SVC-2026-1840','ABC부품','정밀항온기 3KW','무상','07-15','박엔지','완료'],
+      ['SVC-2026-1835','ABC반도체','방폭형에어컨 10KW','유상','07-10','이A/S','완료'],
       ['SVC-2026-1829','(주)A공장','대형항온기','유상','07-05','김서비스','반려'],
     ],
     approveShow: false,
@@ -960,7 +1019,7 @@ const MFG_MODULES = {
     title: '사용자 권한 설정',
     fields: [
       {label:'사용자ID', value:'user001', type:'text'},
-      {label:'사용자명', value:'홍길동', type:'text'},
+      {label:'사용자명', value:'홍담당', type:'text'},
       {label:'소속부서', value:'영업부', type:'text'},
       {label:'직급', value:'대리', type:'text'},
       {label:'권한그룹', value:'영업 일반 사용자 (R/W)', type:'text'},
@@ -978,7 +1037,7 @@ const MFG_MODULES = {
     ],
     tableHeader: ['사용자ID','성명','부서','권한그룹','최종접속','사용여부','상태'],
     tableData: [
-      ['user001','홍길동','영업부','영업일반(R/W)','07-21','사용','완료'],
+      ['user001','홍담당','영업부','영업일반(R/W)','07-21','사용','완료'],
       ['user002','김생산','생산부','생산관리(R/W)','07-20','사용','완료'],
       ['user003','박구매','구매부','구매관리(R/W)','07-19','사용','완료'],
       ['user004','이품질','품질부','품질관리(R/W)','07-18','사용','완료'],
@@ -1236,7 +1295,7 @@ const AI_MODULE_ARCH = {
 // ══════════════════════════════════════════════
 const CASE_PROFILES = {
   construction: {
-    company:'㈜한국종합건설', type:'종합건설업 (주택·상업·토목·인테리어)',
+    company:'㈜ABC종합건설', type:'종합건설업 (주택·상업·토목·인테리어)',
     scale:'연매출 5,200억 · 임직원 1,850명 · 수행현장 23개 · 협력사 187개사',
     erp:'더존 Smart A (건설·분양 특화 모듈)', live:'2022년 3월 ERP 오픈', color:'#2563eb',
     stats:[{l:'수주잔고',v:'8,240억',i:'📋'},{l:'진행현장',v:'23개',i:'🏗️'},{l:'1일발주',v:'47건',i:'📄'},{l:'원가집계',v:'실시간',i:'⚡'}],
@@ -1269,7 +1328,7 @@ const CASE_PROFILES = {
     sched:[{time:'09:00',title:'현장소장 주간 공정회의',place:'본사 대회의실'},{time:'11:30',title:'강남현장 원가검토',place:'현장사무소'},{time:'14:00',title:'협력사 정산협의',place:'협력사동'},　{time:'16:30',title:'안전관리 일일보고',place:'안전팀'}],
   },
   manufacturing: {
-    company:'㈜에이스냉동공조', type:'냉동공조 제조업 (항온항습기·에어컨·냉동기)',
+    company:'㈜ABC냉동공조', type:'냉동공조 제조업 (항온항습기·에어컨·냉동기)',
     scale:'연매출 850억 · 임직원 280명 · 협력사 45개사 · 제품 120종',
     erp:'더존 iCUBE ERP (영업·생산·구매·품질·SVC 8모듈)', live:'2013년 더존 ERP 오픈 / 2025년 AI 확장',color:'#10b981',
     stats:[{l:'월 수주',v:'72억원',i:'🧾'},{l:'가동률',v:'87.3%',i:'🏭'},{l:'납기준수',v:'96.4%',i:'✅'},{l:'불량률OQC',v:'0.8%',i:'🔍'}],
@@ -1303,7 +1362,7 @@ const CASE_PROFILES = {
     sched:[{time:'09:30',title:'영업팀 주간 수주 회의',place:'대회의실'},{time:'11:00',title:'생산부 공정 점검',place:'제조1동'},{time:'14:00',title:'품질 월간 리뷰',place:'품질실'},{time:'16:00',title:'경영진 실적 보고',place:'임원실'}],
   },
   distribution: {
-    company:'㈜신선식자재유통', type:'식자재 도매업 (B2B 전문 · 전국 배송)',
+    company:'㈜ABC식자재유통', type:'식자재 도매업 (B2B 전문 · 전국 배송)',
     scale:'연매출 1,200억 · 임직원 420명 · 물류센터 5개소 · 거래처 3,800개사',
     erp:'더존 Smart A 유통 특화 (WMS·TMS 연동)', live:'2021년 6월 ERP 오픈', color:'#f59e0b',
     stats:[{l:'일출고건수',v:'3,850건',i:'📦'},{l:'재고정확도',v:'98.7%',i:'📊'},{l:'주문충족율',v:'97.3%',i:'✅'},{l:'반품율',v:'1.2%',i:'🔄'}],
@@ -1336,7 +1395,7 @@ const CASE_PROFILES = {
     sched:[{time:'07:00',title:'물류센터 오전 배송 출발',place:'서울 물류센터'},{time:'10:00',title:'공급사 단가협의',place:'회의실A'},{time:'14:00',title:'재고실사 (냉동구역)',place:'물류센터 B동'},{time:'17:00',title:'일일 출고 마감 집계',place:'물류팀'}],
   },
   service: {
-    company:'㈜코리아IT서비스', type:'IT서비스·SI 전문기업 (ERP·MES·SCM 구축)',
+    company:'㈜ABC IT서비스', type:'IT서비스·SI 전문기업 (ERP·MES·SCM 구축)',
     scale:'연매출 480억 · 기술인력 180명 · 동시수행 34건 · 고객사 280개',
     erp:'더존 Business On (프로젝트 원가·인력관리)', live:'2023년 1월 ERP 오픈', color:'#8b5cf6',
     stats:[{l:'수행프로젝트',v:'34건',i:'💼'},{l:'인력가동률',v:'87.3%',i:'👥'},{l:'수익률',v:'18.5%',i:'📈'},{l:'미수금',v:'4.2억',i:'💰'}],
@@ -1369,7 +1428,7 @@ const CASE_PROFILES = {
     sched:[{time:'09:00',title:'주간 프로젝트 현황 공유',place:'PMO'},{time:'11:00',title:'A사 ERP 검수 회의',place:'고객사'},{time:'14:30',title:'신규 제안서 내부 리뷰',place:'영업팀'},{time:'16:00',title:'PM 주간 원가 보고',place:'대표실'}],
   },
   food: {
-    company:'㈜맛있는외식', type:'외식 프랜차이즈 (직영 24 + 가맹 118개 매장)',
+    company:'㈜ABC외식', type:'외식 프랜차이즈 (직영 24 + 가맹 118개 매장)',
     scale:'연매출 265억 · 임직원 380명 · 가맹점 118개 · 식재료 거래처 42개사',
     erp:'더존 Smart A 식음료 특화 + POS 통합', live:'2024년 3월 ERP+POS 통합 오픈', color:'#ef4444',
     stats:[{l:'전국매장',v:'142개',i:'🍽️'},{l:'일평균매출',v:'6,200만',i:'💰'},{l:'원가율',v:'32.4%',i:'📊'},{l:'폐기율',v:'1.8%',i:'♻️'}],
@@ -1405,6 +1464,7 @@ const CASE_PROFILES = {
 
 let currentInd = 'manufacturing';
 let currentMfgModule = 'sales';
+let currentFlowStep = 3;
 let trendChart = null, pieChart = null;
 let simMode = 'query';  // new | query
 
@@ -1436,43 +1496,55 @@ function renderCaseProfile() {
   const cfg = CASE_PROFILES[currentInd];
   if (!cfg) { el.innerHTML = ''; return; }
   const c = cfg.color || '#2563eb';
+  const bid = 'cp-ba-' + currentInd;
   el.innerHTML = `
-    <div style="background:linear-gradient(135deg,${c}18,${c}06);border:1.5px solid ${c}40;border-radius:12px;padding:16px 20px;display:grid;grid-template-columns:1fr auto auto;gap:16px;align-items:start">
-      <div>
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap">
-          <span style="font-size:18px;font-weight:800;color:${c}">${cfg.company}</span>
-          <span style="background:${c};color:#fff;font-size:10px;padding:2px 10px;border-radius:10px;font-weight:600">${cfg.live}</span>
+    <div class="cp-new" style="background:linear-gradient(135deg,${c}12,${c}05);border-color:${c}35">
+      <div class="cp-header-row">
+        <span class="cp-name-badge" style="color:${c}">${cfg.company}</span>
+        <span class="cp-live-chip" style="background:${c}">${cfg.live}</span>
+      </div>
+      <div class="cp-meta">${cfg.type}</div>
+      <div class="cp-meta">${cfg.scale}</div>
+      <div class="cp-erp-line" style="color:${c}">⚙️ ${cfg.erp}</div>
+      <div class="cp-body-grid">
+        <div class="cp-stats-row">
+          ${cfg.stats.map(s=>`
+            <div class="cp-stat-card" style="border-color:${c}20">
+              <div class="cp-stat-icon">${s.i}</div>
+              <div class="cp-stat-val" style="color:${c}">${s.v}</div>
+              <div class="cp-stat-lbl">${s.l}</div>
+            </div>
+          `).join('')}
         </div>
-        <div style="font-size:12px;color:var(--muted);margin-bottom:3px">${cfg.type}</div>
-        <div style="font-size:11px;color:var(--muted);margin-bottom:8px">${cfg.scale}</div>
-        <div style="font-size:11px;color:${c};font-weight:600">⚙️ ${cfg.erp}</div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;min-width:248px">
-        ${cfg.stats.map(s=>`
-          <div style="background:rgba(255,255,255,.88);border:1px solid ${c}28;border-radius:8px;padding:8px 10px;text-align:center">
-            <div style="font-size:15px;margin-bottom:2px">${s.i}</div>
-            <div style="font-size:15px;font-weight:800;color:${c};line-height:1.1">${s.v}</div>
-            <div style="font-size:10px;color:var(--muted);margin-top:2px">${s.l}</div>
-          </div>
-        `).join('')}
-      </div>
-      <details style="min-width:210px;font-size:11px;cursor:pointer">
-        <summary style="font-weight:700;color:${c};padding:4px 2px;list-style:none;user-select:none">
+        <button class="cp-ba-btn" style="color:${c};border-color:${c}50" onclick="toggleCpBA('${bid}',this)">
           📊 도입 전/후 비교 ▾
-        </summary>
-        <div style="margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
-          <div>
-            <div style="font-size:10px;font-weight:700;color:#ef4444;margin-bottom:4px">❌ 도입 전</div>
-            ${cfg.before.map(b=>`<div style="color:var(--muted);margin-bottom:3px;line-height:1.4">· ${b}</div>`).join('')}
+        </button>
+      </div>
+      <div class="cp-ba-panel" id="${bid}">
+        <div class="ba-grid">
+          <div class="ba-col before">
+            <h6>❌ 도입 전</h6>
+            <ul>${cfg.before.map(b=>`<li>${b}</li>`).join('')}</ul>
           </div>
-          <div>
-            <div style="font-size:10px;font-weight:700;color:#10b981;margin-bottom:4px">✅ 도입 후</div>
-            ${cfg.after.map(a=>`<div style="color:var(--text);margin-bottom:3px;line-height:1.4">· ${a}</div>`).join('')}
+          <div class="ba-arrows-col">
+            ${cfg.before.map(()=>`<div class="ba-arrow">→</div>`).join('')}
+          </div>
+          <div class="ba-col after">
+            <h6>✅ 도입 후</h6>
+            <ul>${cfg.after.map(a=>`<li>${a}</li>`).join('')}</ul>
           </div>
         </div>
-      </details>
+      </div>
     </div>
   `;
+}
+
+function toggleCpBA(id, btn) {
+  const panel = document.getElementById(id);
+  if (!panel) return;
+  const open = panel.style.display !== 'block';
+  panel.style.display = open ? 'block' : 'none';
+  btn.textContent = open ? '📊 도입 전/후 비교 ▴' : '📊 도입 전/후 비교 ▾';
 }
 
 function renderKPIs(d) {
@@ -1489,9 +1561,10 @@ function renderKPIs(d) {
 
 function renderSteps(d) {
   const bar = document.getElementById('step-bar');
+  const active = currentFlowStep;
   bar.innerHTML = d.steps.map((s,i) => `
-    <div class="step-item ${i<3?'done':i===3?'active':''}">
-      <div class="step-circle">${i<3?'✓':i+1}</div>
+    <div class="step-item ${i<active?'done':i===active?'active':''}">
+      <div class="step-circle">${i<active?'✓':i+1}</div>
       <div class="step-label">${s}</div>
     </div>
   `).join('');
@@ -1523,14 +1596,24 @@ function renderFlow(d) {
 function showFlowDetail(idx) {
   const d = INDUSTRIES[currentInd];
   const f = d.flow[idx];
+  currentFlowStep = idx;
   document.querySelectorAll('.flow-box').forEach(b => b.classList.remove('active'));
   document.getElementById('fbox-'+idx).classList.add('active');
+  renderSteps(d);
+  // Switch ERP module for manufacturing
+  if (currentInd === 'manufacturing') {
+    const modMap = {0:'sales',1:'production',2:'production',3:'purchase',4:'production',5:'quality',6:'quality',7:'master'};
+    const mod = modMap[idx] || 'sales';
+    setMfgModule(mod);
+  }
   const panel = document.getElementById('detail-panel');
-  document.getElementById('detail-title').textContent = `📌 ${f.step} — ${f.dept} (${f.name})`;
+  document.getElementById('detail-title').innerHTML = `📌 <b>${f.step}</b> — ${f.dept} (${f.name})`;
+  const aiNote = f.aiNote ? `<div class="detail-item" style="grid-column:1/-1;background:#f0fdf4;border-color:#bbf7d0"><div class="d-label" style="color:#065f46">🤖 AI 자동화</div><div class="d-value" style="color:#065f46">${f.aiNote}</div></div>` : '';
   document.getElementById('detail-grid').innerHTML = `
     <div class="detail-item"><div class="d-label">담당 부서</div><div class="d-value">${f.dept}</div></div>
-    <div class="detail-item"><div class="d-label">담당자</div><div class="d-value">${f.name}</div></div>
+    <div class="detail-item"><div class="d-label">담당 역할</div><div class="d-value">${f.name}</div></div>
     <div class="detail-item"><div class="d-label">주요 업무</div><div class="d-value">${f.desc.replace(/\n/g,'<br>')}</div></div>
+    ${aiNote}
   `;
   panel.classList.add('show');
 }
@@ -1563,7 +1646,11 @@ function setMfgModule(key) {
     tableHeader: m.tableHeader, tableData: m.tableData,
     approveShow: m.approveShow,
   };
-  showQueryScreen(synthD);
+  if (key === 'quality') {
+    showOQCScreen(MFG_MODULES.quality);
+  } else {
+    showQueryScreen(synthD);
+  }
   renderTable(synthD);
   renderAISection(key);
 }
@@ -1632,6 +1719,79 @@ function simAction(act) {
   else if (act === 'save') { toast('✅ 저장되었습니다 (시뮬레이션)'); }
   else if (act === 'print') { toast('🖨️ 인쇄 미리보기 — ERP 양식 에디터로 이동합니다'); setTimeout(()=>window.open('/','_blank'),1200); }
   else if (act === 'approve') { toast('✅ 승인 처리되었습니다 (시뮬레이션)'); }
+}
+
+function showOQCScreen(m) {
+  simMode = 'query';
+  document.getElementById('sim-menu-path').textContent = m.menu;
+  const body = document.getElementById('erp-sim-body');
+  const wf = m.oqcWorkflow || [];
+  const prog = m.oqcProgress || 0;
+  body.innerHTML = `
+    <div style="padding:10px 12px">
+      <!-- OQC 알림 배지 -->
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+        <div class="oqc-notify warn">⚠️ 출하검사 대기 ${m.waitCount || 0}건 — 검사 요청</div>
+        <div class="oqc-notify info">📋 오늘 OQC 목표: 5건 | 완료: 2건 | 잔여: 3건</div>
+        <div class="oqc-notify ok">✅ 합격률 98.2% (AI 자동 판정 적용중)</div>
+      </div>
+      <!-- 출하검사 워크플로우 타임라인 -->
+      <div class="oqc-wf-bar">
+        ${wf.map((w,i)=>`
+          <div class="oqc-wf-step">
+            <div class="oqc-wf-dot ${w.status}">${w.status==='done'?'✓':i+1}</div>
+            <div class="oqc-wf-lbl">${w.step}</div>
+            <div class="oqc-wf-val">${w.val}</div>
+          </div>
+          ${i<wf.length-1?`<div class="oqc-wf-conn ${w.status==='done'?'done':''}"></div>`:''}
+        `).join('')}
+      </div>
+      <!-- 진행률 -->
+      <div class="oqc-progress-wrap">
+        <div style="display:flex;justify-content:space-between;font-size:10px;font-weight:700;color:var(--muted);margin-bottom:4px">
+          <span>📊 오늘 출하검사 진행률</span>
+          <span style="color:var(--c1)">${prog}%</span>
+        </div>
+        <div class="oqc-progress-bar"><div class="oqc-progress-fill" style="width:${prog}%"></div></div>
+        <div style="display:flex;gap:12px;font-size:10px;color:var(--muted);margin-top:4px">
+          <span>완료예정: 15:30</span><span>남은검수: 3건</span><span>평균소요: 45분/건</span>
+        </div>
+      </div>
+      <!-- 입력 폼 -->
+      <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+        <button class="sim-btn primary" onclick="simAction('new')" style="display:flex;align-items:center;gap:4px">
+          신규 <span style="background:rgba(255,255,255,.3);border-radius:8px;padding:1px 7px;font-size:10px;font-weight:800">대기 ${m.waitCount}건</span>
+        </button>
+        <button class="sim-btn" onclick="simAction('save')">저장</button>
+        <button class="sim-btn" onclick="simAction('query')">조회</button>
+        <button class="sim-btn" onclick="simAction('print')">성적서출력</button>
+        <button class="sim-btn primary" onclick="simAction('approve')">합격처리</button>
+        <button class="sim-btn" style="border-color:#ef4444;color:#ef4444" onclick="simAction('reject')">불합격처리</button>
+      </div>
+      <div class="mini-form">
+        ${m.fields.map(f=>`
+          <div ${f.label==='주요업무'?'class="form-full"':''}>
+            <label>${f.label}</label>
+            ${f.type==='select'?
+              `<select style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:5px;font-size:12px;font-family:inherit">
+                ${(f.options||[]).map(o=>`<option ${o===f.value?'selected':''}>${o}</option>`).join('')}
+              </select>` :
+              `<input type="${f.type||'text'}" value="${f.value||''}" ${f.readonly?'readonly':''} style="background:${f.readonly?'#f8fafc':''}"/>`
+            }
+          </div>
+        `).join('')}
+      </div>
+      <!-- 검사 항목 테이블 -->
+      <table class="data-table" style="margin-top:10px">
+        <thead><tr>
+          <th>검사항목</th><th>검사구분</th><th>측정결과</th><th>판정</th><th>불량수</th><th>불량코드</th><th>상태</th>
+        </tr></thead>
+        <tbody>
+          ${m.items.map(row=>`<tr>${row.map((c,j)=>`<td>${j===3?`<span class="badge ${c==='합격'?'완료':c==='불합격'?'반려':'진행'}">${c}</span>`:c}</td>`).join('')}</tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
 }
 
 function renderTable(d) {
@@ -2086,13 +2246,18 @@ function getEISSnap(min) {
 function startEISSim() {
   if (!document.getElementById('eis-dashboard')) return;
   stopEISSim();
-  eisSimMinutes = 9 * 60;
+  eisSimMinutes = Math.round((new Date().getHours() * 60 + new Date().getMinutes()));
+  if (eisSimMinutes < 9*60) eisSimMinutes = 9*60;
+  if (eisSimMinutes > 18*60) eisSimMinutes = 18*60;
   renderEISDashboard();
-  eisTimer = setInterval(() => {
-    eisSimMinutes += 8;
-    if (eisSimMinutes >= 18 * 60) eisSimMinutes = 9 * 60;
-    renderEISDashboard();
-  }, 3000);
+}
+
+function eisRefresh() {
+  eisSimMinutes += Math.round(Math.random()*30+15);
+  if (eisSimMinutes > 18*60) eisSimMinutes = 9*60;
+  renderEISDashboard();
+  const btn = document.querySelector('.eis-refresh-btn');
+  if (btn) { btn.textContent = '🔄 업데이트 중...'; setTimeout(()=>{btn.textContent='🔄 데이터 업데이트';},800); }
 }
 
 function stopEISSim() {
@@ -2141,8 +2306,7 @@ function renderEISDashboard() {
         <div style="font-size:9px;color:#475569;margin-top:3px">${snap.progress}% 경과</div>
       </div>
       <div style="text-align:right">
-        <div class="eis-sim-badge">● LIVE 시뮬레이션</div>
-        <div style="font-size:9px;color:#475569;margin-top:5px">3초마다 갱신 · 8분씩 진행</div>
+        <button class="eis-refresh-btn" onclick="eisRefresh()" style="background:#10b98120;border:1px solid #10b98140;color:#34d399;padding:4px 14px;border-radius:12px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">🔄 데이터 업데이트</button>
       </div>
     </div>
 
