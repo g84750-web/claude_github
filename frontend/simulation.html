@@ -222,16 +222,16 @@ canvas{display:block}
 /* ── AI 시나리오 로드맵 (재설계) ── */
 .scen-label{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;padding-left:8px;border-left:3px solid var(--c1)}
 .scen-section{margin-bottom:20px}
-.scen-mini-flow{display:flex;align-items:flex-start;overflow-x:auto;padding:8px 2px 12px}
-.scen-flow-step{display:flex;flex-direction:column;align-items:center;flex-shrink:0}
-.scen-flow-box{width:124px;background:linear-gradient(145deg,#0f172a,#1e2d45);border-radius:10px;padding:11px 9px;text-align:center;border:1px solid #2d4a6e}
-.scen-flow-arr{width:36px;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding-top:18px;color:#475569;font-size:13px}
-.scen-flow-name{font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.03em;margin-bottom:4px;line-height:1.3}
-.scen-flow-rpa{font-size:22px;font-weight:900;color:#34d399;line-height:1}
-.scen-flow-rpa small{font-size:10px;color:#64748b}
-.scen-flow-ai{font-size:9px;color:#60a5fa;margin:4px 0 6px;line-height:1.4}
-.scen-flow-times{display:flex;align-items:center;justify-content:center;gap:3px;flex-wrap:wrap}
-.scen-flow-time{font-size:9px;padding:2px 6px;border-radius:4px;font-weight:700}
+.scen-mini-flow{display:flex;align-items:stretch;gap:0;padding:10px 0 14px;flex-wrap:nowrap;overflow-x:auto}
+.scen-flow-step{flex:1;min-width:180px;display:flex;flex-direction:column}
+.scen-flow-box{flex:1;background:linear-gradient(145deg,#0f172a,#1e2d45);border-radius:12px;padding:18px 14px;text-align:center;border:1px solid #2d4a6e;display:flex;flex-direction:column;gap:6px}
+.scen-flow-arr{width:44px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#475569;font-size:18px;padding-top:0}
+.scen-flow-name{font-size:11px;font-weight:700;color:#94a3b8;letter-spacing:.02em;line-height:1.4;margin-bottom:2px}
+.scen-flow-rpa{font-size:32px;font-weight:900;color:#34d399;line-height:1}
+.scen-flow-rpa small{font-size:12px;color:#64748b}
+.scen-flow-ai{font-size:11px;color:#60a5fa;line-height:1.5;min-height:32px}
+.scen-flow-times{display:flex;align-items:center;justify-content:center;gap:5px;flex-wrap:wrap;margin-top:4px}
+.scen-flow-time{font-size:10px;padding:3px 9px;border-radius:5px;font-weight:700}
 .scen-flow-time.asis{background:#7f1d1d;color:#fca5a5}
 .scen-flow-time.tobe{background:#064e3b;color:#6ee7b7}
 
@@ -328,15 +328,30 @@ canvas{display:block}
 .news-ticker-sep{color:#475569;margin:0 14px}
 @keyframes news-scroll{0%{transform:translateX(100vw)}100%{transform:translateX(-100%)}}
 
-/* ── 케이스 프로파일 리뉴얼 v2 ── */
-.cp-layout{display:grid;grid-template-columns:260px 1fr;gap:16px;align-items:stretch}
-@media(max-width:800px){.cp-layout{grid-template-columns:1fr}}
-.cp-left{display:flex;flex-direction:column;gap:5px;padding-right:16px;border-right:1px solid rgba(0,0,0,.08)}
-@media(max-width:800px){.cp-left{padding-right:0;border-right:none;border-bottom:1px solid rgba(0,0,0,.08);padding-bottom:12px}}
-.cp-right-card{display:flex;flex-direction:column;gap:10px}
-.cp-stat-mini-row{display:flex;gap:6px;flex-wrap:wrap}
-.cp-stat-mini{background:rgba(255,255,255,.85);border-radius:8px;padding:7px 10px;text-align:center;flex:1;min-width:70px;border:1px solid rgba(0,0,0,.07)}
-.cp-ba-inline{display:grid;grid-template-columns:1fr 28px 1fr;gap:8px;align-items:start}
+/* ── 케이스 프로파일 리뉴얼 v3 ── */
+.cp-layout{display:grid;grid-template-columns:220px 1fr 270px;gap:0;align-items:stretch}
+@media(max-width:900px){.cp-layout{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.cp-layout{grid-template-columns:1fr}}
+.cp-left{display:flex;flex-direction:column;gap:5px;padding:4px 18px 4px 0;border-right:1px solid rgba(0,0,0,.1)}
+.cp-center{display:flex;flex-direction:column;gap:10px;padding:4px 18px;border-right:1px solid rgba(0,0,0,.1)}
+.cp-center-label{font-size:9px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:2px}
+.cp-stat-mini-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cp-stat-mini{background:rgba(255,255,255,.92);border-radius:10px;padding:12px 10px;text-align:center;border:1px solid rgba(0,0,0,.08);box-shadow:0 2px 6px rgba(0,0,0,.06);transition:.15s}
+.cp-stat-mini:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.1)}
+.cp-right{display:flex;flex-direction:column;gap:8px;padding:4px 0 4px 18px}
+.cp-right-label{font-size:9px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.07em}
+.cp-ba-cols{display:grid;grid-template-columns:1fr 22px 1fr;gap:6px;align-items:start}
+.cp-ba-col{font-size:11px;padding:8px 10px;border-radius:7px}
+.cp-ba-col.bef{background:#fef2f2;border-left:3px solid #ef4444}
+.cp-ba-col.aft{background:#f0fdf4;border-left:3px solid #10b981}
+.cp-ba-col h6{font-size:9px;font-weight:800;margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em}
+.cp-ba-col.bef h6{color:#b91c1c}.cp-ba-col.aft h6{color:#065f46}
+.cp-ba-col li{list-style:none;padding:2px 0;display:flex;gap:4px;line-height:1.5;color:var(--text);font-size:10px}
+.cp-ba-col li::before{content:'·';flex-shrink:0;font-weight:700}
+.cp-ba-col.bef li::before{color:#ef4444}.cp-ba-col.aft li::before{color:#10b981}
+.cp-ba-arrows{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:6px;padding-top:22px}
+.cp-ba-arr{font-size:14px;color:#2563eb;animation:ba-pulse 1.8s ease-in-out infinite}
+.cp-ba-arr:nth-child(2){animation-delay:.45s}.cp-ba-arr:nth-child(3){animation-delay:.9s}.cp-ba-arr:nth-child(4){animation-delay:1.35s}
 .cp-comment-bar{font-size:11px;color:#065f46;background:#d1fae5;border-radius:6px;padding:6px 12px;border-left:3px solid #10b981;line-height:1.5}
 
 /* ── ERP 출력 미리보기 모달 ── */
@@ -402,7 +417,11 @@ canvas{display:block}
 .eis-sched-time{font-size:9px;color:var(--muted);font-weight:700;margin-bottom:1px}
 .eis-bottom-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
 @media(max-width:900px){.eis-bottom-grid{grid-template-columns:1fr}}
-.eis-chart-box{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px;overflow:hidden}
+.eis-bottom-grid .eis-chart-box{height:230px}
+.eis-trend-box{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px;height:240px;overflow:hidden;display:flex;flex-direction:column}
+.eis-trend-box canvas{flex:1;min-height:0!important}
+.eis-chart-box{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px;overflow:hidden;display:flex;flex-direction:column}
+.eis-chart-box canvas{flex:1;min-height:0!important}
 .eis-gauge-row{display:flex;flex-direction:column;gap:10px}
 .eis-gauge{display:grid;grid-template-columns:82px 1fr 44px;align-items:center;gap:8px}
 .eis-gauge-label{font-size:11px;color:var(--text);font-weight:600}
@@ -516,7 +535,7 @@ canvas{display:block}
           <button class="sim-btn primary" onclick="simAction('new')">신규</button>
           <button class="sim-btn" onclick="simAction('save')">저장</button>
           <button class="sim-btn" onclick="simAction('query')">조회</button>
-          <button class="sim-btn" onclick="simAction('print')">출력</button>
+          <button class="sim-btn" onclick="event.preventDefault();event.stopPropagation();simAction('print');return false;">출력</button>
           <button class="sim-btn" onclick="simAction('approve')" id="btn-approve" style="display:none">승인</button>
         </div>
         <div id="erp-sim-body"></div>
@@ -1590,39 +1609,46 @@ function renderCaseProfile() {
   el.innerHTML = `
     <div class="cp-new" style="background:linear-gradient(135deg,${c}12,${c}05);border-color:${c}35">
       <div class="cp-layout">
+        <!-- LEFT: 회사 정보 -->
         <div class="cp-left">
-          <div class="cp-header-row">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">
             <span class="cp-name-badge" style="color:${c}">${cfg.company}</span>
-            <span class="cp-live-chip" style="background:${c}">${cfg.live}</span>
           </div>
-          <div class="cp-meta" style="margin-top:4px">${cfg.type}</div>
+          <span class="cp-live-chip" style="background:${c};display:inline-block;margin-bottom:6px">${cfg.live}</span>
+          <div class="cp-meta">${cfg.type}</div>
           <div class="cp-meta">${cfg.scale}</div>
           <div class="cp-erp-line" style="color:${c};margin-top:6px">⚙️ ${cfg.erp}</div>
         </div>
-        <div class="cp-right-card">
+        <!-- CENTER: 핵심 KPI 대시보드 -->
+        <div class="cp-center">
+          <div class="cp-center-label">📊 핵심 성과 지표 (KPI)</div>
           <div class="cp-stat-mini-row">
             ${cfg.stats.map(s=>`
               <div class="cp-stat-mini">
-                <div style="font-size:14px">${s.i}</div>
-                <div style="font-size:15px;font-weight:800;color:${c};line-height:1.2">${s.v}</div>
-                <div style="font-size:9px;color:var(--muted);margin-top:2px">${s.l}</div>
+                <div style="font-size:18px;margin-bottom:4px">${s.i}</div>
+                <div style="font-size:20px;font-weight:900;color:${c};line-height:1.1">${s.v}</div>
+                <div style="font-size:10px;color:var(--muted);margin-top:3px;font-weight:600">${s.l}</div>
               </div>
             `).join('')}
           </div>
-          <div class="cp-ba-inline">
-            <div class="ba-col before">
+          <div class="cp-comment-bar">${comments[currentInd] || comments.manufacturing}</div>
+        </div>
+        <!-- RIGHT: 도입 전/후 비교 -->
+        <div class="cp-right">
+          <div class="cp-right-label">📋 도입 전/후 비교</div>
+          <div class="cp-ba-cols">
+            <div class="cp-ba-col bef">
               <h6>❌ 도입 전</h6>
               <ul>${cfg.before.map(b=>`<li>${b}</li>`).join('')}</ul>
             </div>
-            <div class="ba-arrows-col" style="padding-top:22px">
-              ${cfg.before.map(()=>`<div class="ba-arrow">→</div>`).join('')}
+            <div class="cp-ba-arrows">
+              ${cfg.before.map(()=>`<div class="cp-ba-arr">→</div>`).join('')}
             </div>
-            <div class="ba-col after">
+            <div class="cp-ba-col aft">
               <h6>✅ 도입 후</h6>
               <ul>${cfg.after.map(a=>`<li>${a}</li>`).join('')}</ul>
             </div>
           </div>
-          <div class="cp-comment-bar">${comments[currentInd] || comments.manufacturing}</div>
         </div>
       </div>
     </div>
@@ -2087,7 +2113,11 @@ function simAction(act) {
   if (act === 'new') { showInputScreen(d); toast('신규 입력 화면으로 전환되었습니다'); }
   else if (act === 'query') { showQueryScreen(d); toast('조회 완료 — ' + d.tableData.length + '건'); }
   else if (act === 'save') { toast('✅ 저장되었습니다 (시뮬레이션)'); }
-  else if (act === 'print') { showPrintModal(); }
+  else if (act === 'print') {
+    try { showPrintModal(); }
+    catch(err) { console.error('[출력 오류]', err); toast('🖨️ 출력 미리보기 준비 중입니다. 잠시 후 다시 클릭해주세요.'); }
+    return false;
+  }
   else if (act === 'approve') { toast('✅ 승인 처리되었습니다 (시뮬레이션)'); }
 }
 
@@ -2134,7 +2164,7 @@ function showOQCScreen(m) {
         </button>
         <button class="sim-btn" onclick="simAction('save')">저장</button>
         <button class="sim-btn" onclick="simAction('query')">조회</button>
-        <button class="sim-btn" onclick="simAction('print')">성적서출력</button>
+        <button class="sim-btn" onclick="event.preventDefault();event.stopPropagation();simAction('print');return false;">성적서출력</button>
         <button class="sim-btn primary" onclick="simAction('approve')">합격처리</button>
         <button class="sim-btn" style="border-color:#ef4444;color:#ef4444" onclick="simAction('reject')">불합격처리</button>
       </div>
@@ -2424,6 +2454,7 @@ function renderAISection(moduleKey) {
 // ══════════════════════════════════════════════
 let currentAiTab = 'scenario';
 let eisTimer = null;
+let eisRefreshSec = 600; // 10분 기본값
 let eisSimMinutes = 9 * 60;
 let eisCharts = {};
 let eisTrendPeriod = 'month';
@@ -2617,10 +2648,27 @@ function getEISSnap(min) {
 function startEISSim() {
   if (!document.getElementById('eis-dashboard')) return;
   stopEISSim();
-  eisSimMinutes = Math.round((new Date().getHours() * 60 + new Date().getMinutes()));
+  const now = new Date();
+  eisSimMinutes = now.getHours()*60 + now.getMinutes();
   if (eisSimMinutes < 9*60) eisSimMinutes = 9*60;
   if (eisSimMinutes > 18*60) eisSimMinutes = 18*60;
+  eisLastUpdate = String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0')+':'+String(now.getSeconds()).padStart(2,'0');
   renderEISDashboard();
+  if (eisRefreshSec > 0) {
+    eisTimer = setInterval(() => {
+      const t = new Date();
+      eisSimMinutes = t.getHours()*60 + t.getMinutes();
+      if (eisSimMinutes < 9*60) eisSimMinutes = 9*60;
+      if (eisSimMinutes > 18*60) eisSimMinutes = 18*60;
+      eisLastUpdate = String(t.getHours()).padStart(2,'0')+':'+String(t.getMinutes()).padStart(2,'0')+':'+String(t.getSeconds()).padStart(2,'0');
+      renderEISDashboard();
+    }, eisRefreshSec * 1000);
+  }
+}
+
+function setEisInterval(sec) {
+  eisRefreshSec = parseInt(sec) || 0;
+  startEISSim();
 }
 
 function eisRefresh() {
@@ -2686,9 +2734,17 @@ function renderEISDashboard() {
         </div>
         <div style="font-size:9px;color:#475569;margin-top:3px">${snap.progress}% 경과</div>
       </div>
-      <div style="text-align:right">
-        <button class="eis-refresh-btn" onclick="eisRefresh()" style="background:#10b98120;border:1px solid #10b98140;color:#34d399;padding:5px 16px;border-radius:12px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">🔄 업데이트</button>
-        ${eisLastUpdate ? `<div style="font-size:9px;color:#475569;margin-top:4px;text-align:right">⏱ ${eisLastUpdate} 기준</div>` : ''}
+      <div style="text-align:right;display:flex;flex-direction:column;gap:5px;align-items:flex-end">
+        <div style="display:flex;align-items:center;gap:6px">
+          <select onchange="setEisInterval(this.value)" style="background:#1e3a5f;border:1px solid #2d4a6e;color:#94a3b8;padding:3px 8px;border-radius:7px;font-size:10px;font-family:inherit;cursor:pointer">
+            <option value="600" ${eisRefreshSec===600?'selected':''}>⏰ 10분 자동갱신</option>
+            <option value="300" ${eisRefreshSec===300?'selected':''}>⏰ 5분 자동갱신</option>
+            <option value="60" ${eisRefreshSec===60?'selected':''}>⏰ 1분 자동갱신</option>
+            <option value="0" ${eisRefreshSec===0?'selected':''}>🔒 수동 갱신</option>
+          </select>
+          <button class="eis-refresh-btn" onclick="eisRefresh()" style="background:#10b98120;border:1px solid #10b98140;color:#34d399;padding:5px 14px;border-radius:12px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">🔄 업데이트</button>
+        </div>
+        ${eisLastUpdate ? `<div style="font-size:9px;color:#475569">⏱ ${eisLastUpdate} 기준</div>` : '<div style="font-size:9px;color:#475569">⏱ 탭 클릭시 자동 로드</div>'}
       </div>
     </div>
 
@@ -2742,7 +2798,7 @@ function renderEISDashboard() {
     <div class="eis-bottom-grid">
       <div class="eis-chart-box">
         <div class="card-title" style="margin-bottom:10px">📊 영업계획 vs 실적 · 이익예측</div>
-        <canvas id="chart-eis-sales" style="width:100%!important;height:170px!important"></canvas>
+        <canvas id="chart-eis-sales" style="width:100%!important;height:160px!important;max-height:160px!important;display:block"></canvas>
       </div>
       <div class="eis-chart-box">
         <div class="card-title" style="margin-bottom:10px">💰 원가 · 이익 · 운영 지표 게이지</div>
@@ -2760,15 +2816,15 @@ function renderEISDashboard() {
       </div>
     </div>
 
-    <div class="eis-chart-box">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap">
+    <div class="eis-trend-box">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap;flex-shrink:0">
         <div class="card-title" style="margin:0">📈 주/월/분기/반기/연간 흐름 · 사이클 추이 분석</div>
         <div class="eis-trend-tabs">
           ${[['week','주간'],['month','월간'],['quarter','분기'],['half','반기'],['year','연간']].map(([p,l])=>
             `<button class="eis-trend-btn ${eisTrendPeriod===p?'active':''}" data-p="${p}" onclick="setEisTrend('${p}')">${l}</button>`).join('')}
         </div>
       </div>
-      <canvas id="chart-eis-trend" style="width:100%!important;height:160px!important;max-height:160px"></canvas>
+      <canvas id="chart-eis-trend" style="width:100%!important;max-height:170px!important;display:block"></canvas>
     </div>
   `;
 
