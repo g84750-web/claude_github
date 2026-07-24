@@ -275,10 +275,10 @@ canvas{display:block}
 /* ── 케이스 프로파일 리뉴얼 ── */
 .cp-new{border-radius:12px;border:1.5px solid;padding:16px 20px}
 .cp-header-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px}
-.cp-name-badge{font-size:18px;font-weight:800}
-.cp-live-chip{font-size:10px;font-weight:700;color:#fff;padding:3px 10px;border-radius:10px}
-.cp-meta{font-size:11px;color:var(--muted);margin-bottom:4px}
-.cp-erp-line{font-size:11px;font-weight:600;margin-top:6px}
+.cp-name-badge{font-size:24px;font-weight:900;letter-spacing:-.01em}
+.cp-live-chip{font-size:11px;font-weight:700;color:#fff;padding:4px 12px;border-radius:10px}
+.cp-meta{font-size:13px;color:var(--muted);margin-bottom:5px;line-height:1.5}
+.cp-erp-line{font-size:13px;font-weight:700;margin-top:8px}
 .cp-body-grid{display:grid;grid-template-columns:1fr auto;gap:16px;align-items:start;margin-top:10px}
 .cp-stats-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
 .cp-stat-card{background:rgba(255,255,255,.9);border-radius:8px;padding:9px 14px;text-align:center;border:1px solid rgba(0,0,0,.08);min-width:88px}
@@ -329,7 +329,7 @@ canvas{display:block}
 @keyframes news-scroll{0%{transform:translateX(100vw)}100%{transform:translateX(-100%)}}
 
 /* ── 케이스 프로파일 리뉴얼 v3 ── */
-.cp-layout{display:grid;grid-template-columns:220px 1fr 270px;gap:0;align-items:stretch}
+.cp-layout{display:grid;grid-template-columns:260px 1fr 270px;gap:0;align-items:stretch}
 @media(max-width:900px){.cp-layout{grid-template-columns:1fr 1fr}}
 @media(max-width:600px){.cp-layout{grid-template-columns:1fr}}
 .cp-left{display:flex;flex-direction:column;gap:5px;padding:4px 18px 4px 0;border-right:1px solid rgba(0,0,0,.1)}
@@ -673,11 +673,11 @@ const INDUSTRIES = {
   manufacturing: {
     name: '제조업 (냉동공조)', icon: '🏭',
     kpis: [
-      {label:'이번달 수주건수', value:'28', unit:'건', change:'+3건', up:true, color:'var(--c1)'},
-      {label:'생산달성율', value:'93.7', unit:'%', change:'+2.1%p', up:true, color:'var(--c2)'},
-      {label:'불량률 (OQC)', value:'0.8', unit:'%', change:'-0.3%p', up:true, color:'var(--c3)'},
+      {label:'이번달 수주액', value:'72', unit:'억원', change:'+8.3%', up:true, color:'var(--c1)'},
+      {label:'생산 가동률', value:'87.3', unit:'%', change:'+2.1%p', up:true, color:'var(--c2)'},
       {label:'납기준수율', value:'96.4', unit:'%', change:'+1.2%p', up:true, color:'var(--c5)'},
-      {label:'자재출고 대기', value:'7', unit:'건', change:'-2건', up:true, color:'var(--c4)'},
+      {label:'완제품 출하 대기', value:'12', unit:'건', change:'-3건', up:true, color:'var(--c4)'},
+      {label:'안전재고 달성률', value:'94.2', unit:'%', change:'+1.8%p', up:true, color:'var(--c3)'},
     ],
     steps: ['수주등록','생산계획','생산지시','자재출고','생산실적','품질검사','출하처리','매출마감'],
     flow: [
@@ -1434,7 +1434,13 @@ const CASE_PROFILES = {
     company:'㈜ABC냉동공조', type:'냉동공조 제조업 (항온항습기·에어컨·냉동기)',
     scale:'연매출 850억 · 임직원 280명 · 협력사 45개사 · 제품 120종',
     erp:'더존 iCUBE ERP (영업·생산·구매·품질·SVC 8모듈)', live:'2013년 더존 ERP 오픈 / 2025년 AI 확장',color:'#10b981',
-    stats:[{l:'월 수주',v:'72억원',i:'🧾'},{l:'가동률',v:'87.3%',i:'🏭'},{l:'납기준수',v:'96.4%',i:'✅'},{l:'불량률OQC',v:'0.8%',i:'🔍'}],
+    stats:[
+      {l:'월 수주',v:'72억원',i:'🧾',c:'#2563eb',eval:'전월 +8.3% 증가세 ▲'},
+      {l:'가동률',v:'87.3%',i:'🏭',c:'#10b981',eval:'목표 90% 대비 97% 달성'},
+      {l:'납기준수',v:'96.4%',i:'✅',c:'#f59e0b',eval:'업계 평균 92% 대비 우수'},
+      {l:'주요고객 수주비중',v:'Top3',i:'🏢',c:'#8b5cf6',type:'custbar',
+       custbars:[{name:'㈜ABC전자',pct:38},{name:'㈜ABC자동차',pct:27},{name:'기타 고객',pct:35}]},
+    ],
     before:['수주서 수작업 입력 2시간/건','BOM 전개 엑셀 수작업 4시간','불량 발생 사후 파악 1~2일','SVC 접수 전화·팩스 수기'],
     after:['OCR AI 수주 자동 등록 5분','ERP BOM 자동 전개 5분','실시간 불량 알림·즉시 조치','SVC 모바일 접수·이력조회 자동'],
     eisTiles:(p,rnd)=>[
@@ -1623,13 +1629,30 @@ function renderCaseProfile() {
         <div class="cp-center">
           <div class="cp-center-label">📊 핵심 성과 지표 (KPI)</div>
           <div class="cp-stat-mini-row">
-            ${cfg.stats.map(s=>`
-              <div class="cp-stat-mini">
+            ${cfg.stats.map((s,idx)=>{
+              const sc = s.c || [c,'#10b981','#f59e0b','#8b5cf6'][idx] || c;
+              if (s.type === 'custbar') {
+                return `<div class="cp-stat-mini" style="border-top:3px solid ${sc};padding:10px 10px 8px;text-align:left">
+                  <div style="font-size:10px;font-weight:800;color:${sc};margin-bottom:7px">🏢 ${s.l}</div>
+                  ${(s.custbars||[]).map(r=>`
+                    <div style="margin-bottom:6px">
+                      <div style="display:flex;justify-content:space-between;font-size:9px;margin-bottom:2px">
+                        <span style="color:var(--muted)">${r.name}</span>
+                        <span style="font-weight:800;color:${sc}">${r.pct}%</span>
+                      </div>
+                      <div style="height:5px;background:#e2e8f0;border-radius:3px;overflow:hidden">
+                        <div style="width:${r.pct}%;height:100%;background:${sc};border-radius:3px;transition:width 1s ease"></div>
+                      </div>
+                    </div>`).join('')}
+                </div>`;
+              }
+              return `<div class="cp-stat-mini" style="border-top:3px solid ${sc}">
                 <div style="font-size:18px;margin-bottom:4px">${s.i}</div>
-                <div style="font-size:20px;font-weight:900;color:${c};line-height:1.1">${s.v}</div>
-                <div style="font-size:10px;color:var(--muted);margin-top:3px;font-weight:600">${s.l}</div>
-              </div>
-            `).join('')}
+                <div style="font-size:22px;font-weight:900;color:${sc};line-height:1.1">${s.v}</div>
+                <div style="font-size:10px;color:var(--muted);margin-top:2px;font-weight:600">${s.l}</div>
+                ${s.eval ? `<div style="font-size:9px;color:${sc};background:${sc}15;border-radius:4px;padding:2px 7px;margin-top:6px;font-weight:700;white-space:nowrap">${s.eval}</div>` : ''}
+              </div>`;
+            }).join('')}
           </div>
           <div class="cp-comment-bar">${comments[currentInd] || comments.manufacturing}</div>
         </div>
