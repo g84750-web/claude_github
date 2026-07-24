@@ -138,6 +138,7 @@ canvas{display:block}
 
 /* ── AI KPI 대시보드 ── */
 #ai-dashboard-card{display:none}
+#ai-dashboard-card.visible{display:block}
 .ai-kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
 .ai-kpi-card{background:linear-gradient(145deg,#0f172a,#1e2d45);border-radius:var(--radius);padding:14px 16px;position:relative;overflow:hidden;border:1px solid #2d4a6e}
 .ai-step-name{font-size:9px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px}
@@ -217,6 +218,59 @@ canvas{display:block}
 .kpi-data-table .num{text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
 .kpi-data-table .improve{color:var(--c2)}
 .kpi-data-table .pct-bar{display:inline-block;height:6px;border-radius:3px;background:var(--c1);margin-left:6px;vertical-align:middle}
+
+/* ── AI 시나리오 로드맵 (재설계) ── */
+.scen-label{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;padding-left:8px;border-left:3px solid var(--c1)}
+.scen-section{margin-bottom:20px}
+.scen-mini-flow{display:flex;align-items:flex-start;overflow-x:auto;padding:8px 2px 12px}
+.scen-flow-step{display:flex;flex-direction:column;align-items:center;flex-shrink:0}
+.scen-flow-box{width:124px;background:linear-gradient(145deg,#0f172a,#1e2d45);border-radius:10px;padding:11px 9px;text-align:center;border:1px solid #2d4a6e}
+.scen-flow-arr{width:36px;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding-top:18px;color:#475569;font-size:13px}
+.scen-flow-name{font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.03em;margin-bottom:4px;line-height:1.3}
+.scen-flow-rpa{font-size:22px;font-weight:900;color:#34d399;line-height:1}
+.scen-flow-rpa small{font-size:10px;color:#64748b}
+.scen-flow-ai{font-size:9px;color:#60a5fa;margin:4px 0 6px;line-height:1.4}
+.scen-flow-times{display:flex;align-items:center;justify-content:center;gap:3px;flex-wrap:wrap}
+.scen-flow-time{font-size:9px;padding:2px 6px;border-radius:4px;font-weight:700}
+.scen-flow-time.asis{background:#7f1d1d;color:#fca5a5}
+.scen-flow-time.tobe{background:#064e3b;color:#6ee7b7}
+
+.matrix-table{width:100%;border-collapse:collapse;font-size:11px;min-width:860px}
+.matrix-table th{background:#0f172a;color:#94a3b8;padding:9px 10px;text-align:left;font-size:10px;font-weight:700;letter-spacing:.04em;white-space:nowrap;border-right:1px solid #1e3a5f}
+.matrix-table td{padding:8px 10px;border-bottom:1px solid #f1f5f9;border-right:1px solid #f8fafc;color:var(--text);vertical-align:top;line-height:1.5}
+.matrix-table tbody tr:hover td{background:#f8fafc}
+.matrix-table .col-step{font-weight:700;color:var(--c1);white-space:nowrap;min-width:90px}
+.matrix-table .col-dept{color:var(--muted);font-size:10px;white-space:nowrap}
+.mtag{display:inline-block;padding:2px 7px;border-radius:8px;font-size:9px;font-weight:700;margin:1px 2px 1px 0;white-space:nowrap}
+.mtag.ai{background:#dbeafe;color:#1d4ed8}
+.mtag.int{background:#d1fae5;color:#065f46}
+.mtag.ext{background:#ede9fe;color:#7c3aed}
+.mtag.src{background:#fef3c7;color:#92400e}
+
+.arch-grid{display:grid;grid-template-columns:1fr 118px 1fr;gap:10px;margin:8px 0}
+.arch-col{border-radius:8px;padding:12px;border:1px solid var(--border)}
+.arch-col.int-col{background:#f0f9ff;border-color:#bae6fd}
+.arch-col.ext-col{background:#faf5ff;border-color:#ddd6fe}
+.arch-col-title{font-size:10px;font-weight:800;margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em}
+.arch-col.int-col .arch-col-title{color:#0369a1}
+.arch-col.ext-col .arch-col-title{color:#7c3aed}
+.arch-item-row{display:flex;align-items:center;gap:5px;padding:4px 6px;border-radius:5px;margin-bottom:3px;font-size:11px;background:rgba(255,255,255,.8);border:1px solid rgba(0,0,0,.06)}
+.arch-center-col{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+.arch-erp-box{background:linear-gradient(145deg,#0f172a,#1e3a5f);border-radius:8px;padding:8px 6px;text-align:center;width:100%;border:1px solid #2d4a6e}
+.arch-erp-title{font-size:10px;font-weight:800;color:#60a5fa;margin-bottom:5px}
+.arch-erp-item{font-size:9px;color:#94a3b8;padding:1px 0;border-bottom:1px solid #1e3a5f}
+.arch-erp-item:last-child{border-bottom:none}
+.arch-conn{color:#94a3b8;font-size:14px;font-weight:300;text-align:center;padding:4px 0}
+
+.roadmap-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:8px 0}
+.roadmap-phase{border-radius:8px;padding:12px 14px;border:1.5px solid}
+.roadmap-phase-num{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px}
+.roadmap-phase-title{font-size:13px;font-weight:800;margin-bottom:3px}
+.roadmap-phase-period{font-size:10px;font-weight:600;margin-bottom:10px;opacity:.7}
+.roadmap-task-row{display:flex;align-items:center;gap:6px;font-size:11px;padding:4px 0;border-bottom:1px solid rgba(0,0,0,.07);color:#475569;line-height:1.4}
+.roadmap-task-row:last-child{border-bottom:none}
+.roadmap-task-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;margin-top:2px}
+@media(max-width:768px){.roadmap-grid{grid-template-columns:1fr}.arch-grid{grid-template-columns:1fr}}
 
 /* ── EIS 대시보드 ── */
 .eis-header{display:flex;align-items:center;gap:16px;margin-bottom:16px;padding:12px 18px;background:linear-gradient(135deg,#0f172a,#1e3a5f);border-radius:var(--radius);color:#e2e8f0;flex-wrap:wrap}
@@ -352,13 +406,13 @@ canvas{display:block}
   <div class="section-grid col3">
     <!-- 월별 트렌드 차트 -->
     <div class="card">
-      <div class="card-title">📈 월별 핵심 지표</div>
+      <div class="card-title">📈 <span id="chart-trend-title">월별 핵심 지표</span></div>
       <div class="chart-wrap"><canvas id="chart-trend"></canvas></div>
     </div>
 
     <!-- 항목별 비율 차트 -->
     <div class="card">
-      <div class="card-title">🥧 항목별 비율</div>
+      <div class="card-title">🥧 <span id="chart-pie-title">업무 자동화 구성비</span></div>
       <div class="chart-wrap"><canvas id="chart-pie"></canvas></div>
     </div>
 
@@ -1081,6 +1135,103 @@ const AI_MODULE_DATA = {
 };
 
 // ══════════════════════════════════════════════
+//  AI 모듈별 시나리오 매트릭스 + 아키텍처 데이터
+// ══════════════════════════════════════════════
+const AI_MODULE_MATRIX = {
+  sales:[
+    {dept:'영업팀',impact:'수주·물류팀',aiType:'RPA 자동분류',criteria:'키워드·발신자 규칙',internal:['이메일 파서','RPA Bot'],external:['NLP 분류 API'],source:'수주 이력 DB'},
+    {dept:'영업팀',impact:'생산·구매팀',aiType:'OCR+LLM 추출',criteria:'양식 템플릿 매핑',internal:['OCR 엔진','LLM 연동'],external:['GPT-4 Vision','MCP 서버'],source:'수주서 학습 샘플'},
+    {dept:'영업→ERP',impact:'전사',aiType:'API 자동등록',criteria:'고객·품목 코드 규칙',internal:['ERP REST API','검증 AI'],external:['온톨로지 검증'],source:'ERP 마스터 기준정보'},
+    {dept:'경영지원팀',impact:'경영진·전사',aiType:'RPA 자동발송',criteria:'배포 대상·일정',internal:['RPA','이메일 엔진'],external:['Slack API','SMTP'],source:'ERP 실적 집계 데이터'},
+  ],
+  production:[
+    {dept:'생산관리팀',impact:'영업·자재팀',aiType:'AI 수요예측',criteria:'과거 데이터 90일',internal:['LSTM 예측 모델','생산계획 AI'],external:['AI 예측 API','MCP 서버'],source:'수주 이력·재고 추이'},
+    {dept:'생산관리팀',impact:'구매팀',aiType:'BOM 자동전개',criteria:'설계 BOM 기준 규칙',internal:['ERP BOM API','자재소요 계산'],external:['-'],source:'BOM 마스터·설계 DB'},
+    {dept:'현장감독',impact:'작업자·생산팀',aiType:'수주 연동 자동지시',criteria:'생산계획 연동 규칙',internal:['ERP 작업지시 API','MES 연동'],external:['-'],source:'생산계획·수주 데이터'},
+    {dept:'생산팀',impact:'품질·경영진',aiType:'IoT 자동집계',criteria:'설비 센서 임계값',internal:['IoT 게이트웨이','MES DB'],external:['클라우드 IoT'],source:'PLC·센서 실시간 데이터'},
+  ],
+  purchase:[
+    {dept:'자재팀',impact:'생산·구매팀',aiType:'AI 실시간 모니터링',criteria:'안전재고 기준값',internal:['재고 모니터링 AI','ERP 재고 API'],external:['실시간 알림 서비스'],source:'실시간 재고 DB'},
+    {dept:'구매팀',impact:'생산·자재팀',aiType:'MRP 자동실행',criteria:'MRP 파라미터 설정',internal:['ERP MRP 엔진','발주 초안 생성 AI'],external:['AI 최적화 API'],source:'BOM·재고·생산계획'},
+    {dept:'구매팀',impact:'공급사',aiType:'AI 공급사 선정',criteria:'단가·납기·품질이력',internal:['공급사 평가 AI','ERP 단가 DB'],external:['공급사 EDI 포털'],source:'거래 이력·품질 평가 DB'},
+    {dept:'구매팀',impact:'공급사·재무',aiType:'RPA EDI 자동발송',criteria:'발주서 양식·수신처',internal:['RPA','EDI 커넥터'],external:['공급사 EDI','이메일 API'],source:'MRP 발주 요청 데이터'},
+  ],
+  quality:[
+    {dept:'영업→품질팀',impact:'품질·출하팀',aiType:'수주 연동 자동생성',criteria:'출하요청 연동 규칙',internal:['ERP OQC API','수주 연동'],external:['-'],source:'수주·출하 계획 DB'},
+    {dept:'품질팀',impact:'생산팀',aiType:'IoT 자동수집',criteria:'계측 항목·허용공차',internal:['IoT 계측기 API','측정 DB'],external:['계측 장비 API'],source:'설비 계측 실시간 데이터'},
+    {dept:'품질팀',impact:'출하·영업팀',aiType:'AI 자동 합/불 판정',criteria:'규격서·기준값',internal:['AI 판정 엔진','기준값 DB'],external:['AI 비전 API'],source:'규격서·검사 이력 DB'},
+    {dept:'품질팀',impact:'고객·영업팀',aiType:'ERP 자동발행',criteria:'양식·고객 요구사항',internal:['ERP 성적서 모듈','PDF 생성'],external:['전자서명 API'],source:'검사 결과 DB'},
+  ],
+  iqc:[
+    {dept:'자재→품질팀',impact:'구매·자재팀',aiType:'발주 연동 자동조회',criteria:'발주 품목·수량 연동',internal:['ERP IQC API','발주 연동'],external:['-'],source:'발주 DB·입고 예정 데이터'},
+    {dept:'품질팀',impact:'생산·자재팀',aiType:'AI 비전+IoT 검사',criteria:'외관·치수 기준값',internal:['AI 비전 카메라','IoT 계측기'],external:['AI 비전 API','MCP'],source:'설계 기준·과거 불량 데이터'},
+    {dept:'품질팀',impact:'자재팀',aiType:'AI 자동 판정',criteria:'기준값·허용공차',internal:['AI 판정 엔진','기준값 DB'],external:['-'],source:'측정 결과·규격서'},
+    {dept:'품질팀',impact:'공급사',aiType:'RPA 자동 통보',criteria:'불합격 판정 기준',internal:['RPA','ERP 부적합 모듈'],external:['공급사 EDI','이메일 API'],source:'검사 결과·부적합 이력'},
+  ],
+  svc:[
+    {dept:'고객→CS팀',impact:'CS·엔지니어팀',aiType:'AI 챗봇 자동접수',criteria:'증상 분류 모델',internal:['AI 챗봇 엔진','SVC 분류 AI'],external:['Kakao 채널 API','웹훅'],source:'과거 SVC 이력 데이터'},
+    {dept:'CS팀',impact:'엔지니어팀',aiType:'AI 최적 배정',criteria:'거리·전문성·일정',internal:['배정 알고리즘 AI','ERP 엔지니어 DB'],external:['지도 API','Google Calendar'],source:'엔지니어 이력·위치 데이터'},
+    {dept:'엔지니어팀',impact:'고객·생산팀',aiType:'IoT 원격 진단',criteria:'설비 이상 임계값',internal:['IoT 진단 모듈','원격 접속 시스템'],external:['IoT 클라우드','원격진단 API'],source:'설비 IoT 센서 데이터'},
+    {dept:'엔지니어→재무팀',impact:'재무·고객팀',aiType:'RPA 자동 청구',criteria:'유·무상 판정 기준',internal:['RPA','ERP 매출 API'],external:['전자세금계산서 API'],source:'SVC 처리 결과 DB'},
+  ],
+  master:[
+    {dept:'경영지원팀',impact:'전사',aiType:'국세청 API 자동조회',criteria:'사업자번호 입력 기준',internal:['국세청 API 연동','ERP 거래처 등록'],external:['국세청 OpenAPI','주소 API'],source:'국세청 사업자 DB'},
+    {dept:'품질·자재팀',impact:'생산·구매팀',aiType:'AI 품목 자동분류',criteria:'품목 특성·분류 체계',internal:['품목 분류 AI','코드 채번 엔진'],external:['온톨로지 API','MCP'],source:'품목 특성·등록 이력'},
+    {dept:'개발·품질팀',impact:'생산·구매팀',aiType:'OCR 도면 BOM 생성',criteria:'BOM 구성 규칙',internal:['OCR 엔진','BOM 생성 AI'],external:['GPT-4 Vision','CAD API'],source:'설계 도면·기존 BOM DB'},
+    {dept:'경영지원팀',impact:'전사',aiType:'AI 실시간 정합성 검증',criteria:'중복·오류 감지 규칙',internal:['마스터 검증 AI','ERP 정합성 체크'],external:['온톨로지 검증 API'],source:'ERP 마스터 전체 DB'},
+  ],
+  config:[
+    {dept:'IT→인사팀',impact:'전사 임직원',aiType:'SSO 자동 프로비저닝',criteria:'입사 정보 연동 규칙',internal:['HR-ERP SSO'],external:['HR 시스템 API'],source:'인사 DB'},
+    {dept:'IT팀',impact:'각 부서',aiType:'AI 권한 자동 추천',criteria:'직급·부서 역할 규칙',internal:['RBAC AI 엔진'],external:['권한 정책 온톨로지'],source:'기존 권한 이력 DB'},
+    {dept:'IT팀',impact:'전 모듈',aiType:'변경 자동 전파',criteria:'코드 변경 이벤트 규칙',internal:['코드 동기화 엔진'],external:['-'],source:'공통코드 DB'},
+    {dept:'IT팀',impact:'전사 데이터',aiType:'AI 이상 탐지·자동 백업',criteria:'이상 접근 임계값',internal:['백업 스케줄러','이상탐지 AI'],external:['클라우드 백업'],source:'접근 로그·시스템 로그'},
+  ],
+};
+
+const AI_MODULE_ARCH = {
+  sales:{
+    internal:['이메일 파서 봇 (RPA)','OCR 엔진 (내부 서버)','ERP REST API','RPA (Power Automate)','데이터 검증 AI 모듈'],
+    erpCore:['영업관리 모듈','수주 DB','거래처 마스터','품목 마스터'],
+    external:['GPT-4 Vision API','NLP 분류 서비스','MCP 서버 (데이터 조회)','온톨로지 API','Slack / 이메일 API'],
+  },
+  production:{
+    internal:['LSTM 수요예측 모델','ERP BOM API','IoT 게이트웨이','MES 연동 모듈','작업지시 자동화 엔진'],
+    erpCore:['생산관리 모듈','BOM DB','작업지시 DB','생산실적 DB'],
+    external:['AI 예측 API (외부 SaaS)','클라우드 IoT 플랫폼','MCP 서버','디지털 트윈 플랫폼'],
+  },
+  purchase:{
+    internal:['재고 모니터링 AI','ERP MRP 엔진','공급사 평가 AI','RPA (Power Automate)','EDI 커넥터'],
+    erpCore:['구매관리 모듈','발주 DB','공급사 마스터','재고 DB'],
+    external:['공급사 EDI 포털','AI 최적화 API','이메일 / FAX API','MCP 서버'],
+  },
+  quality:{
+    internal:['ERP OQC 모듈','IoT 계측기 API','AI 판정 엔진 (내부)','PDF 자동생성 모듈','기준값 관리 DB'],
+    erpCore:['품질관리 모듈','검사 DB','성적서 DB','출하 연동 API'],
+    external:['AI 비전 검사 API','계측 장비 API','전자서명 API','MCP 서버'],
+  },
+  iqc:{
+    internal:['ERP IQC 모듈','AI 비전 카메라 (내부망)','IoT 계측기 연동','AI 판정 엔진','RPA (Power Automate)'],
+    erpCore:['IQC 관리 모듈','검사 DB','부적합 DB','발주 연동 API'],
+    external:['AI 비전 검사 API (클라우드)','공급사 EDI 포털','이메일 / FAX API','MCP 서버'],
+  },
+  svc:{
+    internal:['AI 챗봇 엔진 (내부 배포)','배정 알고리즘 AI','IoT 원격 진단 모듈','RPA (Power Automate)','ERP SVC 모듈'],
+    erpCore:['SVC 관리 모듈','고객 DB','엔지니어 DB','청구 DB'],
+    external:['Kakao 채널 / 웹훅 API','Google 지도 API','IoT 클라우드 플랫폼','전자세금계산서 API','MCP 서버'],
+  },
+  master:{
+    internal:['국세청 API 연동 모듈','품목 분류 AI','OCR 엔진 (내부)','마스터 검증 AI','BOM 생성 AI'],
+    erpCore:['기준정보 관리 모듈','거래처 마스터','품목 마스터','BOM 마스터 DB'],
+    external:['국세청 OpenAPI','GPT-4 Vision API','CAD 분석 API','온톨로지 검증 API','MCP 서버'],
+  },
+  config:{
+    internal:['HR-ERP SSO 연동 모듈','RBAC AI 엔진','코드 동기화 엔진','백업 스케줄러','이상탐지 AI'],
+    erpCore:['공통환경 모듈','사용자 권한 DB','공통코드 DB','감사 로그 DB'],
+    external:['HR 시스템 API','클라우드 백업 서비스','이상탐지 SaaS 플랫폼','권한 정책 온톨로지'],
+  },
+};
+
+// ══════════════════════════════════════════════
 //  업종별 양산 대표 오픈 케이스 프로파일
 // ══════════════════════════════════════════════
 const CASE_PROFILES = {
@@ -1495,6 +1646,11 @@ function renderTable(d) {
 }
 
 function renderCharts(d) {
+  const trendTitles = {manufacturing:'월별 수주·생산·품질 추이',construction:'월별 기성·원가 추이',distribution:'월별 출고·재고·매출 추이',service:'월별 수주·인력가동 추이',food:'월별 매출·원가·폐기 추이'};
+  const pieTitles = {manufacturing:'ERP 모듈별 AI 자동화 구성비',construction:'현장별 공정 완료율',distribution:'출고 유형별 처리 비율',service:'프로젝트 유형별 수주 구성',food:'매장 유형별 매출 비중'};
+  const el1 = document.getElementById('chart-trend-title'); if (el1) el1.textContent = trendTitles[currentInd] || '월별 핵심 지표';
+  const el2 = document.getElementById('chart-pie-title'); if (el2) el2.textContent = pieTitles[currentInd] || '업무 자동화 구성비';
+
   // Trend chart
   if (trendChart) trendChart.destroy();
   const ctx1 = document.getElementById('chart-trend').getContext('2d');
@@ -1573,7 +1729,7 @@ function renderAISection(moduleKey) {
   const tabsArea = document.getElementById('ai-tabs-area');
   const ai = AI_MODULE_DATA[moduleKey];
   if (!ai) {
-    dashCard.style.display = 'none';
+    dashCard.classList.remove('visible');
     tlCard.style.display = 'none';
     tabsArea.style.display = 'none';
     stopEISSim();
@@ -1581,9 +1737,9 @@ function renderAISection(moduleKey) {
   }
   stopEISSim();
   ['rpa-bar','time','radar','roi'].forEach(k => { if (eisCharts[k]) { eisCharts[k].destroy(); delete eisCharts[k]; } });
-  dashCard.style.display = '';
-  tlCard.style.display = '';
-  tabsArea.style.display = '';
+  dashCard.classList.add('visible');
+  tlCard.style.display = 'block';
+  tabsArea.style.display = 'block';
   document.getElementById('ai-dash-module').textContent = '— ' + (MFG_MODULES[moduleKey] ? MFG_MODULES[moduleKey].title : '');
 
   const tlColors = ['var(--c1)', 'var(--c2)', 'var(--c5)'];
@@ -1620,14 +1776,113 @@ function renderAISection(moduleKey) {
     </div>${connector}`;
   }).join('');
 
-  // 시나리오 탭 콘텐츠
+  // 시나리오 탭 콘텐츠 — 4섹션 로드맵
+  const matrix = AI_MODULE_MATRIX[moduleKey] || [];
+  const arch = AI_MODULE_ARCH[moduleKey];
+  const phaseColors = [
+    {bg:'#eff6ff',border:'#bfdbfe',text:'#1d4ed8'},
+    {bg:'#f0fdf4',border:'#bbf7d0',text:'#065f46'},
+    {bg:'#faf5ff',border:'#ddd6fe',text:'#7c3aed'},
+  ];
   document.getElementById('ai-scenario-wrap').innerHTML = `
-    <div class="scen-cols">
-      <div class="scen-col asis"><h5>🔴 AS-IS — 기존 ERP 방식</h5><ul>${ai.asIs.map(s=>`<li>${s}</li>`).join('')}</ul></div>
-      <div class="scen-col tobe"><h5>🟢 TO-BE — AI 자동화 방식</h5><ul>${ai.toBe.map(s=>`<li>${s}</li>`).join('')}</ul></div>
+    <!-- ① 프로세스 AI 전환 흐름도 -->
+    <div class="scen-section">
+      <div class="scen-label">🔄 프로세스 AI 전환 흐름 (AS-IS → TO-BE)</div>
+      <div class="scen-mini-flow">
+        ${ai.rpaKpis.map((k,i)=>`
+          <div class="scen-flow-step">
+            <div class="scen-flow-box">
+              <div class="scen-flow-name">${k.step}</div>
+              <div class="scen-flow-rpa">${k.rpa}<small>%</small></div>
+              <div class="scen-flow-ai">${k.label}</div>
+              <div class="scen-flow-times">
+                <span class="scen-flow-time asis">${k.asIs}</span>
+                <span style="color:#475569;font-size:11px">→</span>
+                <span class="scen-flow-time tobe">${k.toBe}</span>
+              </div>
+            </div>
+          </div>
+          ${i<ai.rpaKpis.length-1?'<div class="scen-flow-arr">▶</div>':''}
+        `).join('')}
+      </div>
     </div>
-    <div class="scen-tech" style="margin-top:12px">${ai.techs.map(t=>`<span class="tech-tag">${t}</span>`).join('')}</div>
-    <div class="scen-desc" style="margin-top:10px">${ai.desc}</div>
+
+    <!-- ② 단계별 AI 적용 매트릭스 -->
+    <div class="scen-section">
+      <div class="scen-label">📋 단계별 AI 적용 매트릭스 — 메뉴/담당/영향도/통제/기준/내외부솔루션/근거</div>
+      <div style="overflow-x:auto;border-radius:8px;border:1px solid var(--border)">
+        <table class="matrix-table">
+          <thead><tr>
+            <th>업무 단계<br><span style="font-weight:400;color:#475569">RPA율</span></th>
+            <th>담당 부서</th>
+            <th>영향 범위</th>
+            <th>AI 통제 유형</th>
+            <th>기준 / 설정</th>
+            <th>내부 AI 솔루션</th>
+            <th>외부 AI 연동</th>
+            <th>근거 데이터</th>
+          </tr></thead>
+          <tbody>
+            ${matrix.map((m,i)=>{
+              const kpi = ai.rpaKpis[i] || {};
+              return `<tr>
+                <td class="col-step">${kpi.step||''}<br><span style="font-size:9px;background:#d1fae5;color:#065f46;padding:1px 6px;border-radius:8px;font-weight:700">${kpi.rpa||0}% AUTO</span></td>
+                <td class="col-dept">${m.dept}</td>
+                <td style="font-size:10px;color:var(--muted)">${m.impact}</td>
+                <td><span class="mtag ai">${m.aiType}</span></td>
+                <td style="font-size:10px;color:#475569">${m.criteria}</td>
+                <td>${m.internal.map(s=>`<span class="mtag int">${s}</span>`).join('')}</td>
+                <td>${m.external.map(s=>s==='-'?'<span style="color:var(--muted);font-size:10px">내부처리</span>':`<span class="mtag ext">${s}</span>`).join('')}</td>
+                <td><span class="mtag src">${m.source}</span></td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ③ AI 솔루션 연동 아키텍처 -->
+    ${arch ? `
+    <div class="scen-section">
+      <div class="scen-label">🔗 내부/외부 AI 솔루션 연동 아키텍처 (검색·MCP·RPA·API·온톨로지)</div>
+      <div class="arch-grid">
+        <div class="arch-col int-col">
+          <div class="arch-col-title">🏠 내부 AI 솔루션</div>
+          ${arch.internal.map(s=>`<div class="arch-item-row">⚙ ${s}</div>`).join('')}
+        </div>
+        <div class="arch-center-col">
+          <div class="arch-conn">←→</div>
+          <div class="arch-erp-box">
+            <div class="arch-erp-title">ERP 코어</div>
+            ${arch.erpCore.map(s=>`<div class="arch-erp-item">${s}</div>`).join('')}
+          </div>
+          <div class="arch-conn">←→</div>
+        </div>
+        <div class="arch-col ext-col">
+          <div class="arch-col-title">☁️ 외부 AI 서비스</div>
+          ${arch.external.map(s=>`<div class="arch-item-row">☁ ${s}</div>`).join('')}
+        </div>
+      </div>
+    </div>
+    ` : ''}
+
+    <!-- ④ 단계별 구현 로드맵 -->
+    <div class="scen-section">
+      <div class="scen-label">🗓️ 단계별 구현 로드맵</div>
+      <div class="roadmap-grid">
+        ${ai.timeline.map((t,i)=>{
+          const c = phaseColors[i] || phaseColors[0];
+          return `<div class="roadmap-phase" style="background:${c.bg};border-color:${c.border}">
+            <div class="roadmap-phase-num" style="color:${c.text}">${t.phase}</div>
+            <div class="roadmap-phase-title" style="color:${c.text}">${t.label}</div>
+            <div class="roadmap-phase-period" style="color:${c.text}">${t.period}</div>
+            ${t.items.map(item=>`<div class="roadmap-task-row"><div class="roadmap-task-dot" style="background:${c.text}"></div>${item}</div>`).join('')}
+          </div>`;
+        }).join('')}
+      </div>
+      <div class="scen-tech" style="margin-top:14px">${ai.techs.map(t=>`<span class="tech-tag">${t}</span>`).join('')}</div>
+      <div class="scen-desc" style="margin-top:10px">${ai.desc}</div>
+    </div>
   `;
 
   // 현재 탭 유지
