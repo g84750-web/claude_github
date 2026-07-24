@@ -195,17 +195,16 @@ canvas{display:block}
   <div class="logo">🏭 <span>업종별</span> ERP 시뮬레이션 툴</div>
   <nav>
     <a href="/simulation/" class="active">시뮬레이션</a>
-    <a href="/">ERP 양식 에디터</a>
     <a href="/admin/">관리자</a>
   </nav>
 </div>
 
 <!-- INDUSTRY TABS -->
 <div id="industry-bar">
-  <button class="ind-tab active" onclick="selectIndustry('construction',this)">
+  <button class="ind-tab" onclick="selectIndustry('construction',this)">
     <span class="ind-icon">🏗️</span>건설업
   </button>
-  <button class="ind-tab" onclick="selectIndustry('manufacturing',this)">
+  <button class="ind-tab active" onclick="selectIndustry('manufacturing',this)">
     <span class="ind-icon">🏭</span>제조업
   </button>
   <button class="ind-tab" onclick="selectIndustry('distribution',this)">
@@ -999,7 +998,7 @@ const AI_MODULE_DATA = {
   },
 };
 
-let currentInd = 'construction';
+let currentInd = 'manufacturing';
 let currentMfgModule = 'sales';
 let trendChart = null, pieChart = null;
 let simMode = 'query';  // new | query
