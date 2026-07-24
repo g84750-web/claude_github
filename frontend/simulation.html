@@ -320,6 +320,25 @@ canvas{display:block}
 .oqc-progress-bar{height:10px;background:#e2e8f0;border-radius:5px;overflow:hidden;margin:4px 0}
 .oqc-progress-fill{height:100%;background:linear-gradient(90deg,var(--c1),var(--c2));border-radius:5px;transition:width 1s ease}
 
+/* ── 뉴스 티커 ── */
+#news-ticker{display:flex;align-items:center;background:#0f172a;color:#e2e8f0;font-size:11px;overflow:hidden;height:28px;flex-shrink:0}
+.news-ticker-label{background:#2563eb;color:#fff;padding:0 13px;font-size:10px;font-weight:800;letter-spacing:.06em;white-space:nowrap;height:100%;display:flex;align-items:center;flex-shrink:0;gap:5px}
+.news-ticker-wrap{flex:1;overflow:hidden;height:100%;position:relative}
+.news-ticker-inner{position:absolute;white-space:nowrap;animation:news-scroll 80s linear infinite;padding:0 20px;display:flex;align-items:center;height:100%;top:0;gap:0}
+.news-ticker-sep{color:#475569;margin:0 14px}
+@keyframes news-scroll{0%{transform:translateX(100vw)}100%{transform:translateX(-100%)}}
+
+/* ── 케이스 프로파일 리뉴얼 v2 ── */
+.cp-layout{display:grid;grid-template-columns:260px 1fr;gap:16px;align-items:stretch}
+@media(max-width:800px){.cp-layout{grid-template-columns:1fr}}
+.cp-left{display:flex;flex-direction:column;gap:5px;padding-right:16px;border-right:1px solid rgba(0,0,0,.08)}
+@media(max-width:800px){.cp-left{padding-right:0;border-right:none;border-bottom:1px solid rgba(0,0,0,.08);padding-bottom:12px}}
+.cp-right-card{display:flex;flex-direction:column;gap:10px}
+.cp-stat-mini-row{display:flex;gap:6px;flex-wrap:wrap}
+.cp-stat-mini{background:rgba(255,255,255,.85);border-radius:8px;padding:7px 10px;text-align:center;flex:1;min-width:70px;border:1px solid rgba(0,0,0,.07)}
+.cp-ba-inline{display:grid;grid-template-columns:1fr 28px 1fr;gap:8px;align-items:start}
+.cp-comment-bar{font-size:11px;color:#065f46;background:#d1fae5;border-radius:6px;padding:6px 12px;border-left:3px solid #10b981;line-height:1.5}
+
 /* ── EIS 대시보드 ── */
 .eis-header{display:flex;align-items:center;gap:16px;margin-bottom:16px;padding:12px 18px;background:linear-gradient(135deg,#0f172a,#1e3a5f);border-radius:var(--radius);color:#e2e8f0;flex-wrap:wrap}
 .eis-clock{font-size:30px;font-weight:900;color:#60a5fa;font-variant-numeric:tabular-nums;letter-spacing:3px}
@@ -334,7 +353,7 @@ canvas{display:block}
 .eis-kpi .ek-badge.good{background:#d1fae5;color:#065f46}.eis-kpi .ek-badge.warn{background:#fef3c7;color:#92400e}.eis-kpi .ek-badge.danger{background:#fee2e2;color:#991b1b}
 .eis-mid-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px}
 @media(max-width:900px){.eis-mid-grid{grid-template-columns:1fr}}
-.eis-panel{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;min-height:160px}
+.eis-panel{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;min-height:160px;max-height:230px;overflow-y:auto}
 .eis-panel-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:8px}
 .eis-alert-item{display:flex;align-items:flex-start;gap:7px;padding:5px 0;border-bottom:1px solid #f1f5f9;font-size:11px;line-height:1.5}
 .eis-alert-item:last-child{border-bottom:none}
@@ -346,7 +365,7 @@ canvas{display:block}
 .eis-sched-time{font-size:9px;color:var(--muted);font-weight:700;margin-bottom:1px}
 .eis-bottom-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
 @media(max-width:900px){.eis-bottom-grid{grid-template-columns:1fr}}
-.eis-chart-box{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px}
+.eis-chart-box{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px;overflow:hidden}
 .eis-gauge-row{display:flex;flex-direction:column;gap:10px}
 .eis-gauge{display:grid;grid-template-columns:82px 1fr 44px;align-items:center;gap:8px}
 .eis-gauge-label{font-size:11px;color:var(--text);font-weight:600}
@@ -386,6 +405,34 @@ canvas{display:block}
   <button class="ind-tab" onclick="selectIndustry('food',this)">
     <span class="ind-icon">🍽️</span>식음료/외식
   </button>
+</div>
+
+<!-- NEWS TICKER -->
+<div id="news-ticker">
+  <div class="news-ticker-label">📡 AI·산업 뉴스</div>
+  <div class="news-ticker-wrap">
+    <div class="news-ticker-inner">
+      🤖 <strong>글로벌</strong>&nbsp;OpenAI, GPT-5 기반 엔터프라이즈 ERP 자동화 솔루션 발표 — 수주처리 87% 자동화 달성
+      <span class="news-ticker-sep">|</span>
+      🏭 <strong>제조</strong>&nbsp;현대차·삼성전자 AI 공장 도입 가속 — 스마트팩토리 3년 내 전 공장 100% 확대
+      <span class="news-ticker-sep">|</span>
+      📊 <strong>ERP</strong>&nbsp;더존비즈온, AI ERP 플랫폼 iCUBE AI+ 출시 — 자동분개·불량예측·납기AI 탑재
+      <span class="news-ticker-sep">|</span>
+      🌐 <strong>정책</strong>&nbsp;산업통상자원부, 제조 중소기업 AI·ERP 도입 지원금 최대 3억원 확대
+      <span class="news-ticker-sep">|</span>
+      📈 <strong>시장</strong>&nbsp;글로벌 AI ERP 시장 2028년 780억 달러 전망 — 연평균 성장률 18.4% (IDC 2025)
+      <span class="news-ticker-sep">|</span>
+      🔍 <strong>AI</strong>&nbsp;MCP(Model Context Protocol) 기반 ERP 실시간 데이터 조회 자동화 상용화 본격화
+      <span class="news-ticker-sep">|</span>
+      🏗️ <strong>건설</strong>&nbsp;건설업 스마트건설 BIM+AI 통합관리 의무화 2026년 도입 — 현장 안전·공정 자동보고
+      <span class="news-ticker-sep">|</span>
+      🚚 <strong>물류</strong>&nbsp;CJ대한통운·한진 AI 수요예측 WMS 전면 도입 — 오피킹률 98.7%, 반품 40% 감소
+      <span class="news-ticker-sep">|</span>
+      🍽️ <strong>식음료</strong>&nbsp;프랜차이즈 본사-매장 POS·ERP AI 실시간 연동 의무화 — 식품안전청 고시
+      <span class="news-ticker-sep">|</span>
+      💡 <strong>트렌드</strong>&nbsp;RPA+AI 결합 Intelligent Automation, 국내 대기업 도입률 64% 돌파 (한국IDC)
+    </div>
+  </div>
 </div>
 
 <main id="main-content">
@@ -1496,43 +1543,49 @@ function renderCaseProfile() {
   const cfg = CASE_PROFILES[currentInd];
   if (!cfg) { el.innerHTML = ''; return; }
   const c = cfg.color || '#2563eb';
-  const bid = 'cp-ba-' + currentInd;
+  const comments = {
+    manufacturing:'💡 AI·ERP 전환 후 수주자동화율 94%, 납기준수 96.4%, 불량률 0.8% 달성 — 연간 원가 2.3억 절감',
+    construction:'💡 BIM+ERP 통합 이후 공정 정확도 98.2%, 원가집계 5일→즉시, 협력사 오정산 제로화',
+    distribution:'💡 WMS-ERP 연동 후 오피킹률 0.3%, 재고정확도 ±0.3%, 당일 자동수금 정산 달성',
+    service:'💡 프로젝트 원가·M/M 실시간 집계로 수익성 23% 향상, 전자세금계산서 오류율 0%',
+    food:'💡 POS-ERP 연동 자동발주·원가관리 후 식재료 로스율 8%→2.1%, 매장당 월 190만원 절감',
+  };
   el.innerHTML = `
     <div class="cp-new" style="background:linear-gradient(135deg,${c}12,${c}05);border-color:${c}35">
-      <div class="cp-header-row">
-        <span class="cp-name-badge" style="color:${c}">${cfg.company}</span>
-        <span class="cp-live-chip" style="background:${c}">${cfg.live}</span>
-      </div>
-      <div class="cp-meta">${cfg.type}</div>
-      <div class="cp-meta">${cfg.scale}</div>
-      <div class="cp-erp-line" style="color:${c}">⚙️ ${cfg.erp}</div>
-      <div class="cp-body-grid">
-        <div class="cp-stats-row">
-          ${cfg.stats.map(s=>`
-            <div class="cp-stat-card" style="border-color:${c}20">
-              <div class="cp-stat-icon">${s.i}</div>
-              <div class="cp-stat-val" style="color:${c}">${s.v}</div>
-              <div class="cp-stat-lbl">${s.l}</div>
-            </div>
-          `).join('')}
+      <div class="cp-layout">
+        <div class="cp-left">
+          <div class="cp-header-row">
+            <span class="cp-name-badge" style="color:${c}">${cfg.company}</span>
+            <span class="cp-live-chip" style="background:${c}">${cfg.live}</span>
+          </div>
+          <div class="cp-meta" style="margin-top:4px">${cfg.type}</div>
+          <div class="cp-meta">${cfg.scale}</div>
+          <div class="cp-erp-line" style="color:${c};margin-top:6px">⚙️ ${cfg.erp}</div>
         </div>
-        <button class="cp-ba-btn" style="color:${c};border-color:${c}50" onclick="toggleCpBA('${bid}',this)">
-          📊 도입 전/후 비교 ▾
-        </button>
-      </div>
-      <div class="cp-ba-panel" id="${bid}">
-        <div class="ba-grid">
-          <div class="ba-col before">
-            <h6>❌ 도입 전</h6>
-            <ul>${cfg.before.map(b=>`<li>${b}</li>`).join('')}</ul>
+        <div class="cp-right-card">
+          <div class="cp-stat-mini-row">
+            ${cfg.stats.map(s=>`
+              <div class="cp-stat-mini">
+                <div style="font-size:14px">${s.i}</div>
+                <div style="font-size:15px;font-weight:800;color:${c};line-height:1.2">${s.v}</div>
+                <div style="font-size:9px;color:var(--muted);margin-top:2px">${s.l}</div>
+              </div>
+            `).join('')}
           </div>
-          <div class="ba-arrows-col">
-            ${cfg.before.map(()=>`<div class="ba-arrow">→</div>`).join('')}
+          <div class="cp-ba-inline">
+            <div class="ba-col before">
+              <h6>❌ 도입 전</h6>
+              <ul>${cfg.before.map(b=>`<li>${b}</li>`).join('')}</ul>
+            </div>
+            <div class="ba-arrows-col" style="padding-top:22px">
+              ${cfg.before.map(()=>`<div class="ba-arrow">→</div>`).join('')}
+            </div>
+            <div class="ba-col after">
+              <h6>✅ 도입 후</h6>
+              <ul>${cfg.after.map(a=>`<li>${a}</li>`).join('')}</ul>
+            </div>
           </div>
-          <div class="ba-col after">
-            <h6>✅ 도입 후</h6>
-            <ul>${cfg.after.map(a=>`<li>${a}</li>`).join('')}</ul>
-          </div>
+          <div class="cp-comment-bar">${comments[currentInd] || comments.manufacturing}</div>
         </div>
       </div>
     </div>
@@ -2058,6 +2111,7 @@ let eisSimMinutes = 9 * 60;
 let eisCharts = {};
 let eisTrendPeriod = 'month';
 let eisTodoState = {};
+let eisLastUpdate = '';
 
 function setAiTab(tab) {
   currentAiTab = tab;
@@ -2253,11 +2307,13 @@ function startEISSim() {
 }
 
 function eisRefresh() {
-  eisSimMinutes += Math.round(Math.random()*30+15);
-  if (eisSimMinutes > 18*60) eisSimMinutes = 9*60;
+  const now = new Date();
+  eisSimMinutes = now.getHours()*60 + now.getMinutes();
+  if (eisSimMinutes < 9*60) eisSimMinutes = 9*60;
+  if (eisSimMinutes > 18*60) eisSimMinutes = 18*60;
+  const ts = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+  eisLastUpdate = ts;
   renderEISDashboard();
-  const btn = document.querySelector('.eis-refresh-btn');
-  if (btn) { btn.textContent = '🔄 업데이트 중...'; setTimeout(()=>{btn.textContent='🔄 데이터 업데이트';},800); }
 }
 
 function stopEISSim() {
@@ -2273,10 +2329,18 @@ function setEisTrend(period) {
 
 function toggleEisTodo(id) {
   eisTodoState[id] = !eisTodoState[id];
+  const done = eisTodoState[id];
   const cb = document.getElementById('todo-cb-' + id);
-  if (cb) { cb.classList.toggle('done', eisTodoState[id]); cb.textContent = eisTodoState[id] ? '✓' : ''; }
+  if (cb) { cb.classList.toggle('done', done); cb.textContent = done ? '✓' : ''; }
   const label = document.getElementById('todo-label-' + id);
-  if (label) label.style.cssText = eisTodoState[id] ? 'text-decoration:line-through;color:var(--muted)' : '';
+  if (label) {
+    const orig = label.dataset.text || label.textContent.replace(/완료 ✅$/, '').trim();
+    label.dataset.text = orig;
+    label.style.cssText = done ? 'color:var(--muted)' : '';
+    label.innerHTML = done
+      ? orig + ' <span style="color:#10b981;font-size:10px;font-weight:800;margin-left:4px">완료 ✅</span>'
+      : orig;
+  }
 }
 
 function renderEISDashboard() {
@@ -2295,18 +2359,19 @@ function renderEISDashboard() {
   el.innerHTML = `
     <div class="eis-header">
       <div>
-        <div class="eis-clock-label">시뮬레이션 시각 (100배속)</div>
+        <div class="eis-clock-label">현재 업무 기준 시각</div>
         <div class="eis-clock">${hh}:${mm}</div>
       </div>
       <div style="flex:1;padding:0 16px;min-width:140px">
-        <div style="font-size:9px;color:#64748b;font-weight:700;margin-bottom:4px">업무 진행률 (09:00→18:00)</div>
+        <div style="font-size:9px;color:#64748b;font-weight:700;margin-bottom:4px">일과 진행률 (09:00→18:00)</div>
         <div style="height:7px;background:#1e3a5f;border-radius:4px;overflow:hidden">
           <div style="width:${snap.progress}%;height:100%;background:linear-gradient(90deg,#10b981,#2563eb);transition:width .8s ease"></div>
         </div>
         <div style="font-size:9px;color:#475569;margin-top:3px">${snap.progress}% 경과</div>
       </div>
       <div style="text-align:right">
-        <button class="eis-refresh-btn" onclick="eisRefresh()" style="background:#10b98120;border:1px solid #10b98140;color:#34d399;padding:4px 14px;border-radius:12px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">🔄 데이터 업데이트</button>
+        <button class="eis-refresh-btn" onclick="eisRefresh()" style="background:#10b98120;border:1px solid #10b98140;color:#34d399;padding:5px 16px;border-radius:12px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">🔄 업데이트</button>
+        ${eisLastUpdate ? `<div style="font-size:9px;color:#475569;margin-top:4px;text-align:right">⏱ ${eisLastUpdate} 기준</div>` : ''}
       </div>
     </div>
 
@@ -2331,11 +2396,15 @@ function renderEISDashboard() {
       </div>
       <div class="eis-panel">
         <div class="eis-panel-title">✅ 오늘 할일 (TO-DO)</div>
-        ${todos.map(t=>`
-          <div class="eis-todo-item" onclick="toggleEisTodo('${t.id}')">
-            <div class="eis-todo-cb ${eisTodoState[t.id]?'done':''}" id="todo-cb-${t.id}">${eisTodoState[t.id]?'✓':''}</div>
-            <span id="todo-label-${t.id}" style="${eisTodoState[t.id]?'text-decoration:line-through;color:var(--muted)':''}">${t.text}</span>
-          </div>`).join('')}
+        ${todos.map(t=>{
+          const done = eisTodoState[t.id];
+          return `<div class="eis-todo-item" onclick="toggleEisTodo('${t.id}')">
+            <div class="eis-todo-cb ${done?'done':''}" id="todo-cb-${t.id}">${done?'✓':''}</div>
+            <span id="todo-label-${t.id}" data-text="${t.text.replace(/"/g,'&quot;')}" style="${done?'color:var(--muted)':''}">
+              ${t.text}${done?' <span style="color:#10b981;font-size:10px;font-weight:800;margin-left:4px">완료 ✅</span>':''}
+            </span>
+          </div>`;
+        }).join('')}
       </div>
       <div class="eis-panel">
         <div class="eis-panel-title">📅 오늘 일정</div>
@@ -2382,7 +2451,7 @@ function renderEISDashboard() {
             `<button class="eis-trend-btn ${eisTrendPeriod===p?'active':''}" data-p="${p}" onclick="setEisTrend('${p}')">${l}</button>`).join('')}
         </div>
       </div>
-      <canvas id="chart-eis-trend" style="width:100%!important;height:190px!important"></canvas>
+      <canvas id="chart-eis-trend" style="width:100%!important;height:160px!important;max-height:160px"></canvas>
     </div>
   `;
 
