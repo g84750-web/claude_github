@@ -48,14 +48,22 @@ main{max-width:1400px;margin:0 auto;padding:24px}
 .card-title{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:16px;display:flex;align-items:center;gap:6px}
 
 /* KPI ROW */
-#kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:20px}
-.kpi-card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow);padding:16px 18px;border-top:4px solid var(--c1);cursor:default;transition:.15s}
+#kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:20px}
+@media(max-width:1100px){#kpi-row{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:700px){#kpi-row{grid-template-columns:repeat(2,1fr)}}
+.kpi-card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow);padding:14px 16px;border-top:4px solid var(--c1);cursor:default;transition:.15s;display:flex;flex-direction:column}
 .kpi-card:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,.1)}
-.kpi-label{font-size:11px;color:var(--muted);font-weight:600;margin-bottom:6px}
-.kpi-value{font-size:26px;font-weight:800;color:var(--text)}
-.kpi-unit{font-size:11px;color:var(--muted);margin-top:2px}
-.kpi-change{font-size:11px;margin-top:4px}
+.kpi-label{font-size:10px;color:var(--muted);font-weight:700;margin-bottom:5px;letter-spacing:.02em;text-transform:uppercase}
+.kpi-value{font-size:26px;font-weight:900;line-height:1}
+.kpi-unit{font-size:11px;color:var(--muted);margin-top:3px}
+.kpi-change{font-size:11px;margin-top:4px;font-weight:700}
 .kpi-change.up{color:var(--c2)} .kpi-change.down{color:var(--c4)}
+.kpi-sub-sep{border:none;border-top:1px dashed var(--border);margin:8px 0 6px;flex-shrink:0}
+.kpi-sub-row{display:flex;flex-direction:column;gap:3px;margin-top:auto}
+.kpi-sub-item{display:flex;justify-content:space-between;align-items:center;font-size:10px}
+.kpi-sub-key{color:var(--muted);font-weight:500}
+.kpi-sub-val{font-weight:800;color:var(--text);font-size:10px}
+.kpi-sub-grid{display:grid;grid-template-columns:1fr 1fr;gap:2px 8px}
 
 /* FLOW CHART */
 #flow-wrap{overflow-x:auto;padding:8px 0}
@@ -673,11 +681,47 @@ const INDUSTRIES = {
   manufacturing: {
     name: '제조업 (냉동공조)', icon: '🏭',
     kpis: [
-      {label:'이번달 수주액', value:'72', unit:'억원', change:'+8.3%', up:true, color:'var(--c1)'},
-      {label:'생산 가동률', value:'87.3', unit:'%', change:'+2.1%p', up:true, color:'var(--c2)'},
-      {label:'납기준수율', value:'96.4', unit:'%', change:'+1.2%p', up:true, color:'var(--c5)'},
-      {label:'완제품 출하 대기', value:'12', unit:'건', change:'-3건', up:true, color:'var(--c4)'},
-      {label:'안전재고 달성률', value:'94.2', unit:'%', change:'+1.8%p', up:true, color:'var(--c3)'},
+      {
+        label:'이번달 수주액', value:'72', unit:'억원', change:'+8.3%', up:true, color:'#2563eb',
+        subs:[
+          {k:'수주잔고',v:'124억원',g:true},
+          {k:'진행수주',v:'18건'},
+          {k:'이번달 목표',v:'80억원'},
+        ]
+      },
+      {
+        label:'생산공정율 (지시→실적)', value:'93.7', unit:'%', change:'+2.1%p', up:true, color:'#10b981',
+        subs:[
+          {k:'생산지시',v:'28건'},
+          {k:'완 료',v:'24건',g:true},
+          {k:'진행중',v:'4건'},
+          {k:'지 연',v:'0건'},
+        ]
+      },
+      {
+        label:'납기·채권 현황', value:'96.4', unit:'% 납기준수', change:'+1.2%p', up:true, color:'#f59e0b',
+        subs:[
+          {k:'납기지연',v:'1건·2.8억',warn:true},
+          {k:'단기채권',v:'4.2억'},
+          {k:'장기채권',v:'0.8억',warn:true},
+        ]
+      },
+      {
+        label:'완제품 출하 대기', value:'12', unit:'건', change:'-3건', up:true, color:'#8b5cf6',
+        subs:[
+          {k:'당일예정',v:'5건',g:true},
+          {k:'내일예정',v:'7건'},
+          {k:'출하승인 대기',v:'3건',warn:true},
+        ]
+      },
+      {
+        label:'안전재고 달성률', value:'94.2', unit:'%', change:'+1.8%p', up:true, color:'#06b6d4',
+        subs:[
+          {k:'정상품목',v:'89종',g:true},
+          {k:'부족품목',v:'2종',warn:true},
+          {k:'과다재고',v:'3종'},
+        ]
+      },
     ],
     steps: ['수주등록','생산계획','생산지시','자재출고','생산실적','품질검사','출하처리','매출마감'],
     flow: [
@@ -1688,14 +1732,26 @@ function toggleCpBA(id, btn) {
 
 function renderKPIs(d) {
   const row = document.getElementById('kpi-row');
-  row.innerHTML = d.kpis.map(k => `
-    <div class="kpi-card" style="border-top-color:${k.color}">
-      <div class="kpi-label">${k.label}</div>
-      <div class="kpi-value">${k.value}</div>
-      <div class="kpi-unit">${k.unit}</div>
-      <div class="kpi-change ${k.up?'up':'down'}">${k.up?'▲':'▼'} ${k.change}</div>
-    </div>
-  `).join('');
+  row.innerHTML = d.kpis.map(k => {
+    const hasSubs = k.subs && k.subs.length;
+    const subHtml = hasSubs ? `
+      <hr class="kpi-sub-sep">
+      <div class="kpi-sub-row">
+        ${k.subs.map(s=>`
+          <div class="kpi-sub-item">
+            <span class="kpi-sub-key">${s.k}</span>
+            <span class="kpi-sub-val" style="${s.warn?'color:#ef4444':s.g?'color:#10b981':''}">${s.v}</span>
+          </div>`).join('')}
+      </div>` : '';
+    return `
+      <div class="kpi-card" style="border-top-color:${k.color}">
+        <div class="kpi-label" style="color:${k.color}aa">${k.label}</div>
+        <div class="kpi-value" style="color:${k.color}">${k.value}</div>
+        <div class="kpi-unit">${k.unit}</div>
+        <div class="kpi-change ${k.up?'up':'down'}">${k.up?'▲':'▼'} ${k.change}</div>
+        ${subHtml}
+      </div>`;
+  }).join('');
 }
 
 function renderSteps(d) {
