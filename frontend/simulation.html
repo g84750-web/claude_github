@@ -287,6 +287,9 @@ canvas{display:block}
 </div>
 
 <main id="main-content">
+  <!-- 업종별 오픈 케이스 프로파일 -->
+  <div id="case-profile-banner" style="margin-bottom:20px"></div>
+
   <!-- KPI ROW -->
   <div id="kpi-row"></div>
 
@@ -1077,6 +1080,178 @@ const AI_MODULE_DATA = {
   },
 };
 
+// ══════════════════════════════════════════════
+//  업종별 양산 대표 오픈 케이스 프로파일
+// ══════════════════════════════════════════════
+const CASE_PROFILES = {
+  construction: {
+    company:'㈜한국종합건설', type:'종합건설업 (주택·상업·토목·인테리어)',
+    scale:'연매출 5,200억 · 임직원 1,850명 · 수행현장 23개 · 협력사 187개사',
+    erp:'더존 Smart A (건설·분양 특화 모듈)', live:'2022년 3월 ERP 오픈', color:'#2563eb',
+    stats:[{l:'수주잔고',v:'8,240억',i:'📋'},{l:'진행현장',v:'23개',i:'🏗️'},{l:'1일발주',v:'47건',i:'📄'},{l:'원가집계',v:'실시간',i:'⚡'}],
+    before:['엑셀 공정일보 수작업 2시간/일','원가집계 5영업일 소요','협력사 정산 오류율 3.2%','수기발주서 분실 연 12건'],
+    after:['ERP 공정률 실시간 등록 15분','원가 즉시 집계·비교 분석','자동정산 오류율 0.1% 이하','전자발주 100% 전환·분실 Zero'],
+    eisTiles:(p,rnd)=>[
+      {label:'이달 기성청구',val:Math.round(362+p*88+rnd(15))+'억',unit:'',sub:`목표 450억 · 진도 ${Math.round(p*88)}%`,c:'#2563eb',badge:p>0.6?'good':'warn',bl:p>0.6?'정상':'주의'},
+      {label:'진행현장 공정률',val:Math.round(68.5+p*4+rnd(2))+'%',unit:'',sub:'23개 현장 평균',c:'#10b981',badge:'good',bl:'순조'},
+      {label:'원가율(이달)',val:Math.round((82.3+rnd(1))*10)/10+'%',unit:'',sub:'목표 81% 이하',c:'#f59e0b',badge:'warn',bl:'주의'},
+      {label:'자재발주 잔액',val:Math.round(128-p*30+rnd(5))+'억',unit:'',sub:`미납 ${Math.round(12-p*8+1)}건`,c:'#8b5cf6',badge:'good',bl:'양호'},
+      {label:'안전사고',val:'0건',unit:'',sub:'누적 무재해 382일',c:'#10b981',badge:'good',bl:'우수'},
+      {label:'협력사 미결',val:Math.round(8-p*3)+'건',unit:'',sub:'정산 대기',c:'#0891b2',badge:p>0.5?'good':'warn',bl:p>0.5?'정상':'처리필요'},
+    ],
+    eisGauges:(p,rnd)=>[
+      {label:'원가율',val:Math.round((82.3+rnd(1))*10)/10,max:100,budget:81,c:'#ef4444'},
+      {label:'공정준수율',val:Math.round(94.2+rnd(2)),max:100,budget:90,c:'#10b981'},
+      {label:'하자율',val:Math.round((0.8+rnd(0.2))*10)/10,max:5,budget:1.5,c:'#f59e0b'},
+      {label:'기성청구율',val:Math.round(p*88),max:100,budget:Math.round(p*90),c:'#2563eb'},
+    ],
+    salesMonths:['1월','2월','3월','4월','5월','6월','7월'],
+    salesPlan:[380,410,420,440,450,470,450],salesActual:[372,408,425,438,445,462,0],
+    salesLabel:'기성청구액(억원)',
+    todos:(min)=>[
+      {id:'c1',text:'공정일보 23개 현장 확인',auto:min>600},
+      {id:'c2',text:'자재발주 승인 (12건)',auto:min>660},
+      {id:'c3',text:'협력사 기성청구 검토',auto:false},
+      {id:'c4',text:'현장 안전점검 결과 등록',auto:min>780},
+      {id:'c5',text:'월간 원가보고서 제출',auto:min>960},
+    ],
+    sched:[{time:'09:00',title:'현장소장 주간 공정회의',place:'본사 대회의실'},{time:'11:30',title:'강남현장 원가검토',place:'현장사무소'},{time:'14:00',title:'협력사 정산협의',place:'협력사동'},　{time:'16:30',title:'안전관리 일일보고',place:'안전팀'}],
+  },
+  manufacturing: {
+    company:'㈜에이스냉동공조', type:'냉동공조 제조업 (항온항습기·에어컨·냉동기)',
+    scale:'연매출 850억 · 임직원 280명 · 협력사 45개사 · 제품 120종',
+    erp:'더존 iCUBE ERP (영업·생산·구매·품질·SVC 8모듈)', live:'2013년 더존 ERP 오픈 / 2025년 AI 확장',color:'#10b981',
+    stats:[{l:'월 수주',v:'72억원',i:'🧾'},{l:'가동률',v:'87.3%',i:'🏭'},{l:'납기준수',v:'96.4%',i:'✅'},{l:'불량률OQC',v:'0.8%',i:'🔍'}],
+    before:['수주서 수작업 입력 2시간/건','BOM 전개 엑셀 수작업 4시간','불량 발생 사후 파악 1~2일','SVC 접수 전화·팩스 수기'],
+    after:['OCR AI 수주 자동 등록 5분','ERP BOM 자동 전개 5분','실시간 불량 알림·즉시 조치','SVC 모바일 접수·이력조회 자동'],
+    eisTiles:(p,rnd)=>[
+      {label:'영업 목표달성',val:Math.round(p*87+rnd(5))+'%',unit:'',sub:`목표 ₩500M · 진도 ${Math.round(p*100)}%`,c:'#2563eb',badge:p>0.7?'good':'warn',bl:p>0.7?'달성':'부진'},
+      {label:'설비 가동률',val:Math.round(88+rnd(6))+'%',unit:'',sub:`생산 ${Math.round(p*185+rnd(8))}/200건 완료`,c:'#10b981',badge:Math.round(88+rnd(6))>=85?'good':'warn',bl:'정상'},
+      {label:'불량률(OQC)',val:Math.round((1.8+rnd(0.5))*10)/10+'%',unit:'',sub:'기준치 2.0% 이하',c:'#f59e0b',badge:'good',bl:'정상'},
+      {label:'자금 잔액',val:Math.round(1850+p*290+rnd(35))+'M',unit:'',sub:'전일比 +'+Math.round(p*290)+'M',c:'#8b5cf6',badge:'good',bl:'양호'},
+      {label:'재료비율',val:Math.round((38.5+rnd(1.5))*10)/10+'%',unit:'',sub:'예산 38.0%',c:'#0891b2',badge:'good',bl:'정상'},
+      {label:'영업이익(예측)',val:Math.round((12.8+rnd(1.2))*10)/10+'%',unit:'',sub:'AI 실시간 예측',c:'#7c3aed',badge:'good',bl:'양호'},
+    ],
+    eisGauges:(p,rnd)=>[
+      {label:'재료비율',val:Math.round((38.5+rnd(1.5))*10)/10,max:50,budget:38,c:'#ef4444'},
+      {label:'인건비율',val:Math.round((22.3+rnd(1))*10)/10,max:35,budget:22,c:'#f59e0b'},
+      {label:'영업이익율',val:Math.round((12.8+rnd(1.2))*10)/10,max:25,budget:12,c:'#10b981'},
+      {label:'설비가동률',val:Math.round(88+rnd(6)),max:100,budget:85,c:'#2563eb'},
+      {label:'목표달성율',val:Math.round(p*87+rnd(5)),max:100,budget:Math.round(p*90),c:'#8b5cf6'},
+    ],
+    salesMonths:['1월','2월','3월','4월','5월','6월','7월'],
+    salesPlan:[420,450,480,500,520,510,500],salesActual:[412,449,493,487,509,516,0],
+    salesLabel:'수주액(백만원)',
+    todos:(min)=>[
+      {id:'m1',text:'오전 수주 현황 검토 (10건)',auto:min>600},
+      {id:'m2',text:'생산지시서 AI 자동 승인 확인',auto:min>660},
+      {id:'m3',text:'협력사 발주서 EDI 확인',auto:false},
+      {id:'m4',text:'OQC 불량 보고서 확인',auto:min>780},
+      {id:'m5',text:'영업 실적 보고 (16:00)',auto:min>960},
+    ],
+    sched:[{time:'09:30',title:'영업팀 주간 수주 회의',place:'대회의실'},{time:'11:00',title:'생산부 공정 점검',place:'제조1동'},{time:'14:00',title:'품질 월간 리뷰',place:'품질실'},{time:'16:00',title:'경영진 실적 보고',place:'임원실'}],
+  },
+  distribution: {
+    company:'㈜신선식자재유통', type:'식자재 도매업 (B2B 전문 · 전국 배송)',
+    scale:'연매출 1,200억 · 임직원 420명 · 물류센터 5개소 · 거래처 3,800개사',
+    erp:'더존 Smart A 유통 특화 (WMS·TMS 연동)', live:'2021년 6월 ERP 오픈', color:'#f59e0b',
+    stats:[{l:'일출고건수',v:'3,850건',i:'📦'},{l:'재고정확도',v:'98.7%',i:'📊'},{l:'주문충족율',v:'97.3%',i:'✅'},{l:'반품율',v:'1.2%',i:'🔄'}],
+    before:['수기 입고장 작성 후 ERP 재입력','재고실사 주1회 8시간 소요','주문 오피킹률 2.8%','수금정산 T+3일'],
+    after:['바코드 스캔 즉시 입고 처리','실시간 재고 모니터링 (±0.3%)','오피킹률 0.3% (WMS 연동)','당일 자동 수금 정산'],
+    eisTiles:(p,rnd)=>[
+      {label:'오늘 출고건수',val:Math.round(p*3850+rnd(80))+'건',unit:'',sub:`목표 3,850건 · ${Math.round(p*100)}% 진행`,c:'#2563eb',badge:p>0.5?'good':'warn',bl:p>0.5?'진행중':'시작'},
+      {label:'재고 정확도',val:Math.round((98.7+rnd(0.3))*10)/10+'%',unit:'',sub:'실시간 WMS 기준',c:'#10b981',badge:'good',bl:'정상'},
+      {label:'냉장 온도(평균)',val:Math.round((2.8+rnd(0.5))*10)/10+'°C',unit:'',sub:'기준 0~5°C 이내',c:'#0891b2',badge:'good',bl:'정상'},
+      {label:'오늘 매출',val:Math.round(p*482+rnd(20))+'백만',unit:'',sub:'목표 482백만/일',c:'#8b5cf6',badge:p>0.7?'good':'warn',bl:p>0.7?'달성':'진행'},
+      {label:'반품 대기',val:Math.round(12-p*8+rnd(3))+'건',unit:'',sub:'처리 대기',c:'#f59e0b',badge:'warn',bl:'처리필요'},
+      {label:'미수금',val:Math.round(42+rnd(5))+'백만',unit:'',sub:'T+3일 기준',c:'#ef4444',badge:'warn',bl:'확인요'},
+    ],
+    eisGauges:(p,rnd)=>[
+      {label:'주문충족율',val:Math.round(97.3+rnd(1.0)),max:100,budget:97,c:'#10b981'},
+      {label:'오피킹률(역)',val:Math.round((0.3+rnd(0.1))*10)/10,max:3,budget:0.5,c:'#f59e0b'},
+      {label:'물류비용율',val:Math.round((6.8+rnd(0.3))*10)/10,max:12,budget:7,c:'#2563eb'},
+      {label:'재고회전율',val:Math.round((8.2+rnd(0.3))*10)/10,max:15,budget:8,c:'#8b5cf6'},
+    ],
+    salesMonths:['1월','2월','3월','4월','5월','6월','7월'],
+    salesPlan:[980,1020,1050,1080,1100,1120,1100],salesActual:[975,1018,1055,1072,1098,1115,0],
+    salesLabel:'매출(백만원)',
+    todos:(min)=>[
+      {id:'d1',text:'오전 입고 검수 확인 (85건)',auto:min>600},
+      {id:'d2',text:'냉장온도 이상 구역 점검',auto:min>640},
+      {id:'d3',text:'반품 처리 승인 (12건)',auto:false},
+      {id:'d4',text:'오후 출고 피킹리스트 확인',auto:min>780},
+      {id:'d5',text:'미수금 채권 정리 보고',auto:min>960},
+    ],
+    sched:[{time:'07:00',title:'물류센터 오전 배송 출발',place:'서울 물류센터'},{time:'10:00',title:'공급사 단가협의',place:'회의실A'},{time:'14:00',title:'재고실사 (냉동구역)',place:'물류센터 B동'},{time:'17:00',title:'일일 출고 마감 집계',place:'물류팀'}],
+  },
+  service: {
+    company:'㈜코리아IT서비스', type:'IT서비스·SI 전문기업 (ERP·MES·SCM 구축)',
+    scale:'연매출 480억 · 기술인력 180명 · 동시수행 34건 · 고객사 280개',
+    erp:'더존 Business On (프로젝트 원가·인력관리)', live:'2023년 1월 ERP 오픈', color:'#8b5cf6',
+    stats:[{l:'수행프로젝트',v:'34건',i:'💼'},{l:'인력가동률',v:'87.3%',i:'👥'},{l:'수익률',v:'18.5%',i:'📈'},{l:'미수금',v:'4.2억',i:'💰'}],
+    before:['엑셀 M/M 집계 3일 소요','프로젝트별 원가 파악 불가','인력 가동현황 수작업 보고','세금계산서 발행 오류 빈번'],
+    after:['일일 M/M 자동 집계·대시보드','실시간 프로젝트 수익률','인력 가동률 실시간 모니터링','전자세금계산서 자동 발행'],
+    eisTiles:(p,rnd)=>[
+      {label:'이달 수주액',val:Math.round(284+p*45+rnd(8))+'백만',unit:'',sub:`목표 320백만 · ${Math.round((284+p*45)/320*100)}%달성`,c:'#2563eb',badge:p>0.6?'good':'warn',bl:p>0.6?'달성':'진행'},
+      {label:'인력 가동률',val:Math.round(87.3+rnd(3))+'%',unit:'',sub:'목표 85% 이상',c:'#10b981',badge:'good',bl:'달성'},
+      {label:'프로젝트 수익률',val:Math.round((18.5+rnd(2))*10)/10+'%',unit:'',sub:'목표 17% 이상',c:'#8b5cf6',badge:'good',bl:'양호'},
+      {label:'납기준수율',val:Math.round(92.8+rnd(2))+'%',unit:'',sub:'34건 기준',c:'#f59e0b',badge:'good',bl:'정상'},
+      {label:'미수금',val:Math.round(420-p*80+rnd(20))+'백만',unit:'',sub:'목표 400백만 이하',c:'#ef4444',badge:p>0.5?'good':'warn',bl:p>0.5?'감소중':'관리'},
+      {label:'예산소진율',val:Math.round(p*73+rnd(5))+'%',unit:'',sub:'진도율 대비',c:'#0891b2',badge:'good',bl:'정상'},
+    ],
+    eisGauges:(p,rnd)=>[
+      {label:'프로젝트수익률',val:Math.round((18.5+rnd(2))*10)/10,max:30,budget:17,c:'#10b981'},
+      {label:'인력가동률',val:Math.round(87.3+rnd(3)),max:100,budget:85,c:'#2563eb'},
+      {label:'납기준수율',val:Math.round(92.8+rnd(2)),max:100,budget:90,c:'#8b5cf6'},
+      {label:'미수금율',val:Math.round((8.75-p*1.5+rnd(0.5))*10)/10,max:20,budget:8,c:'#f59e0b'},
+    ],
+    salesMonths:['1월','2월','3월','4월','5월','6월','7월'],
+    salesPlan:[220,240,260,280,300,310,320],salesActual:[218,242,258,275,298,308,0],
+    salesLabel:'수주액(백만원)',
+    todos:(min)=>[
+      {id:'s1',text:'일일 M/M 투입 집계 확인',auto:min>600},
+      {id:'s2',text:'A사 ERP 검수 요청 처리',auto:min>680},
+      {id:'s3',text:'세금계산서 발행 (3건)',auto:false},
+      {id:'s4',text:'인력 가동률 일일 보고',auto:min>800},
+      {id:'s5',text:'C사 MES 범위조정 협의',auto:min>960},
+    ],
+    sched:[{time:'09:00',title:'주간 프로젝트 현황 공유',place:'PMO'},{time:'11:00',title:'A사 ERP 검수 회의',place:'고객사'},{time:'14:30',title:'신규 제안서 내부 리뷰',place:'영업팀'},{time:'16:00',title:'PM 주간 원가 보고',place:'대표실'}],
+  },
+  food: {
+    company:'㈜맛있는외식', type:'외식 프랜차이즈 (직영 24 + 가맹 118개 매장)',
+    scale:'연매출 265억 · 임직원 380명 · 가맹점 118개 · 식재료 거래처 42개사',
+    erp:'더존 Smart A 식음료 특화 + POS 통합', live:'2024년 3월 ERP+POS 통합 오픈', color:'#ef4444',
+    stats:[{l:'전국매장',v:'142개',i:'🍽️'},{l:'일평균매출',v:'6,200만',i:'💰'},{l:'원가율',v:'32.4%',i:'📊'},{l:'폐기율',v:'1.8%',i:'♻️'}],
+    before:['식재료 발주 점장 수작업','매출 집계 익일 보고','레시피 원가 임의 관리','유통기한 수기 체크'],
+    after:['POS 연동 자동 발주 (안전재고)','실시간 142개 매장 매출','표준원가 ERP 자동 계산','AI 유통기한 알림 자동화'],
+    eisTiles:(p,rnd)=>[
+      {label:'오늘 전체 매출',val:Math.round(p*6200+rnd(200))+'만원',unit:'',sub:'142개 매장 합계',c:'#2563eb',badge:p>0.5?'good':'warn',bl:p>0.5?'순조':'진행'},
+      {label:'평균 원가율',val:Math.round((32.4+rnd(1.5))*10)/10+'%',unit:'',sub:'목표 33% 이하',c:'#10b981',badge:'good',bl:'정상'},
+      {label:'평균 객단가',val:Math.round(18400+rnd(500))+'원',unit:'',sub:'전일比 +2.1%',c:'#f59e0b',badge:'good',bl:'양호'},
+      {label:'폐기율',val:Math.round((1.8+rnd(0.4))*10)/10+'%',unit:'',sub:'목표 2.0% 이하',c:'#8b5cf6',badge:'good',bl:'정상'},
+      {label:'식재료 발주완료',val:Math.round(p*142)+'개 점포',unit:'',sub:'자동발주 시스템',c:'#0891b2',badge:'good',bl:'자동처리'},
+      {label:'위생점수(평균)',val:Math.round(98.2+rnd(1))+'점',unit:'',sub:'목표 97점 이상',c:'#10b981',badge:'good',bl:'우수'},
+    ],
+    eisGauges:(p,rnd)=>[
+      {label:'원가율',val:Math.round((32.4+rnd(1.5))*10)/10,max:45,budget:33,c:'#ef4444'},
+      {label:'폐기율',val:Math.round((1.8+rnd(0.4))*10)/10,max:5,budget:2.0,c:'#f59e0b'},
+      {label:'매출달성율',val:Math.round(p*94+rnd(4)),max:100,budget:Math.round(p*90),c:'#10b981'},
+      {label:'자동발주율',val:Math.round(p*142/142*100),max:100,budget:95,c:'#2563eb'},
+    ],
+    salesMonths:['1월','2월','3월','4월','5월','6월','7월'],
+    salesPlan:[210,195,220,230,235,240,250],salesActual:[208,193,224,228,232,241,0],
+    salesLabel:'매출(백만원)',
+    todos:(min)=>[
+      {id:'f1',text:'142개 점포 자동발주 확인',auto:min>580},
+      {id:'f2',text:'냉장식재료 유통기한 AI점검',auto:min>640},
+      {id:'f3',text:'원가율 초과 3개 점포 조치',auto:false},
+      {id:'f4',text:'오후 POS 매출 집계 확인',auto:min>810},
+      {id:'f5',text:'가맹점 로열티 정산 처리',auto:min>960},
+    ],
+    sched:[{time:'08:00',title:'식재료 납품 검수 (전체)',place:'중앙물류센터'},{time:'10:30',title:'신규 메뉴 원가검토',place:'R&D팀'},{time:'14:00',title:'가맹점 위생교육',place:'교육센터'},{time:'17:00',title:'일일 매출 마감 보고',place:'경영관리팀'}],
+  },
+};
+
 let currentInd = 'manufacturing';
 let currentMfgModule = 'sales';
 let trendChart = null, pieChart = null;
@@ -1094,6 +1269,7 @@ function selectIndustry(key, btn) {
 
 function render() {
   const d = INDUSTRIES[currentInd];
+  renderCaseProfile();
   renderKPIs(d);
   renderSteps(d);
   renderFlow(d);
@@ -1101,6 +1277,51 @@ function render() {
   renderTable(d);
   renderCharts(d);
   renderAlerts(d);
+}
+
+function renderCaseProfile() {
+  const el = document.getElementById('case-profile-banner');
+  if (!el) return;
+  const cfg = CASE_PROFILES[currentInd];
+  if (!cfg) { el.innerHTML = ''; return; }
+  const c = cfg.color || '#2563eb';
+  el.innerHTML = `
+    <div style="background:linear-gradient(135deg,${c}18,${c}06);border:1.5px solid ${c}40;border-radius:12px;padding:16px 20px;display:grid;grid-template-columns:1fr auto auto;gap:16px;align-items:start">
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap">
+          <span style="font-size:18px;font-weight:800;color:${c}">${cfg.company}</span>
+          <span style="background:${c};color:#fff;font-size:10px;padding:2px 10px;border-radius:10px;font-weight:600">${cfg.live}</span>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:3px">${cfg.type}</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:8px">${cfg.scale}</div>
+        <div style="font-size:11px;color:${c};font-weight:600">⚙️ ${cfg.erp}</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;min-width:248px">
+        ${cfg.stats.map(s=>`
+          <div style="background:rgba(255,255,255,.88);border:1px solid ${c}28;border-radius:8px;padding:8px 10px;text-align:center">
+            <div style="font-size:15px;margin-bottom:2px">${s.i}</div>
+            <div style="font-size:15px;font-weight:800;color:${c};line-height:1.1">${s.v}</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:2px">${s.l}</div>
+          </div>
+        `).join('')}
+      </div>
+      <details style="min-width:210px;font-size:11px;cursor:pointer">
+        <summary style="font-weight:700;color:${c};padding:4px 2px;list-style:none;user-select:none">
+          📊 도입 전/후 비교 ▾
+        </summary>
+        <div style="margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div>
+            <div style="font-size:10px;font-weight:700;color:#ef4444;margin-bottom:4px">❌ 도입 전</div>
+            ${cfg.before.map(b=>`<div style="color:var(--muted);margin-bottom:3px;line-height:1.4">· ${b}</div>`).join('')}
+          </div>
+          <div>
+            <div style="font-size:10px;font-weight:700;color:#10b981;margin-bottom:4px">✅ 도입 후</div>
+            ${cfg.after.map(a=>`<div style="color:var(--text);margin-bottom:3px;line-height:1.4">· ${a}</div>`).join('')}
+          </div>
+        </div>
+      </details>
+    </div>
+  `;
 }
 
 function renderKPIs(d) {
@@ -1555,22 +1776,56 @@ function renderAIDataTable(moduleKey) {
 function getEISSnap(min) {
   const p = Math.max(0, Math.min(1, (min - 540) / 540));
   const rnd = r => (Math.random() - 0.5) * r;
-  const salesPct = Math.round(p * 87 + rnd(5));
-  const cashDelta = Math.round(p * 290 + rnd(35));
-  const opRate = Math.round(88 + rnd(6));
-  const defect = Math.round((1.8 + rnd(0.5)) * 10) / 10;
-  const matCost = Math.round((38.5 + rnd(1.5)) * 10) / 10;
-  const labCost = Math.round((22.3 + rnd(1.0)) * 10) / 10;
-  const profit = Math.round((12.8 - matCost * 0.08 + rnd(1.2)) * 10) / 10;
-  const prodQty = Math.round(p * 185 + rnd(8));
+  const progress = Math.round(p * 100);
+  const cfg = CASE_PROFILES[currentInd] || CASE_PROFILES.manufacturing;
+  const tiles = cfg.eisTiles(p, rnd);
+  const gauges = cfg.eisGauges(p, rnd);
+  const todos = cfg.todos(min);
+  const sched = cfg.sched;
+
+  // 업종별 알림 자동 생성
   const alerts = [];
-  if (opRate < 85) alerts.push({type:'warn', dept:'생산', msg:`설비 가동률 ${opRate}% — 목표 85% 미달`});
-  if (defect > 2.0) alerts.push({type:'danger', dept:'품질', msg:`불량률 ${defect}% — 기준치(2.0%) 초과, 즉시 조치 필요`});
-  if (salesPct < Math.round(p * 78)) alerts.push({type:'warn', dept:'영업', msg:`목표달성 ${salesPct}% — 진도율 대비 부진, 추가 수주 필요`});
-  if (cashDelta > 150) alerts.push({type:'info', dept:'자금', msg:`오늘 매출 입금 ₩${cashDelta}M 확인 완료`});
-  alerts.push({type:'info', dept:'AI', msg:`RPA: 수주 ${Math.round(p*18+2)}건 자동 등록 · 발주 ${Math.round(p*7)}건 EDI 발송`});
-  if (Math.random() > 0.5) alerts.push({type:'ok', dept:'구매', msg:`MRP 자동 실행 완료 — 발주 ${Math.round(p*5+1)}건 승인 대기`});
-  return {salesPct, cashBalance:1850+cashDelta, opRate, defect, matCost, labCost, profit, prodQty, planQty:200, alerts, progress:Math.round(p*100)};
+  const alertDefs = {
+    manufacturing:[
+      ()=>Math.round(88+rnd(6))<85 && {type:'warn',dept:'생산',msg:`설비 가동률 이상 — 즉시 확인 요망`},
+      ()=>Math.round((1.8+rnd(0.5))*10)/10>2.0 && {type:'danger',dept:'품질',msg:`OQC 불량률 기준 초과 — 품질팀 조치 필요`},
+      ()=>({type:'info',dept:'AI',msg:`RPA: 수주 ${Math.round(p*18+2)}건 자동 등록 · EDI 발주 ${Math.round(p*7)}건 발송`}),
+      ()=>({type:'ok',dept:'구매',msg:`MRP 자동 실행 — 발주 ${Math.round(p*5+1)}건 생성`}),
+      ()=>({type:'info',dept:'SVC',msg:`오늘 A/S 접수 ${Math.round(p*8+1)}건 · 처리완료 ${Math.round(p*6)}건`}),
+    ],
+    construction:[
+      ()=>({type:'warn',dept:'현장',msg:`강남 오피스텔 현장 공정률 72% — 계획比 2%p 지연`}),
+      ()=>({type:'info',dept:'구매',msg:`오늘 발주서 ${Math.round(p*47)}건 처리 · 전자발주 100%`}),
+      ()=>({type:'ok',dept:'회계',msg:`기성청구 ${Math.round(p*8)}건 승인 완료`}),
+      ()=>p>0.3&&{type:'warn',dept:'자재',msg:`레미콘 납기 D-2일 — 구매팀 확인 필요`},
+      ()=>({type:'info',dept:'AI',msg:`협력사 정산 자동화: ${Math.round(p*23)}건 자동 정산 완료`}),
+    ],
+    distribution:[
+      ()=>({type:'info',dept:'물류',msg:`출고 ${Math.round(p*3850)}건 처리 중 (진도 ${progress}%)`}),
+      ()=>Math.random()>0.7&&{type:'warn',dept:'냉장',msg:`창고 B구역 온도 5.2°C — 점검 필요`},
+      ()=>({type:'ok',dept:'WMS',msg:`재고 정확도 98.7% — 실시간 모니터링 정상`}),
+      ()=>({type:'warn',dept:'반품',msg:`반품 대기 ${Math.round(12-p*8+rnd(3))}건 — 처리 요망`}),
+      ()=>({type:'info',dept:'AI',msg:`자동 재발주 ${Math.round(p*28)}건 생성 · EDI 발송 완료`}),
+    ],
+    service:[
+      ()=>({type:'warn',dept:'PMO',msg:`C사 MES 예산 소진율 78% — 범위 조정 검토 필요`}),
+      ()=>({type:'info',dept:'인사',msg:`오늘 M/M 투입 ${Math.round(p*45+5)}건 자동 집계`}),
+      ()=>({type:'ok',dept:'영업',msg:`B사 SCM 고도화 검수 완료 — 세금계산서 발행 예정`}),
+      ()=>p>0.5&&{type:'info',dept:'AI',msg:`프로젝트 수익률 AI 예측: 평균 ${Math.round(18.5+rnd(1))}%`},
+    ],
+    food:[
+      ()=>({type:'ok',dept:'POS',msg:`142개 매장 식재료 자동발주 ${Math.round(p*142)}건 완료`}),
+      ()=>Math.random()>0.6&&{type:'warn',dept:'품질',msg:`건대 5호점 원가율 35.2% — 목표 초과`},
+      ()=>({type:'info',dept:'AI',msg:`유통기한 임박 식재료 ${Math.round(3+rnd(2))}건 자동 알림 발송`}),
+      ()=>({type:'info',dept:'매출',msg:`실시간 매출: 오늘 ${Math.round(p*6200+rnd(200))}만원`}),
+      ()=>({type:'ok',dept:'위생',msg:`일일 위생점검 AI 체크 완료 — 이상 없음`}),
+    ],
+  };
+  const defs = alertDefs[currentInd] || alertDefs.manufacturing;
+  defs.forEach(fn => { const a = fn(); if (a) alerts.push(a); });
+
+  return {tiles, gauges, todos, sched, alerts, progress,
+    salesCfg: cfg, p};
 }
 
 function startEISSim() {
@@ -1614,21 +1869,8 @@ function renderEISDashboard() {
   const mm = String(eisSimMinutes%60).padStart(2,'0');
   const alertDot = {ok:'#10b981',info:'#2563eb',warn:'#f59e0b',danger:'#ef4444'};
 
-  const todos = [
-    {id:'t1',text:'오전 수주 현황 검토',auto:eisSimMinutes>600},
-    {id:'t2',text:'생산지시서 승인 처리 (AI 자동완료)',auto:eisSimMinutes>660},
-    {id:'t3',text:'협력사 발주서 확인',auto:false},
-    {id:'t4',text:'품질 불량 보고서 확인',auto:eisSimMinutes>780},
-    {id:'t5',text:'영업 실적 보고 (16:00)',auto:eisSimMinutes>960},
-  ];
-  todos.forEach(t => { if (eisTodoState[t.id] === undefined) eisTodoState[t.id] = t.auto; });
-
-  const sched = [
-    {time:'09:30',title:'영업팀 주간 수주 회의',place:'대회의실'},
-    {time:'11:00',title:'생산부 공정 점검',place:'제조1동'},
-    {time:'14:00',title:'품질 월간 리뷰',place:'품질실'},
-    {time:'16:00',title:'경영진 실적 보고',place:'임원실'},
-  ];
+  const { todos, sched } = snap;
+  todos.forEach(t => { if (eisTodoState[t.id] === undefined) eisTodoState[t.id] = t.auto !== undefined ? t.auto : false; });
 
   el.innerHTML = `
     <div class="eis-header">
@@ -1650,14 +1892,7 @@ function renderEISDashboard() {
     </div>
 
     <div class="eis-kpi-row">
-      ${[
-        {label:'영업 목표달성',val:snap.salesPct,unit:'%',sub:`목표 ₩500M · 진도 ${snap.progress}%`,c:'#2563eb',badge:snap.salesPct>=75?'good':snap.salesPct>=50?'warn':'danger',bl:snap.salesPct>=75?'달성':'부진'},
-        {label:'설비 가동률',val:snap.opRate,unit:'%',sub:`생산 ${snap.prodQty}/${snap.planQty}건 완료`,c:'#10b981',badge:snap.opRate>=85?'good':'warn',bl:snap.opRate>=85?'정상':'주의'},
-        {label:'불량률',val:snap.defect,unit:'%',sub:'기준치 2.0% 이하',c:'#f59e0b',badge:snap.defect<=2?'good':'danger',bl:snap.defect<=2?'정상':'경고'},
-        {label:'자금 잔액',val:snap.cashBalance,unit:'M',sub:`전일比 +${snap.cashBalance-1850}M`,c:'#8b5cf6',badge:'good',bl:'양호'},
-        {label:'재료비율',val:snap.matCost,unit:'%',sub:'예산 38.0%',c:'#0891b2',badge:snap.matCost<=38.5?'good':'warn',bl:snap.matCost<=38.5?'정상':'주의'},
-        {label:'영업이익(예측)',val:snap.profit,unit:'%',sub:'AI 실시간 예측',c:'#7c3aed',badge:snap.profit>=12?'good':'warn',bl:snap.profit>=12?'양호':'검토'},
-      ].map(k=>`
+      ${snap.tiles.map(k=>`
         <div class="eis-kpi" style="border-top-color:${k.c}">
           <span class="ek-badge ${k.badge}">${k.bl}</span>
           <div class="ek-label">${k.label}</div>
@@ -1707,13 +1942,7 @@ function renderEISDashboard() {
       <div class="eis-chart-box">
         <div class="card-title" style="margin-bottom:10px">💰 원가 · 이익 · 운영 지표 게이지</div>
         <div class="eis-gauge-row">
-          ${[
-            {label:'재료비율',val:snap.matCost,max:50,budget:38,c:'#ef4444'},
-            {label:'인건비율',val:snap.labCost,max:35,budget:22,c:'#f59e0b'},
-            {label:'영업이익율',val:snap.profit,max:25,budget:12,c:'#10b981'},
-            {label:'설비가동률',val:snap.opRate,max:100,budget:85,c:'#2563eb'},
-            {label:'목표달성율',val:snap.salesPct,max:100,budget:Math.round(snap.progress*0.9),c:'#8b5cf6'},
-          ].map(g=>`
+          ${snap.gauges.map(g=>`
             <div class="eis-gauge">
               <div class="eis-gauge-label">${g.label}</div>
               <div>
@@ -1744,10 +1973,15 @@ function renderEISDashboard() {
 function renderEISSalesChart(snap) {
   const el = document.getElementById('chart-eis-sales');
   if (!el) return;
-  const months = ['1월','2월','3월','4월','5월','6월','7월'];
-  const plan = [420,450,480,500,520,510,500];
-  const actual = [412,449,493,487,509,516,Math.round(500*snap.salesPct/100)];
-  const profit = actual.map(v=>Math.round(v*snap.profit/100));
+  const sc = snap.salesCfg || CASE_PROFILES.manufacturing;
+  const months = sc.salesMonths;
+  const plan = sc.salesPlan;
+  const lastPlan = plan[plan.length - 1] || 500;
+  const actual = sc.salesActual.map((v, i) =>
+    i === months.length - 1 ? Math.round(lastPlan * snap.p * 0.97) : v
+  );
+  const profitRate = {manufacturing:0.128,construction:0.058,distribution:0.052,service:0.185,food:0.128}[currentInd] || 0.128;
+  const profit = actual.map(v => Math.round(v * profitRate));
   eisCharts['eis-sales'] = new Chart(el.getContext('2d'), {
     type:'bar',
     data:{labels:months, datasets:[
@@ -1756,7 +1990,8 @@ function renderEISSalesChart(snap) {
       {type:'line',label:'이익예측',data:profit,borderColor:'#8b5cf6',borderDash:[4,3],borderWidth:1.5,pointRadius:2,fill:false,tension:.3},
     ]},
     options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{position:'top',labels:{font:{size:10},boxWidth:10}}},
+      plugins:{legend:{position:'top',labels:{font:{size:10},boxWidth:10}},
+        title:{display:!!sc.salesLabel,text:sc.salesLabel||'',font:{size:10},color:'#64748b'}},
       scales:{y:{grid:{color:'#f8fafc'},ticks:{font:{size:10}}},x:{grid:{display:false},ticks:{font:{size:10}}}}}
   });
 }
