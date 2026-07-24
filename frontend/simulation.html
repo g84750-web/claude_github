@@ -339,6 +339,43 @@ canvas{display:block}
 .cp-ba-inline{display:grid;grid-template-columns:1fr 28px 1fr;gap:8px;align-items:start}
 .cp-comment-bar{font-size:11px;color:#065f46;background:#d1fae5;border-radius:6px;padding:6px 12px;border-left:3px solid #10b981;line-height:1.5}
 
+/* ── ERP 출력 미리보기 모달 ── */
+.pm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px}
+.pm-box{background:#fff;border-radius:10px;width:100%;max-width:780px;max-height:92vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.45);display:flex;flex-direction:column}
+.pm-header{background:linear-gradient(135deg,#1e3a5f,#0f172a);color:#e2e8f0;padding:11px 18px;display:flex;align-items:center;justify-content:space-between;border-radius:10px 10px 0 0;flex-shrink:0}
+.pm-header-title{font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px}
+.pm-header-btns{display:flex;gap:8px}
+.pm-btn{padding:5px 14px;border-radius:7px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.1);color:#e2e8f0;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;transition:.12s}
+.pm-btn:hover{background:rgba(255,255,255,.22)}
+.pm-btn.close{border-color:rgba(239,68,68,.4);background:rgba(239,68,68,.15);color:#fca5a5}
+.pm-doc{padding:36px 44px;font-family:'Malgun Gothic','Apple SD Gothic Neo',sans-serif;color:#111;font-size:12px;line-height:1.7;flex:1}
+.pm-co-name{font-size:11px;font-weight:700;color:#2563eb;text-align:center;margin-bottom:2px}
+.pm-co-info{font-size:10px;color:#555;text-align:center;margin-bottom:12px}
+.pm-doc-title{font-size:22px;font-weight:900;text-align:center;letter-spacing:.12em;margin-bottom:2px}
+.pm-doc-no{font-size:10px;color:#888;text-align:center;margin-bottom:18px;letter-spacing:.04em}
+.pm-divider{border:none;border-top:2px solid #1e3a5f;margin:0 0 16px}
+.pm-info-wrap{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid #bbb;margin-bottom:16px;font-size:11px}
+.pm-info-half{border-right:1px solid #bbb}
+.pm-info-half:last-child{border-right:none}
+.pm-info-row{display:grid;grid-template-columns:90px 1fr;border-bottom:1px solid #ddd}
+.pm-info-row:last-child{border-bottom:none}
+.pm-info-key{background:#f0f4f8;padding:5px 10px;font-weight:700;border-right:1px solid #ddd;color:#374151}
+.pm-info-val{padding:5px 10px;color:#111}
+.pm-table{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:16px}
+.pm-table th{background:#1e3a5f;color:#fff;padding:7px 10px;font-weight:700;text-align:center;border:1px solid #1e3a5f}
+.pm-table td{padding:6px 10px;border:1px solid #ccc;text-align:center;vertical-align:middle}
+.pm-table tr:nth-child(even) td{background:#f8fafc}
+.pm-table tfoot td{font-weight:800;background:#f0f4f8}
+.pm-sign-wrap{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid #bbb;margin-top:20px;font-size:11px}
+.pm-sign-cell{text-align:center;padding:8px 4px;border-right:1px solid #bbb}
+.pm-sign-cell:last-child{border-right:none}
+.pm-sign-title{font-weight:700;color:#374151;margin-bottom:20px}
+.pm-stamp{width:44px;height:44px;border:2px solid #ef4444;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#ef4444;font-size:9px;font-weight:900;margin:4px auto 0;transform:rotate(-12deg)}
+.pm-badge-ok{display:inline-block;border:3px solid #10b981;border-radius:6px;color:#10b981;font-size:16px;font-weight:900;padding:3px 14px;letter-spacing:.08em;transform:rotate(-4deg);margin-left:12px}
+.pm-badge-pass{display:inline-block;border:3px solid #2563eb;border-radius:6px;color:#2563eb;font-size:14px;font-weight:900;padding:2px 12px;letter-spacing:.06em;transform:rotate(-3deg)}
+.pm-qr{width:56px;height:56px;background:#f1f5f9;border:1px solid #ddd;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:8px;color:#94a3b8;text-align:center;margin:0 auto}
+.pm-watermark{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-30deg);font-size:64px;font-weight:900;color:rgba(37,99,235,.04);pointer-events:none;white-space:nowrap;letter-spacing:.1em}
+
 /* ── EIS 대시보드 ── */
 .eis-header{display:flex;align-items:center;gap:16px;margin-bottom:16px;padding:12px 18px;background:linear-gradient(135deg,#0f172a,#1e3a5f);border-radius:var(--radius);color:#e2e8f0;flex-wrap:wrap}
 .eis-clock{font-size:30px;font-weight:900;color:#60a5fa;font-variant-numeric:tabular-nums;letter-spacing:3px}
@@ -1761,6 +1798,286 @@ function addCommas(n) {
   return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
+/* ── ERP 출력 미리보기 ── */
+function closePrintModal() {
+  const el = document.getElementById('pm-overlay');
+  if (el) el.remove();
+}
+
+function showPrintModal() {
+  const mod = (currentInd === 'manufacturing') ? (currentMfgModule || 'sales') : 'sales';
+  const today = (() => { const d=new Date(); return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`; })();
+  const coTop = `<div class="pm-co-name">㈜ABC냉동공조</div>
+    <div class="pm-co-info">서울특별시 금천구 가산디지털1로 168 | TEL. 02-1234-5678 | 사업자번호 123-45-67890</div>`;
+  const signRow = (roles) => `<div class="pm-sign-wrap">${roles.map(r=>`
+    <div class="pm-sign-cell"><div class="pm-sign-title">${r}</div><div style="height:36px"></div></div>`).join('')}
+  </div>`;
+  const qrBox = `<div class="pm-qr">QR<br>ERP<br>검증</div>`;
+
+  const FORMS = {
+    sales: () => `
+      ${coTop}
+      <div class="pm-doc-title">수 주 확 인 서</div>
+      <div class="pm-doc-no">문서번호: SO-2025-07-0142 &nbsp;|&nbsp; 발행일: ${today}</div>
+      <hr class="pm-divider">
+      <div class="pm-info-wrap">
+        <div class="pm-info-half">
+          <div class="pm-info-row"><div class="pm-info-key">고 객 명</div><div class="pm-info-val">㈜ABC전자</div></div>
+          <div class="pm-info-row"><div class="pm-info-key">사업자번호</div><div class="pm-info-val">234-56-78901</div></div>
+          <div class="pm-info-row"><div class="pm-info-key">담 당 자</div><div class="pm-info-val">김구매 과장</div></div>
+        </div>
+        <div class="pm-info-half">
+          <div class="pm-info-row"><div class="pm-info-key">수주일자</div><div class="pm-info-val">${today}</div></div>
+          <div class="pm-info-row"><div class="pm-info-key">납기일자</div><div class="pm-info-val">2025.08.15</div></div>
+          <div class="pm-info-row"><div class="pm-info-key">결제조건</div><div class="pm-info-val">어음 60일 (익월 말)</div></div>
+        </div>
+      </div>
+      <table class="pm-table">
+        <thead><tr><th>No</th><th>품목코드</th><th>품 명</th><th>규 격</th><th>수량</th><th>단가(원)</th><th>공급가(원)</th><th>세액(원)</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>MC-HC-0421</td><td>항온항습기 HM420</td><td>420㎥/h 1톤</td><td>3</td><td>8,500,000</td><td>25,500,000</td><td>2,550,000</td></tr>
+          <tr><td>2</td><td>AC-FS-1520</td><td>산업용 에어컨 FS1500</td><td>15HP 냉방전용</td><td>5</td><td>3,200,000</td><td>16,000,000</td><td>1,600,000</td></tr>
+          <tr><td>3</td><td>RF-CC-0880</td><td>냉동기 CC-880</td><td>88RT 수냉식</td><td>2</td><td>12,800,000</td><td>25,600,000</td><td>2,560,000</td></tr>
+        </tbody>
+        <tfoot><tr><td colspan="6" style="text-align:right;font-weight:800">합 계</td><td><strong>67,100,000</strong></td><td><strong>6,710,000</strong></td></tr>
+        <tr><td colspan="6" style="text-align:right;font-weight:800;color:#1e3a5f">총 청구금액 (VAT 포함)</td><td colspan="2"><strong style="font-size:14px;color:#1e3a5f">73,810,000 원</strong></td></tr></tfoot>
+      </table>
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:10px 14px;font-size:11px;color:#475569;margin-bottom:4px">
+        ※ 본 수주확인서는 더존 iCUBE ERP 시스템에서 AI 자동생성되었습니다. | 납기 미준수 시 지체상금 0.05%/일 적용
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center">${signRow(['담당자','팀장','부서장','대표이사'])}</div>`,
+
+    production: () => `
+      ${coTop}
+      <div class="pm-doc-title">작 업 지 시 서</div>
+      <div class="pm-doc-no">문서번호: WO-2025-07-0388 &nbsp;|&nbsp; 발행일: ${today}</div>
+      <hr class="pm-divider">
+      <div class="pm-info-wrap">
+        <div class="pm-info-half">
+          <div class="pm-info-row"><div class="pm-info-key">연관 수주</div><div class="pm-info-val">SO-2025-07-0142</div></div>
+          <div class="pm-info-row"><div class="pm-info-key">제 품 명</div><div class="pm-info-val">항온항습기 HM420</div></div>
+          <div class="pm-info-row"><div class="pm-info-key">생산수량</div><div class="pm-info-val">3 EA</div></div>
+        </div>
+        <div class="pm-info-half">
+          <div class="pm-info-row"><div class="pm-info-key">작업시작</div><div class="pm-info-val">2025.07.28 08:00</div></div>
+          <div class="pm-info-row"><div class="pm-info-key">완료예정</div><div class="pm-info-val">2025.08.10 17:00</div></div>
+          <div class="pm-info-row"><div class="pm-info-key">담당라인</div><div class="pm-info-val">A라인 (항온항습기 전용)</div></div>
+        </div>
+      </div>
+      <table class="pm-table">
+        <thead><tr><th>공정순서</th><th>공정명</th><th>담당부서</th><th>계획시간</th><th>설비</th><th>비 고</th></tr></thead>
+        <tbody>
+          <tr><td>10</td><td>판금·가공</td><td>제조1팀</td><td>8h</td><td>CNC 절곡기 #3</td><td>SUS304 1.5t</td></tr>
+          <tr><td>20</td><td>배관 조립</td><td>제조2팀</td><td>6h</td><td>토치·용접기</td><td>냉매 R410A</td></tr>
+          <tr><td>30</td><td>전장 배선</td><td>전기팀</td><td>4h</td><td>하니스 제조기</td><td>도면 EL-420</td></tr>
+          <tr><td>40</td><td>조립·검사</td><td>품질팀</td><td>3h</td><td>성능시험기</td><td>OQC 연동</td></tr>
+          <tr><td>50</td><td>포장·출하</td><td>물류팀</td><td>1h</td><td>포장라인</td><td>출하 검사 후</td></tr>
+        </tbody>
+      </table>
+      <div style="background:#fffbeb;border:1px solid #f59e0b;border-radius:6px;padding:9px 14px;font-size:11px;color:#92400e;margin-bottom:4px">
+        ⚡ AI 수요예측 기반 자동 발행된 작업지시서입니다. BOM 자재 소요량은 ERP에서 자동 산출되었습니다.
+      </div>
+      ${signRow(['작성자','생산관리자','품질팀장','공장장'])}`,
+
+    purchase: () => `
+      ${coTop}
+      <div class="pm-doc-title">발 주 서</div>
+      <div class="pm-doc-no">문서번호: PO-2025-07-0271 &nbsp;|&nbsp; 발행일: ${today}</div>
+      <hr class="pm-divider">
+      <div class="pm-info-wrap">
+        <div class="pm-info-half">
+          <div class="pm-info-row"><div class="pm-info-key">공 급 사</div><div class="pm-info-val">㈜ABC부품</div></div>
+          <div class="pm-info-row"><div class="pm-info-key">사업자번호</div><div class="pm-info-val">345-67-89012</div></div>
+          <div class="pm-info-row"><div class="pm-info-key">담 당 자</div><div class="pm-info-val">박자재 대리</div></div>
+        </div>
+        <div class="pm-info-half">
+          <div class="pm-info-row"><div class="pm-info-key">발주일자</div><div class="pm-info-val">${today}</div></div>
+          <div class="pm-info-row"><div class="pm-info-key">납품요청</div><div class="pm-info-val">2025.08.05</div></div>
+          <div class="pm-info-row"><div class="pm-info-key">납품장소</div><div class="pm-info-val">ABC냉동공조 자재창고</div></div>
+        </div>
+      </div>
+      <table class="pm-table">
+        <thead><tr><th>No</th><th>자재코드</th><th>품 명</th><th>규 격</th><th>단위</th><th>수량</th><th>단가</th><th>금액</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>RM-CM-1001</td><td>압축기 (Compressor)</td><td>5HP 스크롤형</td><td>EA</td><td>12</td><td>480,000</td><td>5,760,000</td></tr>
+          <tr><td>2</td><td>RM-EV-2003</td><td>증발기 코일</td><td>420㎥/h 알루미늄핀</td><td>EA</td><td>6</td><td>320,000</td><td>1,920,000</td></tr>
+          <tr><td>3</td><td>RM-EX-3014</td><td>팽창밸브 (EXV)</td><td>전동식 R410A</td><td>EA</td><td>18</td><td>95,000</td><td>1,710,000</td></tr>
+          <tr><td>4</td><td>RM-PB-4022</td><td>PCB 제어기판</td><td>HM420 전용</td><td>PCS</td><td>6</td><td>280,000</td><td>1,680,000</td></tr>
+        </tbody>
+        <tfoot><tr><td colspan="7" style="text-align:right;font-weight:800">합 계 (VAT 별도)</td><td><strong>11,070,000</strong></td></tr></tfoot>
+      </table>
+      <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:9px 14px;font-size:11px;color:#1d4ed8;margin-bottom:4px">
+        🤖 BOM 자동전개 기반 AI 발주서 — MRP 소요량 계산 후 자동 생성. 전자결재 완료 후 EDI 자동 전송됩니다.
+      </div>
+      ${signRow(['구매담당','구매팀장','자재부장','대표이사'])}`,
+
+    quality: () => `
+      ${coTop}
+      <div class="pm-doc-title">출 하 검 사 성 적 서</div>
+      <div class="pm-doc-no">문서번호: QC-OQC-2025-0184 &nbsp;|&nbsp; 검사일: ${today}</div>
+      <hr class="pm-divider">
+      <div class="pm-info-wrap">
+        <div class="pm-info-half">
+          <div class="pm-info-row"><div class="pm-info-key">제 품 명</div><div class="pm-info-val">항온항습기 HM420</div></div>
+          <div class="pm-info-row"><div class="pm-info-key">LOT 번호</div><div class="pm-info-val">LOT-250724-003</div></div>
+          <div class="pm-info-row"><div class="pm-info-key">검사수량</div><div class="pm-info-val">3 EA (전수검사)</div></div>
+        </div>
+        <div class="pm-info-half">
+          <div class="pm-info-row"><div class="pm-info-key">검 사 자</div><div class="pm-info-val">박품질팀장</div></div>
+          <div class="pm-info-row"><div class="pm-info-key">연관 수주</div><div class="pm-info-val">SO-2025-07-0142</div></div>
+          <div class="pm-info-row"><div class="pm-info-key">납품처</div><div class="pm-info-val">㈜ABC전자</div></div>
+        </div>
+      </div>
+      <table class="pm-table">
+        <thead><tr><th>No</th><th>검사항목</th><th>검사방법</th><th>기준값</th><th>측정값</th><th>판 정</th><th>비 고</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>냉각성능</td><td>성능시험기</td><td>≥ 420㎥/h</td><td>432㎥/h</td><td style="color:#10b981;font-weight:800">합격</td><td>AI 자동 측정</td></tr>
+          <tr><td>2</td><td>온도정밀도</td><td>온도계측기</td><td>±0.5℃</td><td>±0.3℃</td><td style="color:#10b981;font-weight:800">합격</td><td>AI 자동 측정</td></tr>
+          <tr><td>3</td><td>소음레벨</td><td>소음측정기</td><td>≤ 55dB</td><td>51dB</td><td style="color:#10b981;font-weight:800">합격</td><td>현장 직접 측정</td></tr>
+          <tr><td>4</td><td>절연저항</td><td>절연저항계</td><td>≥ 1MΩ</td><td>28MΩ</td><td style="color:#10b981;font-weight:800">합격</td><td>안전기준 이상</td></tr>
+          <tr><td>5</td><td>외관검사</td><td>육안검사</td><td>결함 없음</td><td>이상 없음</td><td style="color:#10b981;font-weight:800">합격</td><td>도장·스크래치 OK</td></tr>
+          <tr><td>6</td><td>진동검사</td><td>진동측정기</td><td>≤ 0.5mm/s</td><td>0.28mm/s</td><td style="color:#10b981;font-weight:800">합격</td><td>기준값의 56%</td></tr>
+        </tbody>
+        <tfoot><tr><td colspan="5" style="text-align:right;font-weight:800">검사결과 종합</td>
+          <td colspan="2"><span class="pm-badge-ok">전 항목 합격</span></td></tr></tfoot>
+      </table>
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:4px">
+        <div style="flex:1;background:#f0fdf4;border:1px solid #86efac;border-radius:6px;padding:9px 14px;font-size:11px;color:#065f46">
+          ✅ 모든 검사항목 기준값 이내 — 출하 승인 처리 완료. AI 자동판정 적용 (판정 정확도 99.4%)
+        </div>
+        <div style="text-align:center">
+          <div class="pm-badge-pass">합 격</div>
+        </div>
+        ${qrBox}
+      </div>
+      ${signRow(['검사자','품질팀장','품질부장','품질본부장'])}`,
+
+    iqc: () => `
+      ${coTop}
+      <div class="pm-doc-title">수 입 검 사 성 적 서</div>
+      <div class="pm-doc-no">문서번호: QC-IQC-2025-0097 &nbsp;|&nbsp; 검사일: ${today}</div>
+      <hr class="pm-divider">
+      <div class="pm-info-wrap">
+        <div class="pm-info-half">
+          <div class="pm-info-row"><div class="pm-info-key">공 급 사</div><div class="pm-info-val">㈜ABC부품</div></div>
+          <div class="pm-info-row"><div class="pm-info-key">자재명</div><div class="pm-info-val">스크롤 압축기 5HP</div></div>
+          <div class="pm-info-row"><div class="pm-info-key">검사수량</div><div class="pm-info-val">12 EA (샘플 3EA)</div></div>
+        </div>
+        <div class="pm-info-half">
+          <div class="pm-info-row"><div class="pm-info-key">입고일자</div><div class="pm-info-val">${today}</div></div>
+          <div class="pm-info-row"><div class="pm-info-key">연관 발주</div><div class="pm-info-val">PO-2025-07-0271</div></div>
+          <div class="pm-info-row"><div class="pm-info-key">검 사 자</div><div class="pm-info-val">이검사 주임</div></div>
+        </div>
+      </div>
+      <table class="pm-table">
+        <thead><tr><th>No</th><th>검사항목</th><th>기준값</th><th>측정값</th><th>판정</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>외관상태</td><td>이상 없음</td><td>양호</td><td style="color:#10b981;font-weight:800">합격</td></tr>
+          <tr><td>2</td><td>작동 전압</td><td>AC 220V ±10%</td><td>219V</td><td style="color:#10b981;font-weight:800">합격</td></tr>
+          <tr><td>3</td><td>냉매 충전량</td><td>R410A 850g</td><td>848g</td><td style="color:#10b981;font-weight:800">합격</td></tr>
+          <tr><td>4</td><td>소음·진동</td><td>≤60dB</td><td>57dB</td><td style="color:#10b981;font-weight:800">합격</td></tr>
+        </tbody>
+        <tfoot><tr><td colspan="4" style="text-align:right;font-weight:800">판정</td><td><span class="pm-badge-pass">합격 입고</span></td></tr></tfoot>
+      </table>
+      ${signRow(['검사자','구매팀장','품질팀장','창고관리자'])}`,
+
+    svc: () => `
+      ${coTop}
+      <div class="pm-doc-title">서 비 스 완 료 확 인 서</div>
+      <div class="pm-doc-no">문서번호: SVC-2025-07-0056 &nbsp;|&nbsp; 발행일: ${today}</div>
+      <hr class="pm-divider">
+      <div class="pm-info-wrap">
+        <div class="pm-info-half">
+          <div class="pm-info-row"><div class="pm-info-key">고 객 명</div><div class="pm-info-val">㈜ABC전자 천안공장</div></div>
+          <div class="pm-info-row"><div class="pm-info-key">설비명</div><div class="pm-info-val">항온항습기 HM420 (S/N: 2023-0042)</div></div>
+          <div class="pm-info-row"><div class="pm-info-key">서비스유형</div><div class="pm-info-val">정기점검 (연간계약)</div></div>
+        </div>
+        <div class="pm-info-half">
+          <div class="pm-info-row"><div class="pm-info-key">방문일시</div><div class="pm-info-val">${today} 10:00</div></div>
+          <div class="pm-info-row"><div class="pm-info-key">완료일시</div><div class="pm-info-val">${today} 14:30</div></div>
+          <div class="pm-info-row"><div class="pm-info-key">서비스기사</div><div class="pm-info-val">최서비스 기사 (SVC-007)</div></div>
+        </div>
+      </div>
+      <table class="pm-table">
+        <thead><tr><th>No</th><th>작업항목</th><th>처리내용</th><th>부품교체</th><th>결 과</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>필터 청소</td><td>에어 필터 전면 청소</td><td>없음</td><td style="color:#10b981;font-weight:800">완료</td></tr>
+          <tr><td>2</td><td>냉매 충전량 확인</td><td>R410A 850g → 정상</td><td>없음</td><td style="color:#10b981;font-weight:800">완료</td></tr>
+          <tr><td>3</td><td>전기 계통 점검</td><td>전압·전류 측정 이상없음</td><td>없음</td><td style="color:#10b981;font-weight:800">완료</td></tr>
+          <tr><td>4</td><td>PCB 펌웨어 업데이트</td><td>v2.1.4 → v2.3.0 업그레이드</td><td>없음</td><td style="color:#10b981;font-weight:800">완료</td></tr>
+        </tbody>
+      </table>
+      <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:6px;padding:9px 14px;font-size:11px;color:#065f46;margin-bottom:12px">
+        ✅ 모든 항목 점검 완료. 다음 정기점검 예정일: 2026.01.24 | AI 원격모니터링 연동 정상 확인
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div><div style="font-size:11px;font-weight:700;margin-bottom:6px">서비스 기사 서명</div><div style="height:40px;border-bottom:1px solid #aaa"></div></div>
+        <div><div style="font-size:11px;font-weight:700;margin-bottom:6px">고객 확인 서명</div><div style="height:40px;border-bottom:1px solid #aaa"></div></div>
+      </div>`,
+
+    master: () => `
+      ${coTop}
+      <div class="pm-doc-title">품 목 마 스 터 출 력</div>
+      <div class="pm-doc-no">출력기준: ${today} &nbsp;|&nbsp; 조회조건: 완제품 전체</div>
+      <hr class="pm-divider">
+      <table class="pm-table">
+        <thead><tr><th>품목코드</th><th>품 명</th><th>규 격</th><th>단위</th><th>표준단가</th><th>표준원가</th><th>상 태</th></tr></thead>
+        <tbody>
+          <tr><td>MC-HC-0421</td><td>항온항습기 HM420</td><td>420㎥/h 1톤</td><td>EA</td><td>8,500,000</td><td>5,820,000</td><td style="color:#10b981;font-weight:700">판매중</td></tr>
+          <tr><td>MC-HC-0630</td><td>항온항습기 HM630</td><td>630㎥/h 1.5톤</td><td>EA</td><td>11,200,000</td><td>7,650,000</td><td style="color:#10b981;font-weight:700">판매중</td></tr>
+          <tr><td>AC-FS-1520</td><td>산업용 에어컨 FS1500</td><td>15HP 냉방전용</td><td>EA</td><td>3,200,000</td><td>2,140,000</td><td style="color:#10b981;font-weight:700">판매중</td></tr>
+          <tr><td>AC-FS-2020</td><td>산업용 에어컨 FS2000</td><td>20HP 냉난방</td><td>EA</td><td>4,100,000</td><td>2,780,000</td><td style="color:#10b981;font-weight:700">판매중</td></tr>
+          <tr><td>RF-CC-0880</td><td>냉동기 CC-880</td><td>88RT 수냉식</td><td>EA</td><td>12,800,000</td><td>8,920,000</td><td style="color:#10b981;font-weight:700">판매중</td></tr>
+          <tr><td>RF-CC-1200</td><td>냉동기 CC-1200</td><td>120RT 공냉식</td><td>EA</td><td>17,500,000</td><td>12,100,000</td><td style="color:#f59e0b;font-weight:700">단종예정</td></tr>
+        </tbody>
+      </table>
+      <div style="font-size:10px;color:#888;text-align:right">총 품목 수: 120종 (완제품 38종 / 반제품 28종 / 원자재 54종) — 더존 iCUBE 품목마스터 기준</div>`,
+
+    config: () => `
+      ${coTop}
+      <div class="pm-doc-title">시 스 템 설 정 현 황</div>
+      <div class="pm-doc-no">출력기준: ${today} &nbsp;|&nbsp; 관리자: 시스템팀</div>
+      <hr class="pm-divider">
+      <table class="pm-table">
+        <thead><tr><th>설정 분류</th><th>항 목</th><th>설정값</th><th>비 고</th></tr></thead>
+        <tbody>
+          <tr><td>기본설정</td><td>회계연도</td><td>2025년 (1월~12월)</td><td>더존 iCUBE</td></tr>
+          <tr><td>기본설정</td><td>원가산정방법</td><td>총평균법</td><td></td></tr>
+          <tr><td>사용자권한</td><td>영업팀 권한</td><td>조회/입력/수정/출력</td><td>승인 제외</td></tr>
+          <tr><td>사용자권한</td><td>품질팀 권한</td><td>검사입력/조회/출력</td><td>OQC 전담</td></tr>
+          <tr><td>AI 설정</td><td>수주 자동분류</td><td>활성 (정확도 97.2%)</td><td>NLP 기반</td></tr>
+          <tr><td>AI 설정</td><td>OQC 자동판정</td><td>활성 (신뢰도 99.4%)</td><td>딥러닝 모델</td></tr>
+          <tr><td>연동설정</td><td>EDI 공급사 연동</td><td>45개사 자동 전송</td><td>실시간</td></tr>
+          <tr><td>연동설정</td><td>MES 공정실적</td><td>IoT 게이트웨이 연동</td><td>실시간 집계</td></tr>
+        </tbody>
+      </table>
+      <div style="font-size:10px;color:#888;text-align:right">더존 iCUBE ERP 시스템 관리 설정 출력 — ${today}</div>`,
+  };
+
+  const docFn = FORMS[mod] || FORMS.sales;
+  const modLabel = {sales:'영업관리',production:'생산관리',purchase:'구매관리',quality:'출하검사(OQC)',iqc:'수입검사(IQC)',svc:'서비스관리',master:'품목마스터',config:'시스템설정'}[mod] || '영업관리';
+
+  const overlay = document.createElement('div');
+  overlay.className = 'pm-overlay';
+  overlay.id = 'pm-overlay';
+  overlay.addEventListener('click', e => { if (e.target === overlay) closePrintModal(); });
+  overlay.innerHTML = `
+    <div class="pm-box">
+      <div class="pm-header">
+        <div class="pm-header-title">🖨️ ERP 출력 미리보기 &nbsp;—&nbsp; ${modLabel}</div>
+        <div class="pm-header-btns">
+          <button class="pm-btn" onclick="window.print()">🖨️ 인쇄</button>
+          <button class="pm-btn close" onclick="closePrintModal()">✕ 닫기</button>
+        </div>
+      </div>
+      <div class="pm-doc" style="position:relative">
+        <div class="pm-watermark">SAMPLE</div>
+        ${docFn()}
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
 function simAction(act) {
   let d = INDUSTRIES[currentInd];
   if (currentInd === 'manufacturing') {
@@ -1770,7 +2087,7 @@ function simAction(act) {
   if (act === 'new') { showInputScreen(d); toast('신규 입력 화면으로 전환되었습니다'); }
   else if (act === 'query') { showQueryScreen(d); toast('조회 완료 — ' + d.tableData.length + '건'); }
   else if (act === 'save') { toast('✅ 저장되었습니다 (시뮬레이션)'); }
-  else if (act === 'print') { toast('🖨️ 인쇄 미리보기 — ERP 양식 에디터로 이동합니다'); setTimeout(()=>window.open('/','_blank'),1200); }
+  else if (act === 'print') { showPrintModal(); }
   else if (act === 'approve') { toast('✅ 승인 처리되었습니다 (시뮬레이션)'); }
 }
 
