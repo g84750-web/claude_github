@@ -592,6 +592,8 @@ KPI 연계: 2.4 매출 실현율 · 4.1 BU% · 3.3 방법론 준수율`),
               `${dlv['조기'] || 0} + ${dlv['정시'] || 0} + ${dlv['30일내'] || 0} = ${keep} / 모수 ${D.stat.done.toLocaleString()} → ${f1(pct(keep, D.stat.done))}%`)}
             ${chk(id.deliverySum, '[G2] 준수 + 초과 = 판정모수',
               `${keep} + ${(dlv['1M초과'] || 0) + (dlv['2M초과'] || 0) + (dlv['3M초과'] || 0)} = ${D.stat.done.toLocaleString()}`)}
+            ${chk(true, '[G2] 기본 구축기간 준수율 (AD 단독)',
+              `${(D.meta.deliveryBaseKeep || 0).toLocaleString()} / ${(D.meta.deliveryBaseJudged || 0).toLocaleString()} = ${f1(D.meta.deliveryBaseRate)}%  ·  납기 변경으로 준수 전환 ${D.meta.deliveryExtended}건 (연장 효과 ${f1(D.meta.deliveryRate - D.meta.deliveryBaseRate)}%p)`)}
             ${chk(id.mdIdentity, '[G3] ★ 계약공수 = 투입환산 + 미투입1차',
               `${f1(m.contract)} = ${f1(m.converted)} + ${f1(m.un1)}`)}
             ${chk(Math.abs(m.un1 - (m.paidUn + m.freeUn1)) < 0.5, '[G3] 미투입1차 = 유상 + 무상',
@@ -602,8 +604,10 @@ KPI 연계: 2.4 매출 실현율 · 4.1 BU% · 3.3 방법론 준수율`),
               `${f1(m.finalUn)} ÷ ${f0(D.meta.capa)} = ${f2(D.meta.delayM)}M`)}
             ${chk(true, '[G3] 월가용 CAPA = 가용인원 × 22.0',
               `${D.meta.headcount} × ${D.meta.capaCoef} = ${f0(D.meta.capa)} m/d`)}
-            ${chk(false, '[G4] 계약기간준수율 (설치형)',
-              `본 산출 ${ct.ok}/${ct.fin} = ${f1(ct.rate)}%  ≠  확정값 143/177 = 80.8%  — 예외 22건 규칙 미제공`)}
+            ${chk(true, '[G4] 계약기간 모집단 (설치형)',
+              `${ct.pop} → 신영 제외 ${ct.popEx} → 완료 ${ct.fin} · 예외(납기변경) ${ct.exception}건 → KPI 1.9로 별도 판정`)}
+            ${chk(false, '[G4] 계약기간준수율 준수 건수',
+              `본 산출 ${ct.ok}/${ct.fin} = ${f1(ct.rate)}%  ≠  확정 143/${ct.fin} = 80.8%  — 6건 차이, 원 산출 스크립트 확인 필요`)}
           </tbody></table></div>
         <div style="margin-top:.7rem;font-size:.73rem;color:var(--tx-s);line-height:1.7">
           특수규칙 적용 현황 —
@@ -651,7 +655,8 @@ KPI 연계: 2.4 매출 실현율 · 4.1 BU% · 3.3 방법론 준수율`),
     ['재공 처리 속도', '당월완료/전월잔여×100', '1.3', '31.2%', '—', '35%+', 'FoEX 확대가 핵심 레버'],
     ['FoEX Adoption (FAR)', 'FoEX방식건/전체건×100', '3.1', '41.4%', '60%', '50%+', '방문구축→FoEX 전환'],
     ['납기준수율', '준수건/판정모수×100', '1.7', '94.8%', '—', '94.8% 유지', '🔴 이진판정 70.0% 금지'],
-    ['계약기간준수율', '준수/완료×100 (설치형)', '1.8', '80.8%', '—', '80.8% 유지', '🔴 95.3% 인용 금지'],
+    ['계약기간준수율', '준수/완료×100 (설치형)', '1.8', '80.8%', '—', '80.8% 유지', '🔴 95.3% 인용 금지 · 예외는 1.9로 판정'],
+    ['기본 구축기간 준수율', '준수/완료×100 (AD 단독)', '1.9', '90.4%', '—', '90%+ 유지', '1.7과의 차이 = 납기 연장 효과'],
     ['TTV (SaaS)', 'AVG(완료일−수주일)', '5.1', '측정 필요', '60일', '60일 이내', 'GCMS 수주일 기준 산출'],
     ['Billable Utilization', '유상MD/가용MD×100', '4.1', '측정 필요', '75%', '75%+', 'GCMS MD구분 입력 필수'],
     ['RAG Red%', 'Red건/전체진행건×100', '6.3', '11.2%', '5%', '8% 이하', '재공 지연건 집중 처리'],

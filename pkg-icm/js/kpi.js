@@ -198,20 +198,47 @@ const KPI = (() => {
       cycle: '월간',
       target: '80.8% 유지', targetVal: 80, op: 'gte', unit: '%',
       asIs: '80.8% = 143/177 (확정)', state: 'proxy',
-      note: '⚠ 재현 불일치 — 확정값 143/177(80.8%)와 본 산출값 사이에 예외 22건 규칙 차이가 있다. 해당 규칙은 스킬 a10-deadline-compliance ❸에만 존재하며 제공 문서에 없어 미반영. 🔴 95.3%(SaaS 포함) 인용 금지.',
+      note: '예외 건(변경완료예정일 보유 = 납기 변경 발생 22건)은 계약기간이 아닌 기본 구축기간 납기준수율(KPI 1.9)로 별도 판정한다. ' +
+            '※ 모집단(302→301→완료 177)은 확정값과 일치하나 준수 건수는 6건 차이가 남는다(137 vs 143). ' +
+            'GCMS 보유 컬럼 조합으로는 재현되지 않아 스킬 a10-deadline-compliance ❸의 원 산출 스크립트 확인이 필요하다. 🔴 95.3%(SaaS 포함) 인용 금지.',
       calc: D => {
-        const pop = D.rows.filter(p => p.pjtType === '신규' && p.product === 'Amaranth10'
-          && p.ctrStart && p.ctrEnd && p.code !== 'PAC240528003');
-        const fin = pop.filter(p => p.status === '완료');
-        const ok = fin.filter(p => p.doneDate && p.doneDate <= p.ctrEnd).length;
-        const v = pct(ok, fin.length);
+        const ct = D.meta.contractTerm || {};
+        const v = ct.rate;
         return {
           v, disp: f1(v) + '%',
-          sub: `준수 ${ok} / 완료 ${fin.length}건 (모집단 ${pop.length})`,
+          sub: `준수 ${ct.ok} / 완료 ${ct.fin}건 (모집단 ${ct.pop} → ${ct.popEx})`,
           detail: [
-            { label: '확정값 (작업지침 §1-1)', value: '143 / 177 = 80.8%' },
-            { label: '본 산출값 (예외규칙 미반영)', value: `${ok} / ${fin.length} = ${f1(v)}%` },
-            { label: '차이', value: `${143 - ok}건 — 예외 22건 규칙 필요` },
+            { label: '모집단', value: `${ct.pop} → 신영 제외 ${ct.popEx} → 완료 ${ct.fin}` },
+            { label: '계약종료일(AZ) 기준 준수', value: `${ct.ok} / ${ct.fin} = ${f1(ct.rate)}%` },
+            { label: '예외 (납기 변경 발생 건)', value: `${ct.exception}건 → KPI 1.9로 판정` },
+            { label: '기본 구축기간(AD) 기준', value: `${ct.baseKeep} / ${ct.fin} = ${f1(ct.baseRate)}%` },
+            { label: '확정값 (작업지침 §1-1)', value: `143 / ${ct.fin} = 80.8% — 6건 미재현` },
+          ]
+        };
+      }
+    },
+    {
+      id: '1.9', pillar: 1, name: '기본 구축기간 납기준수율',
+      def: '납기 변경(연장)을 반영하지 않은 최초 구축완료예정일 기준 납기준수율. KPI 1.7과의 차이가 곧 납기 연장 효과이며, 계약기간준수율(1.8)의 예외 건 판정 기준이다.',
+      formula: '기본 구축기간 준수율(%) = 준수건 / 완료건 × 100\n판정 기준일 = 구축완료예정일(AD) 단독  ※ 변경완료예정일(AE) 미적용\n준수 = 조기 + 정시 + 30일이내\n연장 효과(%p) = KPI 1.7 − KPI 1.9',
+      source: 'GCMS: 구축완료예정일(AD), 구축완료일(AF)',
+      cycle: '주간 / 월간',
+      target: '90%+ 유지', targetVal: 90, op: 'gte', unit: '%',
+      asIs: '90.4% = 1,452/1,606', state: 'auto',
+      note: 'KPI 1.7(94.8%)은 변경완료예정일을 반영한 값이므로, 두 지표의 차이만큼 납기 변경으로 준수 판정이 뒤바뀐 건이 존재한다. 계약기간준수율(1.8)의 예외 건은 본 지표로 판정한다.',
+      calc: D => {
+        const keep = D.meta.deliveryBaseKeep, mo = D.meta.deliveryBaseJudged;
+        const v = pct(keep, mo);
+        const b = D.meta.deliveryBase || {};
+        const bp = D.meta.deliveryRate;
+        return {
+          v, disp: f1(v) + '%',
+          sub: `준수 ${keep.toLocaleString()} / 모수 ${mo.toLocaleString()}건`,
+          detail: [
+            { label: '조기 · 정시 · 30일내', value: `${b['조기']} · ${b['정시']} · ${b['30일내']} = ${keep.toLocaleString()}` },
+            { label: '1M · 2M · 3M 초과', value: `${b['1M초과']} · ${b['2M초과']} · ${b['3M초과']} = ${(mo - keep).toLocaleString()}` },
+            { label: 'KPI 1.7 (변경 반영)', value: `${f1(bp)}%` },
+            { label: '납기 연장 효과', value: `${f1(bp - v)}%p · 준수 전환 ${D.meta.deliveryExtended}건` },
           ]
         };
       }

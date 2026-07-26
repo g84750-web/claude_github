@@ -36,6 +36,7 @@ CENTER = {'솔루션구축1Unit': '1센터(서울/수도권)', '솔루션구축2
 M_1N, M_MIX, M_VISIT, M_SOLO = 'FoEX교육(1:N)', 'FoEX교육(1:N)+방문', '방문구축', 'FoEX교육(단독)'
 FOEX_FAMILY = (M_1N, M_MIX)          # 계약공수 = 표준공수(AH), 무상공수 발생
 FREE_COEF = 0.30                     # FoEX 효율계수
+KEEP_BUCKETS = ('조기', '정시', '30일내')   # 납기 준수 판정 구간
 CAPA_COEF = 22.0                     # 월가용 CAPA 계수 (2026.07~)
 ACTIVE = ('진행', '지연')
 
@@ -107,12 +108,22 @@ def load(path, today):
             mdStd=mdStd, mdPlan=mdPlan, mdUsed=mdUsed,
         )
 
-        # ── 납기 판정 (G2) — delta = 구축완료일 − BP ──────────────
+        # ── 납기 판정 (G2) ────────────────────────────────────────
+        #   ① 납기준수율        : BP = 변경완료예정일(AE) 1순위 → 구축완료예정일(AD) 2순위
+        #   ② 기본 구축기간 준수율: 구축완료예정일(AD) 단독 — 납기 변경(연장) 미반영
+        def bucket(delta):
+            return (None if delta is None else
+                    '조기' if delta < 0 else '정시' if delta == 0 else '30일내' if delta <= 30
+                    else '1M초과' if delta <= 60 else '2M초과' if delta <= 90 else '3M초과')
+
+        due0 = d(r[C['due']])
         rec['dlvDelta'] = (done - bp).days if (status == '완료' and done and bp) else None
-        dd = rec['dlvDelta']
-        rec['dlvBucket'] = (None if dd is None else
-                            '조기' if dd < 0 else '정시' if dd == 0 else '30일내' if dd <= 30
-                            else '1M초과' if dd <= 60 else '2M초과' if dd <= 90 else '3M초과')
+        rec['dlvBucket'] = bucket(rec['dlvDelta'])
+        rec['dlvBaseDelta'] = (done - due0).days if (status == '완료' and done and due0) else None
+        rec['dlvBaseBucket'] = bucket(rec['dlvBaseDelta'])
+        # 납기 변경(연장)으로 준수 판정이 뒤바뀐 건
+        rec['dlvExtended'] = bool(
+            rec['dlvBucket'] in KEEP_BUCKETS and rec['dlvBaseBucket'] not in KEEP_BUCKETS)
 
         # ── 계약공수 기준 공수 산정 (G3) — 현진행 건만 ────────────
         rec.update(mdContract=0.0, mdPaidUn=0.0, mdFreeUn1=0.0, mdFinalUn=0.0,
@@ -166,6 +177,9 @@ def verify(rows, today, headcount=82):
 
     dlv = Counter(r['dlvBucket'] for r in rows if r['dlvBucket'])
     keep = dlv['조기'] + dlv['정시'] + dlv['30일내']
+    dlvB = Counter(r['dlvBaseBucket'] for r in rows if r['dlvBaseBucket'])
+    keepB = dlvB['조기'] + dlvB['정시'] + dlvB['30일내']
+    extended = sum(1 for r in rows if r.get('dlvExtended'))
 
     g = defaultdict(lambda: dict(cnt=0, contract=0.0, plan=0.0, used=0.0,
                                  paid=0.0, free=0.0, final=0.0))
@@ -193,15 +207,24 @@ def verify(rows, today, headcount=82):
         doneRate=round(done / total * 100, 2), active=len(act),
         carry=carry, new=new, carryByYear={str(k): v for k, v in sorted(yr.items())},
         delivery=dict(dlv), deliveryKeep=keep, deliveryRate=round(keep / done * 100, 1) if done else None,
+        deliveryBase=dict(dlvB), deliveryBaseKeep=keepB,
+        deliveryBaseJudged=sum(dlvB.values()),
+        deliveryBaseRate=round(keepB / sum(dlvB.values()) * 100, 1) if sum(dlvB.values()) else None,
+        deliveryExtended=extended,
         methodAgg={k: {kk: round(vv, 1) for kk, vv in v.items()} for k, v in g.items()},
         md=dict(contract=round(T['contract'], 1), plan=round(T['plan'], 1), used=round(T['used'], 1),
                 paidUn=round(T['paid'], 1), freeUn1=round(T['free'], 1),
                 un1=round(un1, 1), converted=round(conv, 1), finalUn=round(T['final'], 1)),
         delayM=round(T['final'] / capa, 2) if capa else None,
         spRule=dict(Counter(r['spRule'] for r in rows if r['spRule'])),
-        contractTerm=dict(pop=len(pop) + 1, popEx=len(pop), fin=len(cfin), ok=cok,
-                          over=len(cfin) - cok,
-                          rate=round(cok / len(cfin) * 100, 1) if cfin else None),
+        contractTerm=dict(
+            pop=len(pop) + 1, popEx=len(pop), fin=len(cfin), ok=cok, over=len(cfin) - cok,
+            rate=round(cok / len(cfin) * 100, 1) if cfin else None,
+            # 예외 = 변경완료예정일(AE) 보유 건 → 계약기간이 아닌 기본 구축기간(AD) 기준으로 판정
+            exception=sum(1 for r in cfin if r['dueChgDate']),
+            baseKeep=sum(1 for r in cfin if r['dlvBaseBucket'] in KEEP_BUCKETS),
+            baseRate=round(sum(1 for r in cfin if r['dlvBaseBucket'] in KEEP_BUCKETS)
+                           / len(cfin) * 100, 1) if cfin else None),
         orderAmtM=round(sum(r['orderAmt'] for r in rows) / 1_000_000),
         identity=dict(
             statusSum=sum(st.values()) == total,
@@ -277,6 +300,8 @@ def main():
     print(f'완료율 {v["doneRate"]}%  현진행 {v["active"]}')
     print(f'납기준수 {v["deliveryKeep"]}/{v["done"]} = {v["deliveryRate"]}%  '
           f'{"OK" if v["identity"]["deliverySum"] else "FAIL"}')
+    print(f'기본 구축기간 준수 {v["deliveryBaseKeep"]}/{v["deliveryBaseJudged"]} = {v["deliveryBaseRate"]}%'
+          f'  (납기 변경으로 준수 전환 {v["deliveryExtended"]}건)')
     m = v['md']
     print(f'\n계약공수 {m["contract"]:,} = 투입환산 {m["converted"]:,} + 미투입1차 {m["un1"]:,}  '
           f'{"OK" if v["identity"]["mdIdentity"] else "FAIL"}')
@@ -286,6 +311,8 @@ def main():
     print(f'특수규칙 {v["spRule"]}')
     ct = v['contractTerm']
     print(f'계약기간준수율 {ct["ok"]}/{ct["fin"]} = {ct["rate"]}%  (모집단 {ct["pop"]}→{ct["popEx"]})')
+    print(f'  └ 예외(변경완료예정일 보유) {ct["exception"]}건 → 기본 구축기간(AD) 기준 '
+          f'{ct["baseKeep"]}/{ct["fin"]} = {ct["baseRate"]}%')
 
     assignees, aMeta = [], None
     if apath:
