@@ -450,6 +450,41 @@ const INGEST = (() => {
     try { localStorage.setItem(KEY, JSON.stringify(all)); } catch { }
   }
 
+  /* ════════ 컬럼 매핑 프리셋 ════════
+     원본 레이아웃이 매주 동일하므로 (전치여부 · 머리글행 · 컬럼매핑)을 저장해
+     다음 회차에 자동 복원한다. 2단 머리글처럼 자동 인식이 어려운 표에 특히 유용. */
+  const PKEY = 'pkg-icm.map.v1';
+  const pmem = {};
+  const pid = (src, block) => `${src}.${block}`;
+
+  function loadPresets() {
+    try { return JSON.parse(localStorage.getItem(PKEY) || '{}'); }
+    catch { return { ...pmem }; }
+  }
+  function getPreset(src, block) { return loadPresets()[pid(src, block)] || null; }
+  function savePreset(src, block, preset) {
+    const all = loadPresets();
+    all[pid(src, block)] = preset; pmem[pid(src, block)] = preset;
+    try { localStorage.setItem(PKEY, JSON.stringify(all)); return true; } catch { return false; }
+  }
+  function removePreset(src, block) {
+    const all = loadPresets();
+    delete all[pid(src, block)]; delete pmem[pid(src, block)];
+    try { localStorage.setItem(PKEY, JSON.stringify(all)); } catch { }
+  }
+
+  /** 프리셋이 현재 데이터에 적용 가능한지 검사 */
+  function presetUsable(preset, grid, block) {
+    if (!preset || !preset.map) return false;
+    const g = preset.transposed ? transpose(grid) : grid;
+    const hdr = g[preset.headerRow];
+    if (!hdr) return false;
+    const idxs = Object.values(preset.map).filter(i => i >= 0);
+    if (!idxs.length || Math.max(...idxs) >= hdr.length) return false;
+    // 필수 컬럼이 모두 매핑되어 있어야 한다
+    return block.cols.filter(c => c.req).every(c => (preset.map[c.key] ?? -1) >= 0);
+  }
+
   /* ════════ 양식(템플릿) CSV ════════ */
   function templateCsv(block) {
     const head = block.cols.map(c => c.label).join(',');
@@ -469,5 +504,6 @@ const INGEST = (() => {
     SCHEMAS, blockOf, parseXlsx, parseText, autoMap, findHeaderRow, toRecords,
     transpose, bestOrientation,
     loadAll, saveOne, removeOne, templateCsv, download, toNum, norm,
+    getPreset, savePreset, removePreset, loadPresets, presetUsable,
   };
 })();

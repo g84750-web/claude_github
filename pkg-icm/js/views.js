@@ -760,7 +760,8 @@ KPI 연계: 2.4 매출 실현율 · 4.1 BU% · 3.3 방법론 준수율`),
 
   /* ════════ 8. 데이터 입력 (별도 3종 — 붙여넣기 / 엑셀 업로드) ════════ */
   const ING = { src: 'oneai', block: 'recv', grid: null, headerRow: 0, map: {}, records: [],
-                sheets: [], sheet: '', fileName: '', asOf: '', err: '', transposed: false, raw: null };
+                sheets: [], sheet: '', fileName: '', asOf: '', err: '', transposed: false, raw: null,
+                presetApplied: false };
 
   const curBlock = () => INGEST.blockOf(ING.src, ING.block);
 
@@ -793,12 +794,13 @@ KPI 연계: 2.4 매출 실현율 · 4.1 BU% · 3.3 방법론 준수율`),
     const bl = curBlock();
     const saved = INGEST.loadAll()[ING.src];
     const savedRecs = saved?.blocks?.[bl.key];
+    const hasPreset = !!INGEST.getPreset(ING.src, bl.key);
     const box = $('ing-body'); if (!box) return;
 
     const blockTabs = sc.blocks.length > 1 ? `
       <div style="display:flex;gap:.35rem;margin-bottom:.9rem;flex-wrap:wrap">
         ${sc.blocks.map(b => `<button class="pg ${ING.block === b.key ? 'active' : ''}"
-          onclick="VIEWS.ingBlock('${b.key}')">${esc(b.name)}${saved?.blocks?.[b.key] ? ' ✓' : ''}</button>`).join('')}
+          onclick="VIEWS.ingBlock('${b.key}')">${esc(b.name)}${saved?.blocks?.[b.key] ? ' ✓' : ''}${INGEST.getPreset(sc.id, b.key) ? ' 🔖' : ''}</button>`).join('')}
       </div>` : '';
 
     box.innerHTML = `
@@ -829,6 +831,8 @@ KPI 연계: 2.4 매출 실현율 · 4.1 BU% · 3.3 방법론 준수율`),
           <div style="display:flex;gap:.4rem;flex-wrap:wrap">
             <button class="pg" onclick="VIEWS.ingPaste()">붙여넣기 분석</button>
             ${ING.raw ? `<button class="pg" onclick="VIEWS.ingFlip()">행/열 바꾸기 ${ING.transposed ? '(전치됨)' : ''}</button>` : ''}
+            ${ING.grid ? `<button class="pg" onclick="VIEWS.ingSavePreset()">매핑 저장</button>` : ''}
+            ${hasPreset ? `<button class="pg" onclick="VIEWS.ingDropPreset()">저장 매핑 해제</button>` : ''}
             <button class="pg" onclick="VIEWS.ingTemplate()">양식 내려받기</button>
             <button class="pg" onclick="VIEWS.ingClear()">입력 초기화</button>
             ${savedRecs ? `<button class="pg" style="border-color:#FECACA;color:var(--risk)" onclick="VIEWS.ingRemove()">이 표 저장 삭제</button>` : ''}
@@ -837,7 +841,10 @@ KPI 연계: 2.4 매출 실현율 · 4.1 BU% · 3.3 방법론 준수율`),
           ${ING.err ? `<div class="err" style="margin-top:.8rem;padding:.8rem 1rem;font-size:.78rem">${esc(ING.err)}</div>` : ''}
           ${ING.fileName ? `<div style="margin-top:.7rem;font-size:.73rem;color:var(--tx-s)">
             읽은 데이터: <b>${esc(ING.fileName)}</b>${ING.sheet ? ` · 시트 <b>${esc(ING.sheet)}</b>` : ''}
-            ${ING.transposed ? ' · <b style="color:var(--info)">가로형 감지 → 행/열 전치 적용</b>' : ''}</div>` : ''}
+            ${ING.transposed ? ' · <b style="color:var(--info)">가로형 감지 → 행/열 전치 적용</b>' : ''}
+            ${ING.presetApplied ? ' · <b style="color:var(--ok)">저장된 매핑 자동 적용</b>' : ''}</div>` : ''}
+          ${hasPreset && !ING.grid ? `<div style="margin-top:.7rem;font-size:.73rem;color:var(--ok);background:var(--ok-bg);border-radius:6px;padding:.5rem .7rem;line-height:1.6">
+            이 표의 <b>컬럼 매핑이 저장되어 있습니다.</b> 데이터를 붙여넣거나 업로드하면 머리글 행·전치 여부·컬럼 지정이 자동 복원됩니다.</div>` : ''}
 
           <div style="margin-top:.9rem;padding-top:.8rem;border-top:1px dashed var(--bd-light)">
             <div style="font-size:.72rem;font-weight:800;color:var(--tx-s);margin-bottom:.4rem">기대 컬럼</div>
@@ -928,6 +935,7 @@ KPI 연계: 2.4 매출 실현율 · 4.1 BU% · 3.3 방법론 준수율`),
   function ingReset() {
     ING.grid = null; ING.raw = null; ING.records = []; ING.err = '';
     ING.fileName = ''; ING.sheets = []; ING.sheet = ''; ING.transposed = false;
+    ING.presetApplied = false;
   }
   function ingSrc(id) {
     ING.src = id; ING.block = INGEST.SCHEMAS[id].blocks[0].key;
@@ -949,6 +957,26 @@ KPI 연계: 2.4 매출 실현율 · 4.1 BU% · 3.3 방법론 준수율`),
     const sc = INGEST.SCHEMAS[ING.src], bl = curBlock();
     INGEST.download(`PKG_${sc.id}_${bl.key}_양식.csv`, INGEST.templateCsv(bl));
   }
+  function ingSavePreset() {
+    if (!ING.grid) return;
+    const ok = INGEST.savePreset(ING.src, ING.block, {
+      transposed: ING.transposed, headerRow: ING.headerRow, map: { ...ING.map },
+      savedAt: new Date().toISOString().slice(0, 16).replace('T', ' '),
+    });
+    ING.err = ok ? '' : '※ 브라우저 저장소가 차단되어 매핑이 이번 세션에만 유지됩니다.';
+    drawIngest();
+  }
+
+  function ingDropPreset() {
+    INGEST.removePreset(ING.src, ING.block);
+    ING.presetApplied = false;
+    if (ING.raw) {                      // 저장 매핑 해제 후 자동 인식으로 재분석
+      const best = INGEST.bestOrientation(ING.raw, curBlock());
+      ING.transposed = best.transposed;
+      applyGrid(best.grid);
+    } else drawIngest();
+  }
+
   function ingFlip() {
     if (!ING.raw) return;
     ING.transposed = !ING.transposed;
@@ -957,6 +985,7 @@ KPI 연계: 2.4 매출 실현율 · 4.1 BU% · 3.3 방법론 준수율`),
 
   function applyGrid(grid, manual) {
     const bl = curBlock();
+    ING.presetApplied = false;
     ING.grid = grid;
     const h = INGEST.findHeaderRow(grid, bl);
     ING.headerRow = h.row;
@@ -971,7 +1000,25 @@ KPI 연계: 2.4 매출 실현율 · 4.1 BU% · 3.3 방법론 준수율`),
     const bl = curBlock();
     if (!grid.length) { ING.err = '읽을 데이터가 없습니다.'; drawIngest(); return; }
     ING.raw = grid; ING.fileName = label || '';
-    const best = INGEST.bestOrientation(grid, bl);   // 가로형이면 자동 전치
+
+    // ① 저장된 매핑 프리셋이 현재 데이터에 적용 가능하면 우선 복원
+    const preset = INGEST.getPreset(ING.src, bl.key);
+    if (INGEST.presetUsable(preset, grid, bl)) {
+      ING.transposed = !!preset.transposed;
+      ING.grid = preset.transposed ? INGEST.transpose(grid) : grid;
+      ING.headerRow = preset.headerRow;
+      ING.map = { ...preset.map };
+      ING.presetApplied = true;
+      ING.err = '';
+      ING.records = [];
+      drawIngest();
+      ingApply();
+      return;
+    }
+
+    // ② 없으면 가로형 자동 전치 + 자동 매핑
+    ING.presetApplied = false;
+    const best = INGEST.bestOrientation(grid, bl);
     ING.transposed = best.transposed;
     applyGrid(best.grid);
   }
@@ -1022,6 +1069,11 @@ KPI 연계: 2.4 매출 실현율 · 4.1 BU% · 3.3 방법론 준수율`),
     cur.source = ING.fileName;
     cur.savedAt = new Date().toISOString().slice(0, 16).replace('T', ' ');
     const ok = INGEST.saveOne(ING.src, cur);
+    // 표를 저장하면 컬럼 매핑도 함께 기억한다 (다음 회차 자동 복원)
+    INGEST.savePreset(ING.src, ING.block, {
+      transposed: ING.transposed, headerRow: ING.headerRow, map: { ...ING.map },
+      savedAt: new Date().toISOString().slice(0, 16).replace('T', ' '),
+    });
     ING.err = ok ? '' : '※ 브라우저 저장소 사용이 차단되어 이번 세션에만 유지됩니다.';
     renderIngest(APP.D);
   }
@@ -1029,5 +1081,5 @@ KPI 연계: 2.4 매출 실현율 · 4.1 BU% · 3.3 방법론 준수율`),
   return { renderExec, renderBook, renderProjectShell, renderStatus, renderCapa, renderAudit, renderBench,
     renderIngest, selectPJ, goPJ, goTab, goCP,
     ingSrc, ingBlock, ingAsOf, ingHeader, ingMap, ingClear, ingRemove, ingTemplate,
-    ingPaste, ingFile, ingFlip, ingApply, ingSave };
+    ingPaste, ingFile, ingFlip, ingApply, ingSave, ingSavePreset, ingDropPreset };
 })();
