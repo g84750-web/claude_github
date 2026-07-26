@@ -564,9 +564,22 @@ KPI 연계: 2.4 매출 실현율 · 4.1 BU% · 3.3 방법론 준수율`),
             <tr><td class="ctr">③</td><td class="strong">CAPA 인원</td><td class="mono" style="font-size:.7rem">스킬 a10-capa-buildperf</td>
               <td class="strong">${esc(D.asOf)}</td><td>인력변동 시</td>
               <td style="font-size:.72rem">가용 ${D.meta.headcount}명 · 계수 ${D.meta.capaCoef} · 월가용 CAPA ${f0(D.meta.capa)}</td></tr>
-            <tr style="opacity:.55"><td class="ctr">④</td><td>ONE AI / 영업지원 / FoEX</td>
-              <td class="mono" style="font-size:.7rem">별도 PDF·xlsx 3종</td><td>미로드</td><td>월</td>
-              <td style="font-size:.72rem">ONE AI 실적 · 영업지원 전환율 · FoEX 교육실적 (본 파일럿 범위 외)</td></tr>
+            ${(() => {
+              const aux = INGEST.loadAll();
+              return Object.values(INGEST.SCHEMAS).map((sc, i) => {
+                const v = aux[sc.id];
+                const stale = v && v.asOf && v.asOf !== D.asOf;
+                return `<tr style="${v ? '' : 'opacity:.55'}">
+                  <td class="ctr">${['④','⑤','⑥'][i]}</td>
+                  <td class="strong">${esc(sc.name)}</td>
+                  <td class="mono" style="font-size:.7rem">${v ? esc(v.source || '직접 입력') : '별도 xlsx / 붙여넣기'}</td>
+                  <td class="strong" style="color:${!v ? 'var(--tx-m)' : stale ? 'var(--warn)' : 'inherit'}">${v ? esc(v.asOf) : '미입력'}</td>
+                  <td>${esc(sc.cycle)}</td>
+                  <td style="font-size:.72rem">${v
+                    ? sc.summary(v.records).map(([l, x]) => `${esc(l)} ${esc(x)}`).join(' · ')
+                    : '「데이터 입력(3종)」 화면에서 엑셀 붙여넣기 또는 파일 업로드'}</td></tr>`;
+              }).join('');
+            })()}
           </tbody></table></div>
         ${D.assigneeMeta?.asOf && D.assigneeMeta.asOf !== D.asOf ? `
         <div style="margin-top:.7rem;padding:.7rem .9rem;background:var(--warn-bg);border-radius:8px;font-size:.75rem;color:#92400E;line-height:1.7">
@@ -606,6 +619,15 @@ KPI 연계: 2.4 매출 실현율 · 4.1 BU% · 3.3 방법론 준수율`),
               `${D.meta.headcount} × ${D.meta.capaCoef} = ${f0(D.meta.capa)} m/d`)}
             ${chk(true, '[G4] 계약기간 모집단 (설치형)',
               `${ct.pop} → 신영 제외 ${ct.popEx} → 완료 ${ct.fin} · 예외(납기변경) ${ct.exception}건 → KPI 1.9로 별도 판정`)}
+            ${(() => {
+              const aux = INGEST.loadAll();
+              const out = [];
+              ['sales', 'foex'].forEach(id => {
+                const v = aux[id]; if (!v) return;
+                INGEST.SCHEMAS[id].verify(v.records).forEach(x => out.push(chk(x.ok, x.label, x.expr)));
+              });
+              return out.join('');
+            })()}
             ${chk(false, '[G4] 계약기간준수율 준수 건수',
               `본 산출 ${ct.ok}/${ct.fin} = ${f1(ct.rate)}%  ≠  확정 143/${ct.fin} = 80.8%  — 6건 차이, 원 산출 스크립트 확인 필요`)}
           </tbody></table></div>
@@ -730,6 +752,230 @@ KPI 연계: 2.4 매출 실현율 · 4.1 BU% · 3.3 방법론 준수율`),
       </div>`;
   }
 
+
+  /* ════════ 8. 데이터 입력 (별도 3종 — 붙여넣기 / 엑셀 업로드) ════════ */
+  const ING = { src: 'oneai', grid: null, headerRow: 0, map: {}, records: [],
+                sheets: [], sheet: '', fileName: '', asOf: '', err: '' };
+
+  function renderIngest(D) {
+    const saved = INGEST.loadAll();
+    const tabs = Object.values(INGEST.SCHEMAS).map(sc => {
+      const has = saved[sc.id];
+      return `<button class="dt-btn ${ING.src === sc.id ? 'active' : ''}" onclick="VIEWS.ingSrc('${sc.id}')">
+        ${sc.icon} ${esc(sc.name)} ${has ? `<span class="st auto" style="margin-left:.3rem">${has.records.length}행</span>`
+          : '<span class="st pending" style="margin-left:.3rem">미입력</span>'}</button>`;
+    }).join('');
+
+    $('v-ingest').innerHTML = `
+      <div class="sec-head"><h2>데이터 입력 — 별도 3종</h2>
+        <span class="sub">작업지침 v2 §2-2 별도 업로드 3종 · GCMS에 없는 데이터 · 엑셀 붙여넣기 / 파일 업로드</span></div>
+      <div class="card" style="margin-bottom:1rem;background:#F8FAFF;border-color:#C7D2FE">
+        <div style="font-size:.77rem;line-height:1.8;color:var(--tx-b)">
+          <b style="color:var(--tx-h)">⚠ 미입력 시 주의</b> —
+          ①②③은 GCMS에 없는 데이터입니다. 미업로드 상태로 GCMS만 갱신하면 <b>해당 섹션에 이전 기준일 값이 잔존</b>합니다
+          (v68 FoEX 단독 15건 누락 사례). 각 소스의 <b>기준일을 반드시 입력</b>하여 병기하십시오.</div></div>
+      <div class="detail-tabs">${tabs}</div>
+      <div id="ing-body"></div>`;
+    drawIngest();
+  }
+
+  function drawIngest() {
+    const sc = INGEST.SCHEMAS[ING.src];
+    const saved = INGEST.loadAll()[ING.src];
+    const box = $('ing-body'); if (!box) return;
+
+    box.innerHTML = `
+      <div class="g2" style="align-items:start">
+        <div class="card">
+          <div class="sec-head"><h2 style="font-size:.9rem">${sc.icon} ${esc(sc.name)} 입력</h2>
+            <span class="sub">갱신주기 ${esc(sc.cycle)}</span></div>
+          <div style="font-size:.74rem;color:var(--tx-s);margin-bottom:.8rem">${esc(sc.desc)}</div>
+
+          <div class="f-grid" style="grid-template-columns:1fr 1fr;margin-bottom:.8rem">
+            <div class="fg"><label>기준일 (필수 · 병기용)</label>
+              <input class="ctl" type="date" id="ing-asof" value="${esc(ING.asOf || saved?.asOf || '')}"
+                onchange="VIEWS.ingAsOf(this.value)"></div>
+            <div class="fg"><label>엑셀 파일 업로드 (.xlsx / .csv)</label>
+              <input class="ctl" type="file" id="ing-file" accept=".xlsx,.csv,.tsv,.txt"
+                onchange="VIEWS.ingFile(this)"></div>
+          </div>
+
+          <div class="fg" style="margin-bottom:.6rem">
+            <label>엑셀에서 복사 → 아래에 붙여넣기 (Ctrl+V)</label>
+            <textarea class="ctl" id="ing-paste" rows="6" placeholder="엑셀에서 머리글 포함 영역을 복사한 뒤 이곳에 붙여넣으세요."
+              style="font-family:ui-monospace,monospace;font-size:.72rem;resize:vertical"
+              onpaste="setTimeout(()=>VIEWS.ingPaste(),0)"></textarea>
+          </div>
+
+          <div style="display:flex;gap:.4rem;flex-wrap:wrap">
+            <button class="pg" onclick="VIEWS.ingPaste()">붙여넣기 분석</button>
+            <button class="pg" onclick="VIEWS.ingTemplate()">양식 내려받기</button>
+            <button class="pg" onclick="VIEWS.ingClear()">입력 초기화</button>
+            ${saved ? `<button class="pg" style="border-color:#FECACA;color:var(--risk)" onclick="VIEWS.ingRemove()">저장 삭제</button>` : ''}
+          </div>
+
+          ${ING.err ? `<div class="err" style="margin-top:.8rem;padding:.8rem 1rem;font-size:.78rem">${esc(ING.err)}</div>` : ''}
+          ${ING.fileName ? `<div style="margin-top:.7rem;font-size:.73rem;color:var(--tx-s)">
+            읽은 파일: <b>${esc(ING.fileName)}</b>${ING.sheet ? ` · 시트 <b>${esc(ING.sheet)}</b>` : ''}
+            ${ING.sheets.length > 1 ? ` · 전체 시트 ${ING.sheets.length}개` : ''}</div>` : ''}
+
+          <div style="margin-top:.9rem;padding-top:.8rem;border-top:1px dashed var(--bd-light)">
+            <div style="font-size:.72rem;font-weight:800;color:var(--tx-s);margin-bottom:.4rem">기대 컬럼</div>
+            <div class="sch" style="font-family:ui-monospace,monospace;font-size:.7rem;background:#F8FAFC;border:1px solid var(--bd-light);border-radius:6px;padding:.55rem .7rem;line-height:1.8">
+              ${sc.cols.map(c => `${esc(c.label)}${c.req ? ' *' : ''}${c.hint ? `  — ${esc(c.hint)}` : ''}`).join('<br>')}
+            </div></div>
+        </div>
+
+        <div class="card">
+          <div class="sec-head"><h2 style="font-size:.9rem">컬럼 매핑 · 미리보기</h2>
+            ${ING.grid ? `<span class="sub">${ING.grid.length}행 인식</span>` : ''}</div>
+          ${ING.grid ? mappingUI(sc) : `<div class="notimpl">
+            <b>데이터를 먼저 입력하세요</b><br>
+            엑셀에서 <b>머리글 행을 포함</b>하여 복사한 뒤 왼쪽에 붙여넣거나, <code>.xlsx</code> 파일을 업로드하면
+            머리글이 자동 인식되고 컬럼이 자동 매핑됩니다.</div>`}
+        </div>
+      </div>
+      ${ING.records.length ? resultUI(sc) : ''}
+      ${saved ? savedUI(sc, saved) : ''}`;
+  }
+
+  function mappingUI(sc) {
+    const header = ING.grid[ING.headerRow] || [];
+    const opts = idx => ['<option value="-1">— 미사용 —</option>']
+      .concat(header.map((h, i) => `<option value="${i}" ${i === idx ? 'selected' : ''}>${esc(h || `(${i + 1}열)`)}</option>`)).join('');
+    return `
+      <div class="fg" style="margin-bottom:.7rem">
+        <label>머리글 행</label>
+        <select class="ctl" onchange="VIEWS.ingHeader(+this.value)">
+          ${ING.grid.slice(0, 12).map((r, i) =>
+            `<option value="${i}" ${i === ING.headerRow ? 'selected' : ''}>${i + 1}행 — ${esc(r.slice(0, 6).filter(Boolean).join(' | ').slice(0, 46))}</option>`).join('')}
+        </select></div>
+      <div class="tbl-wrap" style="max-height:230px;overflow:auto"><table>
+        <thead><tr><th>스키마 필드</th><th>엑셀 컬럼</th></tr></thead>
+        <tbody>${sc.cols.map(c => `<tr>
+          <td class="strong" style="white-space:nowrap">${esc(c.label)}${c.req ? ' <span style="color:var(--risk)">*</span>' : ''}</td>
+          <td><select class="ctl" style="padding:.3rem .5rem;font-size:.74rem"
+              onchange="VIEWS.ingMap('${c.key}', +this.value)">${opts(ING.map[c.key])}</select></td>
+        </tr>`).join('')}</tbody></table></div>
+      <button class="pg" style="margin-top:.7rem;background:#3B4FC8;color:#fff;border-color:#3B4FC8"
+        onclick="VIEWS.ingApply()">매핑 적용 → 집계</button>`;
+  }
+
+  function resultUI(sc) {
+    const recs = ING.records;
+    const sum = sc.summary(recs), ver = sc.verify(recs);
+    const cols = sc.cols;
+    return `
+      <div class="card" style="margin-top:1rem">
+        <div class="sec-head"><h2 style="font-size:.9rem">집계 결과</h2>
+          <span class="sub">${recs.length}행 · 기준일 ${esc(ING.asOf || '미입력')}</span>
+          <span class="spacer"></span>
+          <button class="pg" style="background:var(--ok);color:#fff;border-color:var(--ok)"
+            onclick="VIEWS.ingSave()">이 내용으로 저장</button></div>
+        <div class="md-cards">${sum.map(([l, v], i) =>
+          `<div class="md-card c${(i % 5) + 1}"><div class="l">${esc(l)}</div><div class="v">${esc(v)}</div></div>`).join('')}</div>
+        <div class="tbl-wrap" style="max-height:260px;overflow:auto;margin-bottom:.9rem"><table>
+          <thead><tr>${cols.map(c => `<th class="${c.type === 'num' ? 'num' : ''}">${esc(c.label)}</th>`).join('')}</tr></thead>
+          <tbody>${recs.slice(0, 60).map(r => `<tr>${cols.map(c =>
+            `<td class="${c.type === 'num' ? 'num' : ''}">${c.type === 'num' ? (r[c.key] || 0).toLocaleString() : esc(r[c.key])}</td>`).join('')}</tr>`).join('')}
+          </tbody></table></div>
+        ${recs.length > 60 ? `<div style="font-size:.72rem;color:var(--tx-m);margin-bottom:.6rem">외 ${recs.length - 60}행…</div>` : ''}
+        <div class="sec-head"><h2 style="font-size:.85rem">정합성 검증</h2></div>
+        <div class="tbl-wrap"><table><tbody>${ver.map(v => `<tr>
+          <td class="ctr" style="width:44px;font-size:1rem">${v.ok ? '✅' : '⚠️'}</td>
+          <td class="strong" style="width:230px">${esc(v.label)}</td>
+          <td class="mono" style="font-size:.72rem;color:${v.ok ? 'var(--tx-b)' : 'var(--warn)'}">${esc(v.expr)}</td>
+        </tr>`).join('')}</tbody></table></div>
+      </div>`;
+  }
+
+  function savedUI(sc, saved) {
+    const stale = APP.D && saved.asOf && saved.asOf !== APP.D.asOf;
+    return `<div class="card" style="margin-top:1rem;${stale ? 'background:var(--warn-bg);border-color:#FDE68A' : ''}">
+      <div class="sec-head"><h2 style="font-size:.9rem">저장된 데이터</h2>
+        <span class="sub">${saved.records.length}행 · 기준일 ${esc(saved.asOf || '미입력')} · 저장 ${esc(saved.savedAt || '')}</span></div>
+      <div style="font-size:.76rem;line-height:1.8;color:var(--tx-b)">
+        ${sc.summary(saved.records).map(([l, v]) => `<b>${esc(l)}</b> ${esc(v)}`).join(' &nbsp;·&nbsp; ')}
+      </div>
+      ${stale ? `<div style="margin-top:.7rem;font-size:.75rem;color:#92400E;line-height:1.7">
+        <b>⚠ 기준일 불일치</b> — 이 소스의 기준일(${esc(saved.asOf)})이 GCMS 기준일(${esc(APP.D.asOf)})과 다릅니다.
+        작업지침 §2-3에 따라 값을 맞추지 말고 <b>기준일을 병기</b>하십시오.</div>` : ''}
+    </div>`;
+  }
+
+  /* ── 데이터 입력 핸들러 ── */
+  function ingReset() { ING.grid = null; ING.records = []; ING.err = ''; ING.fileName = ''; ING.sheets = []; ING.sheet = ''; }
+  function ingSrc(id) { ING.src = id; ingReset(); ING.asOf = INGEST.loadAll()[id]?.asOf || ''; drawIngest(); }
+  function ingAsOf(v) { ING.asOf = v; }
+  function ingHeader(n) { ING.headerRow = n; ING.map = INGEST.autoMap(ING.grid[n] || [], INGEST.SCHEMAS[ING.src]); drawIngest(); }
+  function ingMap(key, idx) { ING.map[key] = idx; }
+  function ingClear() { ingReset(); const t = $('ing-paste'); if (t) t.value = ''; drawIngest(); }
+  function ingRemove() { INGEST.removeOne(ING.src); ingReset(); renderIngest(APP.D); }
+  function ingTemplate() {
+    const sc = INGEST.SCHEMAS[ING.src];
+    INGEST.download(`PKG_${sc.id}_양식.csv`, INGEST.templateCsv(sc));
+  }
+
+  function loadGrid(grid, label) {
+    const sc = INGEST.SCHEMAS[ING.src];
+    if (!grid.length) { ING.err = '읽을 데이터가 없습니다.'; drawIngest(); return; }
+    ING.grid = grid; ING.err = ''; ING.fileName = label || '';
+    const h = INGEST.findHeaderRow(grid, sc);
+    ING.headerRow = h.row;
+    ING.map = INGEST.autoMap(grid[h.row] || [], sc);
+    ING.records = [];
+    if (h.hits === 0) ING.err = '머리글을 자동 인식하지 못했습니다. 머리글 행과 컬럼 매핑을 직접 지정하세요.';
+    drawIngest();
+    if (h.hits > 0) ingApply();
+  }
+
+  function ingPaste() {
+    const t = $('ing-paste'); if (!t) return;
+    const grid = INGEST.parseText(t.value);
+    if (!grid.length) { ING.err = '붙여넣은 내용이 없습니다.'; drawIngest(); return; }
+    loadGrid(grid, '붙여넣기');
+  }
+
+  async function ingFile(input) {
+    const f = input.files && input.files[0]; if (!f) return;
+    try {
+      if (/\.(csv|tsv|txt)$/i.test(f.name)) {
+        loadGrid(INGEST.parseText(await f.text()), f.name);
+      } else {
+        const r = await INGEST.parseXlsx(await f.arrayBuffer());
+        ING.sheets = r.sheets; ING.sheet = r.sheet;
+        loadGrid(r.grid, f.name);
+      }
+    } catch (e) {
+      ING.err = String(e.message || e);
+      ING.grid = null; ING.records = [];
+      drawIngest();
+    }
+  }
+
+  function ingApply() {
+    const sc = INGEST.SCHEMAS[ING.src];
+    const miss = sc.cols.filter(c => c.req && (ING.map[c.key] ?? -1) < 0);
+    if (miss.length) { ING.err = `필수 컬럼 미매핑: ${miss.map(c => c.label).join(', ')}`; drawIngest(); return; }
+    ING.err = '';
+    ING.records = INGEST.toRecords(ING.grid, ING.headerRow, ING.map, sc);
+    if (!ING.records.length) ING.err = '유효한 데이터 행이 없습니다. 머리글 행 지정을 확인하세요.';
+    drawIngest();
+  }
+
+  function ingSave() {
+    if (!ING.records.length) return;
+    const asOf = ($('ing-asof') || {}).value || ING.asOf || '';
+    if (!asOf) { ING.err = '기준일을 입력하세요. (기준일 병기 원칙 §2-3)'; drawIngest(); return; }
+    const ok = INGEST.saveOne(ING.src, {
+      asOf, records: ING.records, source: ING.fileName,
+      savedAt: new Date().toISOString().slice(0, 16).replace('T', ' '),
+    });
+    ING.err = ok ? '' : '※ 브라우저 저장소 사용이 차단되어 이번 세션에만 유지됩니다.';
+    renderIngest(APP.D);
+  }
+
   return { renderExec, renderBook, renderProjectShell, renderStatus, renderCapa, renderAudit, renderBench,
-    selectPJ, goPJ, goTab, goCP };
+    renderIngest, selectPJ, goPJ, goTab, goCP,
+    ingSrc, ingAsOf, ingHeader, ingMap, ingClear, ingRemove, ingTemplate, ingPaste, ingFile, ingApply, ingSave };
 })();
