@@ -9,6 +9,7 @@ const APP = (() => {
     { id: 'project', label: '📋 PROJECT 등록',    render: D => VIEWS.renderProjectShell(D), once: true },
     { id: 'status',  label: '📈 접수·완료 현황',  render: D => VIEWS.renderStatus(D), once: true },
     { id: 'capa',    label: '👥 공수현황(개인)',  render: D => VIEWS.renderCapa(D), once: true },
+    { id: 'audit',   label: '🔍 별첨·정합성 검증', render: (D, K) => VIEWS.renderAudit(D, K), once: true },
     { id: 'bench',   label: '🎯 EQT Benchmark',   render: (D, K) => VIEWS.renderBench(D, K), once: true },
   ];
 
@@ -32,8 +33,8 @@ const APP = (() => {
   async function loadRaw() {
     // standalone 빌드 시 데이터가 HTML에 내장됨
     if (window.__GCMS_DATA__) return window.__GCMS_DATA__;
-    const res = await fetch('data/gcms_data.json');
-    if (!res.ok) throw new Error(`HTTP ${res.status} — data/gcms_data.json`);
+    const res = await fetch('data/gcms_full.json');
+    if (!res.ok) throw new Error(`HTTP ${res.status} — data/gcms_full.json`);
     return res.json();
   }
 
@@ -51,14 +52,15 @@ const APP = (() => {
 
       const s = KPI.summary(S.K);
       document.getElementById('meta').innerHTML = `
-        <span class="chip live">● GCMS 연동</span>
-        <span class="chip">${S.D.meta.count.toLocaleString()}건</span>
-        <span class="chip">KPI ${s.total}개 (산출 ${s.auto + s.proxy})</span>
-        <span class="chip">${S.D.meta.lastReceipt} 기준</span>`;
+        <span class="chip live">● GCMS ${S.D.asOf}</span>
+        <span class="chip">${S.D.stat.total.toLocaleString()}건</span>
+        <span class="chip">완료율 ${(S.D.stat.done / S.D.stat.total * 100).toFixed(2)}%</span>
+        <span class="chip">구축지연 ${S.D.meta.delayM}M</span>
+        <span class="chip">KPI ${s.total}개 (산출 ${s.auto + s.proxy})</span>`;
 
       document.getElementById('foot-info').textContent =
-        `총 ${S.D.meta.count.toLocaleString()}개 프로젝트 · 구축인력 ${S.D.assignees.length}명 · ` +
-        `데이터 기간 ${S.D.meta.firstReceipt} ~ ${S.D.meta.lastReceipt}`;
+        `총 ${S.D.stat.total.toLocaleString()}건 · 완료 ${S.D.stat.done.toLocaleString()} · 현진행 ${S.D.stat.active} · ` +
+        `구축인력 ${S.D.assignees.length}명 · 접수기간 ${S.D.firstRecv} ~ ${S.D.lastRecv}`;
 
       go('exec');
     } catch (e) {

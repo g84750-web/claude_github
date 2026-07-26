@@ -1,235 +1,185 @@
 /* ══════════════════════════════════════════════════════════════════
-   PKG 구축통합관리 — 데이터 정규화 계층
-   원천: GCMS (Google Sheets 기반 구축진척관리시스템)
-   매핑 기준: NSM 개발 화면정의서 V2.0 (PROJECT등록 필드 체계)
+   PKG 구축통합관리 — 데이터 계층
+   원천 : GCMS A10(통합)구축진행현황 (etl_gcms.py 산출물)
+   산식 : PKG 주간보고 작업지침 v2 §1-3 계약공수 기준 공수 산정 (확정 정책)
    ══════════════════════════════════════════════════════════════════ */
 const DATA = (() => {
 
-  /* ── 화면정의서 기준 코드 정의 ──────────────────────────────── */
   const CODE = {
-    // 구축상태 (진행상태)
     STATUS: ['진행', '완료', '지연', '보류', '반품'],
-    // 구축구분 (구축방식) — KPI 1.4 / 3.1 FAR 산출 기준
-    METHOD: ['방문구축', 'FoEX교육(단독)', 'FoEX교육(1:N)', 'FoEX교육(1:N)+방문'],
-    // 제품형태 → 서버유형 (KPI 1.5 SaaS vs 구축형 Gap 산출 기준)
+    METHOD: ['방문구축', 'FoEX교육(1:N)', 'FoEX교육(1:N)+방문', 'FoEX교육(단독)'],
     SERVER: ['SaaS', '구축형'],
-    // 프로젝트구분
-    PJT_TYPE: ['신규', '추가'],
+    DLV: ['조기', '정시', '30일내', '1M초과', '2M초과', '3M초과'],
+    CENTER: ['1센터(서울/수도권)', '2센터(중부/호남권)', '3센터(부산/영남권)'],
   };
+  const ACTIVE = ['진행', '지연'];              // 현진행 = 진행 + 지연
+  const FOEX_FAMILY = ['FoEX교육(1:N)', 'FoEX교육(1:N)+방문'];
+  const FREE_COEF = 0.30;
 
-  /* 진행 종결 상태 — 화면정의서 slide5: "진행부분은 진행상태가 <완료,반품>이 아닌 것 적용" */
-  const CLOSED = ['완료', '반품'];
+  const day = (a, b) => (a && b) ? Math.round((new Date(b) - new Date(a)) / 86400000) : null;
 
-  /* ── 단일 레코드 정규화 ─────────────────────────────────────── */
-  function normalizeRow(r) {
-    const unit = (r.department || '').replace('본사(', '').replace(')', '') || '미지정';
-    const isSaaS = (r.product_type || '').includes('SaaS');
-    const method = r.construction_type || '미분류';
-
-    // 화면정의서 slide8 공수정보 필드 매핑
-    //   계약공수      ← standard_hours (모듈별 표준공수 합)
-    //   예상공수(유)  ← expected_hours
-    //   예상공수(무)  = 계약공수 − 예상공수(유)      [slide8 계산식]
-    //   투입공수(유)  ← invested_hours
-    //   잔여공수      = 예상공수(유) − 투입공수(유)  [slide9 계산식]
-    const mdContract = num(r.standard_hours);
-    const mdPlanPaid = num(r.expected_hours);
-    const mdPlanFree = Math.max(0, mdContract - mdPlanPaid);
-    const mdInPaid = num(r.invested_hours);
-    const mdRemain = mdPlanPaid - mdInPaid;
-
-    // 수행기간 — slide8: 일수[구축시작일 ~ 구축완료보고일]
-    //   ※ GCMS 미보유 필드(구축시작일/완료보고일/보류기간) → 접수일~완료예정일 대체 산출
-    const days = dayDiff(r.receipt_date, r.expected_completion);
-
-    return {
-      no: r.no,
-      projectCode: r.project_code,          // 프로젝트코드 (PAS/PAC + YYMM + 일련 3자리)
-      customer: r.customer,                 // 거래처명
-      dept: r.department,                   // 구축부서
-      unit,                                 // Unit 축약
-      pm: r.pm,                             // PM
-      status: r.status,                     // 구축상태
-      method,                               // 구축구분(구축방식)
-      receiptDate: r.receipt_date,          // 구축접수일
-      dueDate: r.expected_completion,       // 구축완료예정일
-      productType: r.product_type,          // 제품구분
-      serverType: isSaaS ? 'SaaS' : '구축형', // 서버유형 (파생)
-      pjtType: r.project_type,              // 프로젝트구분(신규/추가)
-      constructorsRaw: r.constructors || '',
-      assignees: parseAssignees(r.constructors),  // 배정정보 (담당자·모듈)
-
-      // 공수정보
-      mdContract, mdPlanPaid, mdPlanFree, mdInPaid, mdRemain,
-      progress: num(r.progress_rate),
-      days,
-
-      // 파생 플래그
-      isFoEX: method.startsWith('FoEX'),
-      isPureFoEX: method === 'FoEX교육(단독)' || method === 'FoEX교육(1:N)',
-      isClosed: CLOSED.includes(r.status),
-      isActive: !CLOSED.includes(r.status),   // 진행 중 (지연·보류 포함)
-      receiptYM: (r.receipt_date || '').slice(0, 7),
-      receiptYear: (r.receipt_date || '').slice(0, 4),
-      dueYM: (r.expected_completion || '').slice(0, 7),
-    };
-  }
-
-  /* ── 배정정보 파싱: "김규태(UC,인사)/이정화(회계)" ───────────── */
-  function parseAssignees(str) {
-    if (!str) return [];
-    return String(str).split('/').map(p => {
-      const m = p.trim().match(/^(.+?)\((.+)\)$/);
-      if (!m) return p.trim() ? { name: p.trim(), modules: [] } : null;
-      return {
-        name: m[1].trim(),
-        modules: m[2].split(',').map(x => x.trim()).filter(Boolean)
-      };
-    }).filter(Boolean);
-  }
-
-  const num = v => (typeof v === 'number' && isFinite(v)) ? v : (parseFloat(v) || 0);
-
-  function dayDiff(a, b) {
-    if (!a || !b) return null;
-    const d1 = new Date(a), d2 = new Date(b);
-    if (isNaN(d1) || isNaN(d2)) return null;
-    return Math.round((d2 - d1) / 86400000);
-  }
-
-  /* ── 담당자(구축자) 집계 — 화면정의서 slide21 공수현황(개인) ── */
-  function buildAssigneeStats(rows) {
-    const map = new Map();
+  /* ── 그룹 집계 ───────────────────────────────────────────────── */
+  function groupBy(rows, keyFn) {
+    const m = new Map();
     rows.forEach(p => {
-      p.assignees.forEach(a => {
-        if (!map.has(a.name)) {
-          map.set(a.name, {
-            name: a.name, projects: 0, active: 0, done: 0, delayed: 0,
-            mdContract: 0, mdPlanPaid: 0, mdInPaid: 0,
-            modules: new Map(), units: new Set(), lastDate: ''
-          });
-        }
-        const s = map.get(a.name);
-        s.projects++;
-        if (p.status === '완료') s.done++;
-        if (p.status === '지연') s.delayed++;
-        if (p.isActive) s.active++;
-        s.mdContract += p.mdContract;
-        s.mdPlanPaid += p.mdPlanPaid;
-        s.mdInPaid += p.mdInPaid;
-        s.units.add(p.unit);
-        if (p.receiptDate > s.lastDate) s.lastDate = p.receiptDate;
-        a.modules.forEach(m => s.modules.set(m, (s.modules.get(m) || 0) + 1));
+      const k = keyFn(p) || '미지정';
+      if (!m.has(k)) m.set(k, {
+        key: k, total: 0, done: 0, active: 0, delayed: 0, held: 0, returned: 0,
+        mdContract: 0, mdPlan: 0, mdUsed: 0, mdPaidUn: 0, mdFreeUn1: 0, mdFinalUn: 0,
+        amount: 0, doneAmount: 0, dlvKeep: 0, dlvJudged: 0
       });
-    });
-    return [...map.values()].map(s => ({
-      ...s,
-      mdRemain: s.mdPlanPaid - s.mdInPaid,
-      // 생산성 = 계약(표준)공수 / 투입공수 × 100
-      productivity: s.mdInPaid > 0 ? (s.mdContract / s.mdInPaid * 100) : null,
-      topModules: [...s.modules.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5),
-      unitList: [...s.units].join(', ')
-    })).sort((a, b) => b.projects - a.projects);
-  }
-
-  /* ── PM 집계 ─────────────────────────────────────────────────── */
-  function buildPMStats(rows) {
-    const map = new Map();
-    rows.forEach(p => {
-      if (!map.has(p.pm)) map.set(p.pm, {
-        name: p.pm, total: 0, done: 0, active: 0, delayed: 0, held: 0,
-        mdContract: 0, mdInPaid: 0, units: new Set()
-      });
-      const s = map.get(p.pm);
+      const s = m.get(k);
       s.total++;
-      if (p.status === '완료') s.done++;
+      if (p.status === '완료') { s.done++; s.doneAmount += p.orderAmt || 0; }
       if (p.status === '지연') s.delayed++;
       if (p.status === '보류') s.held++;
+      if (p.status === '반품') s.returned++;
       if (p.isActive) s.active++;
-      s.mdContract += p.mdContract;
-      s.mdInPaid += p.mdInPaid;
-      s.units.add(p.unit);
+      s.amount += p.orderAmt || 0;
+      s.mdContract += p.mdContract || 0;
+      s.mdPlan += p.mdPlan || 0;
+      s.mdUsed += p.mdUsed || 0;
+      s.mdPaidUn += p.mdPaidUn || 0;
+      s.mdFreeUn1 += p.mdFreeUn1 || 0;
+      s.mdFinalUn += p.mdFinalUn || 0;
+      if (p.dlvBucket) {
+        s.dlvJudged++;
+        if (['조기', '정시', '30일내'].includes(p.dlvBucket)) s.dlvKeep++;
+      }
     });
-    return [...map.values()].map(s => ({
+    return [...m.values()].map(s => ({
       ...s,
       doneRate: s.total > 0 ? s.done / s.total * 100 : 0,
-      productivity: s.mdInPaid > 0 ? s.mdContract / s.mdInPaid * 100 : null,
-      unitList: [...s.units].join(', ')
+      dlvRate: s.dlvJudged > 0 ? s.dlvKeep / s.dlvJudged * 100 : null,
+      unRate: s.mdContract > 0 ? s.mdFinalUn / s.mdContract * 100 : null,
+      avgAmount: s.done > 0 ? s.doneAmount / s.done / 1e6 : null,
     })).sort((a, b) => b.total - a.total);
   }
 
-  /* ── 월별 시계열 — KPI 1.3 재공 처리 속도 산출용 ─────────────── */
-  function buildMonthly(rows) {
+  /* ── 담당자(구축자) 집계 — 화면정의서 slide21 ────────────────── */
+  function buildAssignees(arows, projByCode) {
+    if (!arows || !arows.length) return [];
+    const m = new Map();
+    arows.forEach(a => {
+      if (!m.has(a.person)) m.set(a.person, {
+        name: a.person, rows: 0, projects: new Set(), active: 0, done: 0,
+        mdPlan: 0, mdUsed: 0, mdUn: 0, mdAdd: 0, mdMig: 0, mdOut: 0,
+        modules: new Map(), units: new Set(), lastDate: ''
+      });
+      const s = m.get(a.person);
+      s.rows++;
+      s.projects.add(a.code);
+      if (ACTIVE.includes(a.status)) s.active++;
+      if (a.status === '완료') s.done++;
+      s.mdPlan += a.mdPlan || 0;
+      s.mdUsed += a.mdUsed || 0;
+      s.mdUn += a.mdUn || 0;
+      s.mdAdd += a.mdAdd || 0;
+      s.mdMig += a.mdMig || 0;
+      s.mdOut += a.mdOut || 0;
+      if (a.unit) s.units.add(a.unit);
+      if (a.module) s.modules.set(a.module, (s.modules.get(a.module) || 0) + 1);
+      if (a.lastDate && a.lastDate > s.lastDate) s.lastDate = a.lastDate;
+    });
+    return [...m.values()].map(s => ({
+      ...s,
+      projectCnt: s.projects.size,
+      mdTotal: s.mdUsed + s.mdAdd + s.mdMig + s.mdOut,
+      topModules: [...s.modules.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5),
+      unitList: [...s.units].join(', '),
+    })).sort((a, b) => b.rows - a.rows);
+  }
+
+  /* ── PM 집계 ─────────────────────────────────────────────────── */
+  function buildPMs(rows) {
+    const g = groupBy(rows, p => p.pm);
+    return g.map(s => ({ ...s, name: s.key }));
+  }
+
+  /* ── 월별 시계열 ─────────────────────────────────────────────── */
+  function buildMonthly(rows, asOf) {
     const m = new Map();
     const touch = ym => {
-      if (!m.has(ym)) m.set(ym, { ym, received: 0, completed: 0, returned: 0, amountless: 0 });
+      if (!m.has(ym)) m.set(ym, { ym, received: 0, completed: 0, returned: 0 });
       return m.get(ym);
     };
     rows.forEach(p => {
-      if (p.receiptYM) touch(p.receiptYM).received++;
-      // 완료 시점 원천(구축완료보고일) 미보유 → 완료예정일을 완료 시점 대체값으로 사용
-      if (p.status === '완료' && p.dueYM) touch(p.dueYM).completed++;
-      if (p.status === '반품' && p.dueYM) touch(p.dueYM).returned++;
+      if (p.recvYM) touch(p.recvYM).received++;
+      if (p.status === '완료' && p.doneYM) touch(p.doneYM).completed++;
+      if (p.status === '반품' && p.doneYM) touch(p.doneYM).returned++;
     });
-    const list = [...m.values()].sort((a, b) => a.ym.localeCompare(b.ym));
-    // 재공(WIP) 잔여 누적 = 누적접수 − 누적완료 − 누적반품
+    const bound = (asOf || '').slice(0, 7);
+    const list = [...m.values()].filter(x => !bound || x.ym <= bound)
+      .sort((a, b) => a.ym.localeCompare(b.ym));
     let cr = 0, cc = 0, cx = 0;
     list.forEach(r => {
       cr += r.received; cc += r.completed; cx += r.returned;
-      r.cumReceived = cr; r.cumCompleted = cc; r.cumReturned = cx;
       r.wip = cr - cc - cx;
     });
     return list;
   }
 
-  /* ── 그룹 집계 헬퍼 ──────────────────────────────────────────── */
-  function groupBy(rows, keyFn) {
-    const m = new Map();
-    rows.forEach(p => {
-      const k = keyFn(p);
-      if (!m.has(k)) m.set(k, {
-        key: k, total: 0, done: 0, active: 0, delayed: 0, held: 0, returned: 0,
-        mdContract: 0, mdPlanPaid: 0, mdInPaid: 0
-      });
-      const s = m.get(k);
-      s.total++;
-      if (p.status === '완료') s.done++;
-      if (p.status === '지연') s.delayed++;
-      if (p.status === '보류') s.held++;
-      if (p.status === '반품') s.returned++;
-      if (p.isActive) s.active++;
-      s.mdContract += p.mdContract;
-      s.mdPlanPaid += p.mdPlanPaid;
-      s.mdInPaid += p.mdInPaid;
-    });
-    return [...m.values()].map(s => ({
-      ...s,
-      doneRate: s.total > 0 ? s.done / s.total * 100 : 0,
-      productivity: s.mdInPaid > 0 ? s.mdContract / s.mdInPaid * 100 : null
-    })).sort((a, b) => b.total - a.total);
-  }
-
   /* ── 데이터셋 빌드 ───────────────────────────────────────────── */
-  function build(raw) {
-    const rows = raw.map(normalizeRow);
+  function build(payload) {
+    // 신형식 {meta, rows, assignees} / 구형식 [ ... ] 모두 수용
+    const isNew = payload && !Array.isArray(payload) && payload.rows;
+    const meta = isNew ? payload.meta : {};
+    const src = isNew ? payload.rows : payload;
+    const asOf = meta.asOf || '';
+
+    const rows = src.map(r => ({
+      ...r,
+      isActive: ACTIVE.includes(r.status),
+      isFoEX: (r.method || '').startsWith('FoEX'),
+      isFoEXFamily: FOEX_FAMILY.includes(r.method),
+      isPureFoEX: r.method === 'FoEX교육(단독)' || r.method === 'FoEX교육(1:N)',
+      recvYM: (r.recvDate || '').slice(0, 7),
+      recvYear: (r.recvDate || '').slice(0, 4),
+      doneYM: (r.doneDate || '').slice(0, 7),
+      // 수행기간 — 수주일→구축완료일 (TTV 원천)
+      ttv: day(r.orderDate, r.doneDate),
+      leadTime: day(r.recvDate, r.doneDate),
+      mdRemain: (r.mdPlan || 0) - (r.mdUsed || 0),
+      progress: r.mdPlan > 0 ? Math.min(100, (r.mdUsed || 0) / r.mdPlan * 100) : 0,
+    }));
+
+    const byCode = new Map(rows.map(p => [p.code, p]));
+    const active = rows.filter(p => p.isActive);
+
+    // 프로젝트별 배정 인덱스 — 화면정의서 [배정정보]·[투입정보] 탭 원천
+    const assignByCode = new Map();
+    (payload.assignees || []).forEach(a => {
+      if (!assignByCode.has(a.code)) assignByCode.set(a.code, []);
+      assignByCode.get(a.code).push(a);
+    });
+
+    const dates = rows.map(p => p.recvDate).filter(Boolean).sort();
+
     return {
-      rows,
-      CODE,
-      assignees: buildAssigneeStats(rows),
-      pms: buildPMStats(rows),
-      monthly: buildMonthly(rows),
+      meta, asOf, rows, active, CODE, ACTIVE, FREE_COEF, groupBy, byCode, assignByCode,
+      firstRecv: dates[0] || '', lastRecv: dates[dates.length - 1] || '',
+      assignees: buildAssignees(payload.assignees, byCode),
+      assigneeMeta: meta.assigneeMeta || null,
+      pms: buildPMs(rows),
+      monthly: buildMonthly(rows, asOf),
       byMethod: groupBy(rows, p => p.method),
       byUnit: groupBy(rows, p => p.unit),
-      byServer: groupBy(rows, p => p.serverType),
+      byCenter: groupBy(rows, p => p.center),
+      byServer: groupBy(rows, p => p.server),
       byPjtType: groupBy(rows, p => p.pjtType),
-      groupBy,
-      meta: {
-        count: rows.length,
-        firstReceipt: rows.reduce((a, p) => (!a || (p.receiptDate && p.receiptDate < a)) ? p.receiptDate : a, ''),
-        lastReceipt: rows.reduce((a, p) => (p.receiptDate > a ? p.receiptDate : a), ''),
-      }
+      byUpsell: groupBy(rows, p => p.upsell),
+      byModule: groupBy(rows, p => p.module),
+      byRegion: groupBy(rows, p => p.regionGrp),
+      activeByMethod: groupBy(active, p => p.method),
+      stat: {
+        total: rows.length,
+        done: rows.filter(p => p.status === '완료').length,
+        active: active.length,
+        capa: meta.capa || 0,
+        headcount: meta.headcount || 0,
+      },
     };
   }
 
-  return { build, normalizeRow, parseAssignees, groupBy, CODE };
+  return { build, groupBy, CODE, ACTIVE, FREE_COEF };
 })();

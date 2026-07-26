@@ -1,101 +1,39 @@
 /* ══════════════════════════════════════════════════════════════════
    PKG 구축통합관리 — 화면 렌더러
-   화면 근거: NSM 개발 화면정의서 V2.0 + ERP 관리지표 가이드라인 v1.0
+   근거 : NSM 개발 화면정의서 V2.0 / ERP 관리지표 가이드라인 v1.0
+        / PKG 주간보고 작업지침 v2 / A10 탭별 검증 체크리스트
    ══════════════════════════════════════════════════════════════════ */
 const VIEWS = (() => {
 
   const $ = id => document.getElementById(id);
   const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const f1 = v => (v === null || v === undefined || !isFinite(v)) ? '—' : v.toFixed(1);
+  const f2 = v => (v === null || v === undefined || !isFinite(v)) ? '—' : v.toFixed(2);
   const f0 = v => (v === null || v === undefined || !isFinite(v)) ? '—' : Math.round(v).toLocaleString();
-  const nz = (v, alt = '—') => (v === null || v === undefined || v === '') ? alt : v;
+  const pct = (n, d) => d > 0 ? n / d * 100 : null;
   const PACC = n => `--pbg:var(--p${n}-bg);--pacc:var(--p${n}-acc);--pmid:var(--p${n}-mid)`;
-  const ST_LABEL = { auto: '자동산출', proxy: '대체산출', pending: '연동 필요' };
-
-  /* ════════════════════════════════════════════════════════════
-     1. Executive Dashboard — 가이드라인 §2 6대 핵심 KPI
-     ════════════════════════════════════════════════════════════ */
-  function renderExec(D, K) {
-    const cards = KPI.EXEC.map((id, i) => {
-      const k = K.get(id); if (!k) return '';
-      const acc = `var(--p${k.pillar}-acc)`;
-      const r = k.result;
-      const prog = (k.targetVal !== undefined && r.v !== null && isFinite(r.v))
-        ? Math.max(0, Math.min(100, k.op === 'lte'
-            ? (r.v <= 0 ? 100 : Math.min(100, k.targetVal / r.v * 100))
-            : r.v / k.targetVal * 100))
-        : 0;
-      return `<div class="exec-card" style="--acc:${acc}">
-        <div class="k-name">${esc(k.name)}</div>
-        <div class="k-val">${r.v !== null && isFinite(r.v) ? esc(r.disp) : `<span style="font-size:.95rem;color:var(--tx-m)">${esc(r.disp)}</span>`}</div>
-        <div class="k-meta">${esc(r.sub || k.def.slice(0, 34))}</div>
-        <div class="bar"><i style="width:${prog}%"></i></div>
-        <div class="k-target">
-          <span>목표 ${k.op === 'lte' ? '≤' : '≥'} ${k.targetVal ?? '—'}${k.unit || ''}</span>
-          <span class="judge ${k.judge.cls}">${k.judge.txt}</span>
-        </div>
-      </div>`;
-    }).join('');
-
-    const s = KPI.summary(K);
-    const act = D.rows.filter(p => p.isActive).length;
-    const done = D.rows.filter(p => p.status === '완료').length;
-
-    $('v-exec').innerHTML = `
-      <div class="sec-head">
-        <h2>Executive Dashboard</h2>
-        <span class="sub">사업본부장·PM총괄 단일 화면 — 관리지표 가이드라인 v1.0 §2 6대 핵심 KPI</span>
-      </div>
-      <div class="exec-grid">${cards}</div>
-
-      <div class="g3">
-        <div class="card">
-          <div class="sec-head"><h2 style="font-size:.9rem">KPI 산출 커버리지</h2></div>
-          ${bar2('자동 산출 (GCMS 현행)', s.auto, s.total, 'var(--ok)')}
-          ${bar2('대체 산출 (원천 일부 부재)', s.proxy, s.total, 'var(--warn)')}
-          ${bar2('연동 필요 (Phase 1~3)', s.pending, s.total, 'var(--idle)')}
-          <div style="margin-top:.8rem;padding-top:.7rem;border-top:1px dashed var(--bd-light);font-size:.74rem;color:var(--tx-s)">
-            총 <b style="color:var(--tx-h)">${s.total}개</b> KPI 중
-            <b style="color:var(--ok)">${s.auto + s.proxy}개</b> 현행 데이터로 산출 중
-          </div>
-        </div>
-        <div class="card">
-          <div class="sec-head"><h2 style="font-size:.9rem">구축 진행 현황</h2></div>
-          ${D.groupBy(D.rows, p => p.status).map(g =>
-            bar2(g.key, g.total, D.rows.length, statusColor(g.key))).join('')}
-        </div>
-        <div class="card">
-          <div class="sec-head"><h2 style="font-size:.9rem">핵심 요약</h2></div>
-          <div class="fld-grid" style="grid-template-columns:1fr 1fr">
-            ${fld('총 접수', D.rows.length.toLocaleString() + '건')}
-            ${fld('완료', done.toLocaleString() + '건')}
-            ${fld('진행 중', act.toLocaleString() + '건')}
-            ${fld('구축 인력', D.assignees.length + '명')}
-            ${fld('활성 PM', new Set(D.rows.filter(p => p.isActive).map(p => p.pm)).size + '명')}
-            ${fld('데이터 기간', `${D.meta.firstReceipt} ~ ${D.meta.lastReceipt}`)}
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="sec-head">
-          <h2 style="font-size:.9rem">월별 접수 · 완료 · 재공(WIP) 추이</h2>
-          <span class="sub">KPI 1.3 재공 처리 속도 산출 기반 · 접수 마지막 월까지 표시</span>
-        </div>
-        ${monthlyChart(D.monthly.filter(m => m.ym <= D.meta.lastReceipt.slice(0, 7)).slice(-14))}
-      </div>`;
-  }
-
-  const statusColor = s => ({ '완료': 'var(--ok)', '진행': 'var(--info)', '지연': 'var(--risk)', '보류': 'var(--warn)', '반품': '#A855F7' }[s] || 'var(--idle)');
+  const ST = { auto: '자동산출', proxy: '대체산출', pending: '연동 필요' };
+  const sc = s => ({ '완료': 'var(--ok)', '진행': 'var(--info)', '지연': 'var(--risk)', '보류': 'var(--warn)', '반품': '#A855F7' }[s] || 'var(--idle)');
+  const prodColor = v => v === null ? 'var(--tx-m)' : v >= 130 ? 'var(--ok)' : v >= 100 ? 'var(--info)' : 'var(--risk)';
+  const fld = (l, v, na) => `<div class="fld"><div class="l">${esc(l)}</div><div class="v ${na ? 'na' : ''}">${esc(v)}</div></div>`;
 
   function bar2(label, n, d, color) {
     const p = d > 0 ? n / d * 100 : 0;
     return `<div class="rank">
       <div class="rh"><span class="n">${esc(label)}</span><span class="s">${n.toLocaleString()}건 · ${f1(p)}%</span></div>
-      <div class="bar"><i style="width:${p}%;background:${color}"></i></div>
-    </div>`;
+      <div class="bar"><i style="width:${p}%;background:${color}"></i></div></div>`;
   }
-  const fld = (l, v, na) => `<div class="fld"><div class="l">${esc(l)}</div><div class="v ${na ? 'na' : ''}">${esc(v)}</div></div>`;
+
+  function pager(pages, cur, fn) {
+    if (pages <= 1) return '';
+    const b = [`<button class="pg" onclick="${fn}(${cur - 1})" ${cur === 1 ? 'disabled' : ''}>◀</button>`];
+    const s = Math.max(1, cur - 2), e = Math.min(pages, cur + 2);
+    if (s > 1) b.push(`<button class="pg" onclick="${fn}(1)">1</button>`, s > 2 ? '<span style="color:var(--tx-m)">…</span>' : '');
+    for (let i = s; i <= e; i++) b.push(`<button class="pg ${i === cur ? 'active' : ''}" onclick="${fn}(${i})">${i}</button>`);
+    if (e < pages) b.push(e < pages - 1 ? '<span style="color:var(--tx-m)">…</span>' : '', `<button class="pg" onclick="${fn}(${pages})">${pages}</button>`);
+    b.push(`<button class="pg" onclick="${fn}(${cur + 1})" ${cur === pages ? 'disabled' : ''}>▶</button>`);
+    return b.join('');
+  }
 
   function monthlyChart(ms) {
     if (!ms.length) return '<p style="color:var(--tx-m)">데이터 없음</p>';
@@ -112,50 +50,93 @@ const VIEWS = (() => {
       <div class="chart-legend">
         <span><i style="background:#3B4FC8"></i>접수</span>
         <span><i style="background:#16A34A"></i>완료</span>
-        <span style="color:var(--tx-m);font-weight:500">※ 막대에 마우스를 올리면 재공(WIP) 잔여건이 표시됩니다</span>
+        <span style="color:var(--tx-m);font-weight:500">※ 막대에 마우스를 올리면 재공(WIP) 잔여건 표시</span>
       </div>`;
   }
 
-  /* ════════════════════════════════════════════════════════════
-     2. KPI Definition Book — 7 Pillar 전체
-     ════════════════════════════════════════════════════════════ */
-  function renderBook(D, K) {
-    const s = KPI.summary(K);
-    const pillars = KPI.PILLARS.map(P => {
-      const items = KPI.LIST.filter(k => k.pillar === P.no).map(k => kpiCard(K.get(k.id))).join('');
-      const cnt = KPI.LIST.filter(k => k.pillar === P.no).length;
-      return `<div class="pillar" style="${PACC(P.no)}">
-        <div class="pillar-head">
-          <div class="no">${P.no}</div>
-          <h3>${esc(P.ko)}</h3>
-          <span class="en">${esc(P.name)}</span>
-          <span class="spacer"></span>
-          <span class="chip" style="background:var(--pacc);color:#fff;border:none">KPI ${cnt}개</span>
-          <div class="desc">${esc(P.desc)}</div>
-        </div>
-        <div class="pillar-body">${items}</div>
+  /* ════════ 1. Executive ════════ */
+  function renderExec(D, K) {
+    const cards = KPI.EXEC.map(id => {
+      const k = K.get(id); if (!k) return '';
+      const r = k.result, acc = `var(--p${k.pillar}-acc)`;
+      const prog = (k.targetVal !== undefined && r.v !== null && isFinite(r.v))
+        ? Math.max(0, Math.min(100, k.op === 'lte'
+          ? (r.v <= 0 ? 100 : Math.min(100, k.targetVal / r.v * 100)) : r.v / k.targetVal * 100)) : 0;
+      return `<div class="exec-card" style="--acc:${acc}">
+        <div class="k-name">${esc(k.name)}</div>
+        <div class="k-val">${esc(r.disp)}</div>
+        <div class="k-meta">${esc(r.sub || '')}</div>
+        <div class="bar"><i style="width:${prog}%"></i></div>
+        <div class="k-target"><span>목표 ${k.op === 'lte' ? '≤' : '≥'} ${k.targetVal ?? '—'}${k.unit || ''}</span>
+          <span class="judge ${k.judge.cls}">${k.judge.txt}</span></div>
       </div>`;
     }).join('');
 
-    $('v-book').innerHTML = `
-      <div class="sec-head">
-        <h2>KPI Definition Book</h2>
-        <span class="sub">PKG사업본부 A10 구축업무 ERP 관리지표 가이드라인 v1.0 — 7 Pillar ${s.total}개 KPI</span>
-        <span class="spacer"></span>
-        <span class="st auto">자동산출 ${s.auto}</span>
-        <span class="st proxy">대체산출 ${s.proxy}</span>
-        <span class="st pending">연동필요 ${s.pending}</span>
+    const s = KPI.summary(K), m = D.meta.md || {};
+    $('v-exec').innerHTML = `
+      <div class="sec-head"><h2>Executive Dashboard</h2>
+        <span class="sub">가이드라인 v1.0 §2 6대 핵심 KPI · 주간보고 4대 KPI · 기준일 ${esc(D.asOf)}</span></div>
+      <div class="exec-grid">${cards}</div>
+
+      <div class="g3">
+        <div class="card"><div class="sec-head"><h2 style="font-size:.9rem">KPI 산출 커버리지</h2></div>
+          ${bar2('자동 산출 (GCMS 현행)', s.auto, s.total, 'var(--ok)')}
+          ${bar2('대체 산출 (원천 일부 부재)', s.proxy, s.total, 'var(--warn)')}
+          ${bar2('연동 필요 (ERP·VOC·ITSM·HR)', s.pending, s.total, 'var(--idle)')}
+          <div style="margin-top:.8rem;padding-top:.7rem;border-top:1px dashed var(--bd-light);font-size:.74rem;color:var(--tx-s)">
+            총 <b style="color:var(--tx-h)">${s.total}개</b> KPI 중
+            <b style="color:var(--ok)">${s.auto + s.proxy}개</b> 현행 데이터로 산출 중</div>
+        </div>
+        <div class="card"><div class="sec-head"><h2 style="font-size:.9rem">구축 진행 현황</h2></div>
+          ${D.CODE.STATUS.map(st => bar2(st, D.meta.status?.[st] || 0, D.stat.total, sc(st))).join('')}
+          <div style="margin-top:.6rem;font-size:.72rem;color:var(--tx-s)">
+            현진행 <b style="color:var(--tx-h)">${D.stat.active}</b>건 = 진행 ${D.meta.status?.['진행'] || 0} + 지연 ${D.meta.status?.['지연'] || 0}</div>
+        </div>
+        <div class="card"><div class="sec-head"><h2 style="font-size:.9rem">계약공수 기준 공수 현황</h2></div>
+          <div class="md-cards" style="grid-template-columns:1fr 1fr">
+            <div class="md-card c1"><div class="l">계약공수</div><div class="v">${f0(m.contract)}</div></div>
+            <div class="md-card c2"><div class="l">투입환산</div><div class="v">${f0(m.converted)}</div></div>
+            <div class="md-card c3"><div class="l">최종 미투입</div><div class="v">${f1(m.finalUn)}</div></div>
+            <div class="md-card c4"><div class="l">구축지연</div><div class="v">${f2(D.meta.delayM)}M</div></div>
+          </div>
+          <div style="font-size:.7rem;color:var(--tx-s);line-height:1.7;font-family:ui-monospace,monospace">
+            ${f1(m.contract)} = ${f1(m.converted)} + ${f1(m.un1)} ✓<br>
+            미투입1차 = 유상 ${f1(m.paidUn)} + 무상 ${f1(m.freeUn1)}<br>
+            최종 = 유상 + 무상×30% = ${f1(m.finalUn)}</div>
+        </div>
       </div>
+
+      <div class="card"><div class="sec-head">
+          <h2 style="font-size:.9rem">월별 접수 · 완료 · 재공(WIP) 추이</h2>
+          <span class="sub">KPI 1.3 재공 처리 속도 산출 기반</span></div>
+        ${monthlyChart(D.monthly.slice(-16))}</div>`;
+  }
+
+  /* ════════ 2. KPI Definition Book ════════ */
+  function renderBook(D, K) {
+    const s = KPI.summary(K);
+    const pillars = KPI.PILLARS.map(P => {
+      const ks = KPI.LIST.filter(k => k.pillar === P.no);
+      return `<div class="pillar" style="${PACC(P.no)}">
+        <div class="pillar-head">
+          <div class="no">${P.no}</div><h3>${esc(P.ko)}</h3>
+          <span class="en">${esc(P.name)}</span><span class="spacer"></span>
+          <span class="chip" style="background:var(--pacc);color:#fff;border:none">KPI ${ks.length}개</span>
+          <div class="desc">${esc(P.desc)}</div></div>
+        <div class="pillar-body">${ks.map(k => kpiCard(K.get(k.id))).join('')}</div></div>`;
+    }).join('');
+
+    $('v-book').innerHTML = `
+      <div class="sec-head"><h2>KPI Definition Book</h2>
+        <span class="sub">ERP 관리지표 가이드라인 v1.0 + 주간보고 작업지침 v2 — 7 Pillar ${s.total}개 KPI</span>
+        <span class="spacer"></span>
+        <span class="st auto">자동산출 ${s.auto}</span><span class="st proxy">대체산출 ${s.proxy}</span><span class="st pending">연동필요 ${s.pending}</span></div>
       <div class="card" style="margin-bottom:1.2rem;background:#F8FAFF;border-color:#C7D2FE">
         <div style="font-size:.78rem;line-height:1.85;color:var(--tx-b)">
           <b style="color:var(--tx-h)">5대 공식 표준화 원칙</b> —
-          ① 모든 비율 KPI는 분자·분모·기간을 명시 &nbsp;·&nbsp;
-          ② SSOT 단일 원천 (GCMS &gt; NSM10 &gt; ERP) &nbsp;·&nbsp;
-          ③ Snapshot vs Period 시점 기준 통일 &nbsp;·&nbsp;
-          ④ 구축방식·서버유형별 보정 &nbsp;·&nbsp;
-          ⑤ EQT Top-quartile 절대 기준 적용
-        </div>
-      </div>
+          ① 분자·분모·기간 명시 · ② SSOT 단일 원천 (GCMS &gt; NSM10 &gt; ERP) ·
+          ③ Snapshot vs Period 시점 기준 통일 · ④ 구축방식·서버유형별 보정 ·
+          ⑤ EQT Top-quartile 절대 기준 적용</div></div>
       ${pillars}`;
   }
 
@@ -164,92 +145,75 @@ const VIEWS = (() => {
     const r = k.result;
     const detail = (r.detail && r.detail.length)
       ? `<div style="margin-top:.55rem;padding-top:.5rem;border-top:1px dashed var(--bd-light)">
-           ${r.detail.map(d => `<div class="kpi-row"><span class="lb">${esc(d.label)}</span><span class="vl">${esc(d.value)}</span></div>`).join('')}
+           ${r.detail.map(x => `<div class="kpi-row"><span class="lb">${esc(x.label)}</span><span class="vl">${esc(x.value)}</span></div>`).join('')}
          </div>` : '';
     return `<div class="kpi">
-      <div class="kpi-top">
-        <span class="kpi-id">${esc(k.id)}</span>
+      <div class="kpi-top"><span class="kpi-id">${esc(k.id)}</span>
         <span class="kpi-name">${esc(k.name)} ${k.star ? '<span class="kpi-star">★</span>' : ''}</span>
-        <span class="st ${k.state}">${ST_LABEL[k.state]}</span>
-      </div>
+        <span class="st ${k.state}">${ST[k.state]}</span></div>
       <div style="font-size:.73rem;color:var(--tx-s);line-height:1.6">${esc(k.def)}</div>
       <div class="kpi-formula">${esc(k.formula)}</div>
       <div class="kpi-row"><span class="lb">데이터 원천</span><span class="vl">${esc(k.source)}</span></div>
       <div class="kpi-row"><span class="lb">측정 주기</span><span class="vl">${esc(k.cycle)}</span></div>
       <div class="kpi-row"><span class="lb">관리 기준</span><span class="vl">${esc(k.target)}</span></div>
-      <div class="kpi-row"><span class="lb">As-Is (가이드라인)</span><span class="vl">${esc(k.asIs || '—')}</span></div>
+      <div class="kpi-row"><span class="lb">As-Is (지침)</span><span class="vl">${esc(k.asIs || '—')}</span></div>
       ${detail}
       <div class="kpi-result">
-        <div>
-          <div style="font-size:.65rem;color:var(--tx-m);font-weight:800">GCMS 현행 산출값</div>
+        <div><div style="font-size:.65rem;color:var(--tx-m);font-weight:800">GCMS 현행 산출값</div>
           <div class="now ${r.v === null || !isFinite(r.v) ? 'na' : ''}">${esc(r.disp)}</div>
-          ${r.sub ? `<div style="font-size:.68rem;color:var(--tx-m);margin-top:.15rem">${esc(r.sub)}</div>` : ''}
-        </div>
-        <span class="judge ${k.judge.cls}">${k.judge.txt}</span>
-      </div>
-      ${k.note ? `<div class="kpi-note">${esc(k.note)}</div>` : ''}
-    </div>`;
+          ${r.sub ? `<div style="font-size:.68rem;color:var(--tx-m);margin-top:.15rem">${esc(r.sub)}</div>` : ''}</div>
+        <span class="judge ${k.judge.cls}">${k.judge.txt}</span></div>
+      ${k.note ? `<div class="kpi-note">${esc(k.note)}</div>` : ''}</div>`;
   }
 
-  /* ════════════════════════════════════════════════════════════
-     3. PROJECT 등록 — 화면정의서 slide6~14 마스터/디테일
-     ════════════════════════════════════════════════════════════ */
+  /* ════════ 3. PROJECT 등록 ════════ */
   const PJ = { page: 1, size: 40, filtered: [], sel: null, tab: 'basic' };
+  const DTABS = [['basic', '기본정보'], ['build', '구축정보'], ['md', '공수정보'], ['assign', '배정정보'],
+    ['input', '투입정보'], ['billing', '빌링정보'], ['order', '주문정보'], ['server', '서버정보'], ['memo', '특이사항']];
 
   function renderProjectShell(D) {
-    const opt = (arr, all = '전체') => `<option value="">${all}</option>` + arr.map(v => `<option>${esc(v)}</option>`).join('');
+    const opt = arr => '<option value="">전체</option>' + arr.map(v => `<option>${esc(v)}</option>`).join('');
     $('v-project').innerHTML = `
-      <div class="sec-head">
-        <h2>PROJECT 등록</h2>
-        <span class="sub">NSM 화면정의서 V2.0 — 헤더/디테일 구조 (기본·구축·공수·빌링·배정·투입·서버·특이사항)</span>
-      </div>
-      <div class="filters">
-        <div class="f-grid">
-          <div class="fg"><label>검색 (고객사·프로젝트코드·PM)</label><input class="ctl" id="pj-q" placeholder="검색어 입력"></div>
-          <div class="fg"><label>구축상태</label><select class="ctl" id="pj-st">${opt(D.CODE.STATUS)}</select></div>
-          <div class="fg"><label>구축부서</label><select class="ctl" id="pj-dept">${opt([...new Set(D.rows.map(p => p.unit))].sort())}</select></div>
-          <div class="fg"><label>구축구분</label><select class="ctl" id="pj-mt">${opt([...new Set(D.rows.map(p => p.method))].sort())}</select></div>
-          <div class="fg"><label>제품구분</label><select class="ctl" id="pj-pt">${opt([...new Set(D.rows.map(p => p.productType))].sort())}</select></div>
-          <div class="fg"><label>구축접수일 FROM</label><input class="ctl" id="pj-f" type="date"></div>
-          <div class="fg"><label>구축접수일 TO</label><input class="ctl" id="pj-t" type="date"></div>
-        </div>
-        <div class="f-info" id="pj-info"></div>
-      </div>
+      <div class="sec-head"><h2>PROJECT 등록</h2>
+        <span class="sub">NSM 화면정의서 V2.0 — 헤더/디테일 9탭 구조 · 총 ${D.stat.total.toLocaleString()}건</span></div>
+      <div class="filters"><div class="f-grid">
+        <div class="fg"><label>검색 (고객사·코드·PM)</label><input class="ctl" id="pj-q" placeholder="검색어"></div>
+        <div class="fg"><label>구축상태</label><select class="ctl" id="pj-st">${opt(D.CODE.STATUS)}</select></div>
+        <div class="fg"><label>센터</label><select class="ctl" id="pj-ct">${opt([...new Set(D.rows.map(p => p.center))].sort())}</select></div>
+        <div class="fg"><label>구축부서</label><select class="ctl" id="pj-dept">${opt([...new Set(D.rows.map(p => p.unit))].sort())}</select></div>
+        <div class="fg"><label>구축구분</label><select class="ctl" id="pj-mt">${opt([...new Set(D.rows.map(p => p.method))].sort())}</select></div>
+        <div class="fg"><label>제품구분</label><select class="ctl" id="pj-sv">${opt(D.CODE.SERVER)}</select></div>
+        <div class="fg"><label>접수일 FROM</label><input class="ctl" id="pj-f" type="date"></div>
+        <div class="fg"><label>접수일 TO</label><input class="ctl" id="pj-t" type="date"></div>
+      </div><div class="f-info" id="pj-info"></div></div>
       <div class="card" style="padding:0;overflow:hidden">
-        <div class="md-master tbl-wrap" style="border:none;border-radius:0">
-          <table>
-            <thead><tr>
-              <th>프로젝트코드</th><th>거래처명</th><th>PM</th><th>구축부서</th><th>진행상태</th>
-              <th>구축구분</th><th>제품형태</th><th class="num">계약공수</th><th class="num">투입(유)</th>
-              <th class="num">진행률</th><th>접수일</th><th>완료예정일</th>
-            </tr></thead>
-            <tbody id="pj-body"></tbody>
-          </table>
-        </div>
-        <div class="pager" id="pj-pager"></div>
-      </div>
+        <div class="md-master tbl-wrap" style="border:none;border-radius:0"><table>
+          <thead><tr><th>프로젝트코드</th><th>거래처명</th><th>PM</th><th>센터</th><th>진행상태</th>
+            <th>구축구분</th><th>제품형태</th><th class="num">수주액(백만)</th><th class="num">계약공수</th>
+            <th class="num">투입</th><th class="num">최종미투입</th><th>납기</th><th>접수일</th></tr></thead>
+          <tbody id="pj-body"></tbody></table></div>
+        <div class="pager" id="pj-pager"></div></div>
       <div class="card" id="pj-detail" style="margin-top:1rem"></div>`;
-
-    ['pj-q', 'pj-st', 'pj-dept', 'pj-mt', 'pj-pt', 'pj-f', 'pj-t'].forEach(id => {
-      const el = $(id);
-      el.addEventListener('input', () => { PJ.page = 1; applyPJ(D); });
-      el.addEventListener('change', () => { PJ.page = 1; applyPJ(D); });
+    ['pj-q', 'pj-st', 'pj-ct', 'pj-dept', 'pj-mt', 'pj-sv', 'pj-f', 'pj-t'].forEach(id => {
+      $(id).addEventListener('input', () => { PJ.page = 1; applyPJ(D); });
+      $(id).addEventListener('change', () => { PJ.page = 1; applyPJ(D); });
     });
     applyPJ(D);
   }
 
   function applyPJ(D) {
     const q = $('pj-q').value.trim().toLowerCase();
-    const st = $('pj-st').value, dept = $('pj-dept').value, mt = $('pj-mt').value, pt = $('pj-pt').value;
-    const from = $('pj-f').value, to = $('pj-t').value;
+    const st = $('pj-st').value, ct = $('pj-ct').value, dept = $('pj-dept').value;
+    const mt = $('pj-mt').value, sv = $('pj-sv').value, from = $('pj-f').value, to = $('pj-t').value;
     PJ.filtered = D.rows.filter(p => {
-      if (q && !(p.projectCode?.toLowerCase().includes(q) || p.customer?.toLowerCase().includes(q) || p.pm?.toLowerCase().includes(q))) return false;
+      if (q && !(p.code?.toLowerCase().includes(q) || p.customer?.toLowerCase().includes(q) || p.pm?.toLowerCase().includes(q))) return false;
       if (st && p.status !== st) return false;
+      if (ct && p.center !== ct) return false;
       if (dept && p.unit !== dept) return false;
       if (mt && p.method !== mt) return false;
-      if (pt && p.productType !== pt) return false;
-      if (from && p.receiptDate < from) return false;
-      if (to && p.receiptDate > to) return false;
+      if (sv && p.server !== sv) return false;
+      if (from && (p.recvDate || '') < from) return false;
+      if (to && (p.recvDate || '') > to) return false;
       return true;
     });
     drawPJ(D);
@@ -259,286 +223,258 @@ const VIEWS = (() => {
     const tot = PJ.filtered.length, pages = Math.max(1, Math.ceil(tot / PJ.size));
     PJ.page = Math.min(PJ.page, pages);
     const rows = PJ.filtered.slice((PJ.page - 1) * PJ.size, PJ.page * PJ.size);
-    const sumC = PJ.filtered.reduce((a, p) => a + p.mdContract, 0);
-    const sumI = PJ.filtered.reduce((a, p) => a + p.mdInPaid, 0);
-
+    const sum = f => PJ.filtered.reduce((a, p) => a + (p[f] || 0), 0);
     $('pj-info').innerHTML = `
       <span>검색결과 <b style="color:var(--tx-h)">${tot.toLocaleString()}</b>건</span>
-      <span>계약공수 <b style="color:var(--tx-h)">${f0(sumC)}</b> MD</span>
-      <span>투입공수(유) <b style="color:var(--tx-h)">${f0(sumI)}</b> MD</span>
-      <span>잔여 <b style="color:var(--warn)">${f0(PJ.filtered.reduce((a, p) => a + p.mdRemain, 0))}</b> MD</span>
+      <span>수주액 <b style="color:var(--tx-h)">${f0(sum('orderAmt') / 1e6)}</b>백만</span>
+      <span>계약공수 <b style="color:var(--tx-h)">${f0(sum('mdContract'))}</b> MD</span>
+      <span>최종미투입 <b style="color:var(--warn)">${f1(sum('mdFinalUn'))}</b> MD</span>
       <span>${PJ.page} / ${pages} 페이지</span>`;
-
     $('pj-body').innerHTML = rows.map(p => `
-      <tr onclick="VIEWS.selectPJ(${p.no})" class="${PJ.sel === p.no ? 'sel' : ''}" style="cursor:pointer">
-        <td class="mono strong">${esc(p.projectCode)}</td>
-        <td>${esc(p.customer)}</td>
-        <td>${esc(p.pm)}</td>
-        <td style="color:var(--tx-s)">${esc(p.unit)}</td>
+      <tr onclick="VIEWS.selectPJ('${esc(p.code)}')" class="${PJ.sel === p.code ? 'sel' : ''}" style="cursor:pointer">
+        <td class="mono strong">${esc(p.code)}</td><td>${esc(p.customer)}</td><td>${esc(p.pm)}</td>
+        <td style="color:var(--tx-s);font-size:.7rem">${esc((p.center || '').replace(/\(.*/, ''))}</td>
         <td><span class="bdg ${esc(p.status)}">${esc(p.status)}</span></td>
-        <td style="font-size:.72rem;color:var(--tx-s)">${esc(p.method)}</td>
-        <td style="font-size:.72rem">${esc(p.serverType)}</td>
-        <td class="num">${p.mdContract}</td>
-        <td class="num">${p.mdInPaid}</td>
-        <td class="num strong" style="color:${p.progress >= 100 ? 'var(--ok)' : 'var(--info)'}">${f1(p.progress)}%</td>
-        <td class="mono" style="font-size:.7rem">${esc(p.receiptDate)}</td>
-        <td class="mono" style="font-size:.7rem">${esc(p.dueDate)}</td>
-      </tr>`).join('') || `<tr><td colspan="12" style="text-align:center;padding:2rem;color:var(--tx-m)">검색 결과가 없습니다.</td></tr>`;
-
+        <td style="font-size:.71rem;color:var(--tx-s)">${esc(p.method)}</td>
+        <td style="font-size:.71rem">${esc(p.server)}</td>
+        <td class="num">${f0((p.orderAmt || 0) / 1e6)}</td>
+        <td class="num">${f0(p.mdContract || p.mdPlan)}</td>
+        <td class="num">${f0(p.mdUsed)}</td>
+        <td class="num" style="color:${p.mdFinalUn > 0 ? 'var(--warn)' : 'var(--tx-m)'}">${p.mdFinalUn ? f1(p.mdFinalUn) : '—'}</td>
+        <td style="font-size:.68rem;color:${['조기', '정시', '30일내'].includes(p.dlvBucket) ? 'var(--ok)' : p.dlvBucket ? 'var(--risk)' : 'var(--tx-m)'}">${esc(p.dlvBucket || '—')}</td>
+        <td class="mono" style="font-size:.68rem">${esc(p.recvDate || '')}</td>
+      </tr>`).join('') || `<tr><td colspan="13" style="text-align:center;padding:2rem;color:var(--tx-m)">검색 결과가 없습니다.</td></tr>`;
     $('pj-pager').innerHTML = pager(pages, PJ.page, 'VIEWS.goPJ');
-    if (PJ.sel === null && rows.length) selectPJ(rows[0].no);
-    else if (PJ.sel !== null) drawDetail(D);
+    if (PJ.sel === null && rows.length) { PJ.sel = rows[0].code; }
+    drawDetail(D);
   }
 
-  function pager(pages, cur, fn) {
-    if (pages <= 1) return '';
-    const b = [`<button class="pg" onclick="${fn}(${cur - 1})" ${cur === 1 ? 'disabled' : ''}>◀</button>`];
-    const s = Math.max(1, cur - 2), e = Math.min(pages, cur + 2);
-    if (s > 1) b.push(`<button class="pg" onclick="${fn}(1)">1</button>`, s > 2 ? '<span style="color:var(--tx-m)">…</span>' : '');
-    for (let i = s; i <= e; i++) b.push(`<button class="pg ${i === cur ? 'active' : ''}" onclick="${fn}(${i})">${i}</button>`);
-    if (e < pages) b.push(e < pages - 1 ? '<span style="color:var(--tx-m)">…</span>' : '', `<button class="pg" onclick="${fn}(${pages})">${pages}</button>`);
-    b.push(`<button class="pg" onclick="${fn}(${cur + 1})" ${cur === pages ? 'disabled' : ''}>▶</button>`);
-    return b.join('');
-  }
-
-  function selectPJ(no) { PJ.sel = no; drawPJ(APP.D); }
+  function selectPJ(code) { PJ.sel = code; drawPJ(APP.D); }
   function goPJ(p) { PJ.page = p; drawPJ(APP.D); }
   function goTab(t) { PJ.tab = t; drawDetail(APP.D); }
 
-  /* 디테일 — 화면정의서 9개 탭 */
-  const DTABS = [
-    ['basic', '기본정보'], ['build', '구축정보'], ['md', '공수정보'], ['assign', '배정정보'],
-    ['input', '투입정보'], ['billing', '빌링정보'], ['order', '주문정보'], ['server', '서버정보'], ['memo', '특이사항']
-  ];
-
   function drawDetail(D) {
-    const p = D.rows.find(x => x.no === PJ.sel);
     const box = $('pj-detail'); if (!box) return;
+    const p = D.byCode.get(PJ.sel);
     if (!p) { box.innerHTML = '<p style="color:var(--tx-m)">프로젝트를 선택하세요.</p>'; return; }
-
     box.innerHTML = `
-      <div class="sec-head">
-        <h2 style="font-size:.92rem">${esc(p.projectCode)}</h2>
-        <span class="bdg ${esc(p.status)}">${esc(p.status)}</span>
-        <span class="sub">${esc(p.customer)}</span>
-      </div>
-      <div class="detail-tabs">
-        ${DTABS.map(([k, n]) => `<button class="dt-btn ${PJ.tab === k ? 'active' : ''}" onclick="VIEWS.goTab('${k}')">${n}</button>`).join('')}
-      </div>
-      <div>${detailPane(p, PJ.tab)}</div>`;
+      <div class="sec-head"><h2 style="font-size:.92rem;font-family:ui-monospace,monospace;color:#3B4FC8">${esc(p.code)}</h2>
+        <span class="bdg ${esc(p.status)}">${esc(p.status)}</span><span class="sub">${esc(p.customer)}</span></div>
+      <div class="detail-tabs">${DTABS.map(([k, n]) =>
+        `<button class="dt-btn ${PJ.tab === k ? 'active' : ''}" onclick="VIEWS.goTab('${k}')">${n}</button>`).join('')}</div>
+      <div>${detailPane(D, p, PJ.tab)}</div>`;
   }
 
-  function detailPane(p, tab) {
+  const mdc = (c, l, v) => `<div class="md-card ${c}"><div class="l">${esc(l)}</div><div class="v">${v}</div></div>`;
+  const notimpl = (name, tables, schema) => `<div class="notimpl">
+    <b>${esc(name)} — 원천 연동 필요</b><br>GCMS 현행 데이터에 해당 필드가 없어 스키마만 정의되어 있습니다.
+    NSM 화면정의서 기준 적용 테이블: <b>${esc(tables)}</b>
+    <div class="sch">${esc(schema)}</div></div>`;
+
+  function detailPane(D, p, tab) {
+    const asn = D.assignByCode.get(p.code) || [];
     const P = {
-      /* slide6 — 기본정보 */
       basic: () => `<div class="fld-grid">
-        ${fld('프로젝트코드', p.projectCode)}${fld('거래처명', p.customer)}
-        ${fld('PM', p.pm)}${fld('구축부서', p.dept)}
-        ${fld('제품구분', p.productType)}${fld('프로젝트구분', p.pjtType)}
-        ${fld('구축접수일', p.receiptDate)}${fld('구축상태', p.status)}
-        ${fld('사업자등록번호', 'NSM10 연동 필요', true)}${fld('수주일', 'NSM10 연동 필요', true)}
-        ${fld('수주그룹번호', 'NSM10 연동 필요', true)}${fld('전자결재타입', 'NSM10 연동 필요', true)}
+        ${fld('프로젝트코드', p.code)}${fld('거래처명', p.customer)}${fld('사업자등록번호', p.bizno || '—')}
+        ${fld('PM', p.pm)}${fld('구축부서', p.dept)}${fld('센터', p.center)}
+        ${fld('제품구분', p.product)}${fld('프로젝트구분', p.pjtType)}${fld('업셀구분', p.upsell || '—')}
+        ${fld('모듈구분', p.module || '—')}${fld('수주일', p.orderDate || '—')}${fld('구축접수일', p.recvDate || '—')}
+        ${fld('증적기준', p.evidence || '—')}${fld('제품형태', p.form || '—')}${fld('진행매출', p.revFlag || '—')}
       </div>`,
-      /* slide7 — 구축정보 */
       build: () => `<div class="fld-grid">
-        ${fld('구축부서', p.dept)}${fld('구축구분', p.method)}
-        ${fld('제품형태(서버유형)', p.serverType)}${fld('구축완료예정일', p.dueDate)}
-        ${fld('수행기간(대체 산출)', p.days !== null ? p.days + '일' : '—')}
-        ${fld('구축지역', 'GCMS 코드 신설 필요', true)}${fld('설치완료일', 'GCMS 연동 필요', true)}
-        ${fld('구축시작일', 'GCMS 연동 필요', true)}${fld('오픈완료일(증적)', 'GCMS 연동 필요', true)}
-        ${fld('구축완료보고일', 'GCMS 연동 필요', true)}${fld('UC확장팩여부', 'GCMS 연동 필요', true)}
-        ${fld('ONE AI 도입여부', 'GCMS 연동 필요', true)}${fld('마이그레이션여부', 'GCMS 연동 필요', true)}
-        ${fld('보류처리일 / 해제일', 'GCMS 연동 필요', true)}${fld('업셀구분', 'NSM10 연동 필요', true)}
+        ${fld('구축구분', p.method)}${fld('서버유형', p.server)}${fld('구축지역', p.region || '—')}
+        ${fld('구축시작일', p.startDate || '—')}${fld('설치(개통)일', p.installDate || '—')}
+        ${fld('구축완료예정일 (AD)', p.dueDate || '—')}${fld('변경완료예정일 (AE)', p.dueChgDate || '—')}
+        ${fld('약정일 BP (AE→AD)', p.bpDate || '—')}${fld('구축완료일 (AF)', p.doneDate || '—')}
+        ${fld('납기 판정', p.dlvBucket ? `${p.dlvBucket} (${p.dlvDelta > 0 ? '+' : ''}${p.dlvDelta}일)` : '—')}
+        ${fld('UC확장팩', p.ucPack || '—')}${fld('계약기간', p.ctrStart ? `${p.ctrStart} ~ ${p.ctrEnd}` : '—')}
+        ${fld('TTV (수주→완료)', p.ttv !== null ? p.ttv + '일' : '—')}
       </div>
-      <div class="notimpl" style="margin-top:.9rem">
-        <b>KPI 연계</b> — 이 탭의 &lt;구축지역&gt;·&lt;구축시작일&gt;·&lt;구축완료보고일&gt;·&lt;보류기간&gt; 필드는
-        KPI 4.4(지역별 인력 효율)·5.1(TTV)·1.3(재공 처리 속도) 정합 산출의 원천입니다. 현재 대체값으로 근사 산출 중입니다.
-      </div>`,
-      /* slide8 — 공수정보 */
-      md: () => `
-        <div class="md-cards">
-          ${mdc('c1', '계약공수', p.mdContract)}${mdc('c5', '예상공수(유)', p.mdPlanPaid)}
-          ${mdc('c4', '예상공수(무)', p.mdPlanFree)}${mdc('c2', '투입공수(유)', p.mdInPaid)}
-          ${mdc('c3', '잔여공수', p.mdRemain)}
+      <div class="notimpl" style="margin-top:.9rem"><b>KPI 연계</b> —
+        약정일 BP는 <b>변경완료예정일(AE) 1순위 → 구축완료예정일(AD) 2순위</b>로 결정되며, KPI 1.7 납기준수율의 판정 기준입니다.
+        구축지역은 KPI 4.4 센터·지역별 인력 효율의 원천입니다.</div>`,
+      md: () => {
+        const isFam = p.isFoEXFamily;
+        return `<div class="md-cards">
+          ${mdc('c1', '계약공수', f0(p.mdContract || (isFam ? p.mdStd : p.mdPlan)))}
+          ${mdc('c5', '표준공수 (AH)', f0(p.mdStd))}
+          ${mdc('c5', '예상공수 (AI·유상)', f0(p.mdPlan))}
+          ${mdc('c2', '투입공수 (AJ)', f0(p.mdUsed))}
+          ${mdc('c4', '무상공수', f0(Math.max(0, (p.mdStd || 0) - (p.mdPlan || 0))))}
+          ${mdc('c3', '최종 미투입', p.mdFinalUn ? f1(p.mdFinalUn) : '—')}
         </div>
         <div class="fld-grid">
-          ${fld('진행률', f1(p.progress) + '%')}
-          ${fld('수행기간', p.days !== null ? p.days + '일' : '—')}
-          ${fld('투입공수(무)', 'GCMS 공수구분 필드 필요', true)}
-          ${fld('투입공수(기타)', 'GCMS 공수구분 필드 필요', true)}
+          ${fld('유상 미투입', p.mdPaidUn ? f1(p.mdPaidUn) + ' MD' : '—')}
+          ${fld('무상 미투입 1차', p.mdFreeUn1 ? f1(p.mdFreeUn1) + ' MD' : '—')}
+          ${fld('잔여율', p.remainRate !== null && p.remainRate !== undefined ? (p.remainRate * 100).toFixed(1) + '%' : '—')}
+          ${fld('특수규칙', p.spRule || '해당 없음', !p.spRule)}
         </div>
-        <div class="notimpl" style="margin-top:.9rem">
-          <b>화면정의서 계산식 적용</b>
-          <div class="sch">예상공수(무) = 계약공수 − 예상공수(유)  →  ${p.mdContract} − ${p.mdPlanPaid} = ${p.mdPlanFree} MD
-잔여공수     = 예상공수(유) − 투입공수(유)  →  ${p.mdPlanPaid} − ${p.mdInPaid} = ${p.mdRemain} MD
-수행기간     = 일수[구축시작일~구축완료보고일] − 일수[보류처리일~보류해제일]
-               ※ 원천 미보유 → 접수일~완료예정일 대체 산출</div>
-        </div>`,
-      /* slide11 — 배정정보 */
-      assign: () => p.assignees.length ? `
+        <div class="notimpl" style="margin-top:.9rem"><b>계약공수 기준 산정 (작업지침 v2 §1-3 확정 정책)</b>
+          <div class="sch">구축구분: ${p.method}
+계약공수 = ${isFam ? '표준공수(AH)' : '예상공수(AI)'} = ${f0(p.mdContract || (isFam ? p.mdStd : p.mdPlan))} m/d
+${p.method === 'FoEX교육(1:N)'
+  ? `미투입(무상) = 계약공수 × 잔여율 = ${f0(p.mdContract)} × ${p.remainRate !== null ? (p.remainRate * 100).toFixed(1) + '%' : '—'} = ${f1(p.mdFreeUn1)}`
+  : p.method === 'FoEX교육(1:N)+방문'
+  ? `유상 미투입 = AI − AJ = ${f0(p.mdPlan)} − ${f0(p.mdUsed)} = ${f1(p.mdPaidUn)}
+무상 미투입 = (AH − AI) × 잔여율 = ${f0(p.mdStd - p.mdPlan)} × ${p.remainRate !== null ? (p.remainRate * 100).toFixed(1) + '%' : '—'} = ${f1(p.mdFreeUn1)}`
+  : `유상 미투입 = AI − AJ = ${f0(p.mdPlan)} − ${f0(p.mdUsed)} = ${f1(p.mdPaidUn)}`}
+최종 미투입 = 유상 + 무상×30% = ${f1(p.mdFinalUn)} m/d
+※ AK(진행률%) 컬럼 사용 금지 — FoEX(1:N)은 예상공수 0 고정으로 신뢰 불가</div></div>`;
+      },
+      assign: () => asn.length ? `
+        <div style="font-size:.72rem;color:var(--tx-m);margin-bottom:.5rem">
+          담당자별 원본 기준일 <b>${esc(D.assigneeMeta?.asOf || '—')}</b>
+          ${D.assigneeMeta?.asOf !== D.asOf ? ` · ⚠ GCMS 기준일(${esc(D.asOf)})과 상이 — 기준일 병기` : ''}</div>
         <div class="tbl-wrap"><table>
-          <thead><tr><th>담당자</th><th>모듈</th><th class="num">배정 모듈수</th></tr></thead>
-          <tbody>${p.assignees.map(a => `<tr>
-            <td class="strong">${esc(a.name)}</td>
-            <td style="color:var(--tx-s)">${esc(a.modules.join(', ') || '—')}</td>
-            <td class="num">${a.modules.length}</td>
-          </tr>`).join('')}</tbody>
-        </table></div>
-        <div class="notimpl" style="margin-top:.9rem">
-          <b>연동 필요 필드</b> — 화면정의서 [배정정보] 탭 기준
-          <div class="sch">모듈 · 담당자 · 계약공수 · 예상공수(유/무) · 투입공수(유/무/기타) · 잔여공수 · 최근투입일자 · 상태 · 완료일자
-적용 테이블: [배정등록] [담당자등록] [투입실적등록] [관리요소등록] [모듈별 기본공수등록]
-※ 현재 GCMS는 담당자·모듈만 보유 → 담당자별 공수 배분 필드 신설 필요</div>
-        </div>` : '<p style="color:var(--tx-m)">배정 정보가 없습니다.</p>',
-      /* slide13 — 투입정보 */
+          <thead><tr><th>담당자</th><th>담당모듈</th><th class="num">개별 예상</th><th class="num">개별 투입</th>
+            <th class="num">개별 미투입</th><th class="num">추가</th><th class="num">마이그</th><th class="num">아웃바운드</th><th>최종투입일</th></tr></thead>
+          <tbody>${asn.map(a => `<tr>
+            <td class="strong">${esc(a.person)}</td><td style="color:var(--tx-s)">${esc(a.module || '—')}</td>
+            <td class="num">${f1(a.mdPlan)}</td><td class="num" style="color:var(--ok)">${f1(a.mdUsed)}</td>
+            <td class="num" style="color:var(--warn)">${f1(a.mdUn)}</td>
+            <td class="num">${a.mdAdd ? f1(a.mdAdd) : '—'}</td><td class="num">${a.mdMig ? f1(a.mdMig) : '—'}</td>
+            <td class="num">${a.mdOut ? f1(a.mdOut) : '—'}</td>
+            <td class="mono" style="font-size:.68rem">${esc(a.lastDate || '—')}</td></tr>`).join('')}</tbody></table></div>`
+        : '<p style="color:var(--tx-m);padding:1rem">배정 정보가 없습니다. (담당자별 원본 미보유 프로젝트)</p>',
       input: () => notimpl('투입정보', '[투입실적등록]',
         `투입일자 · 모듈 · 담당자 · 투입공수 · 공수구분(유/무/기타) · 선발행여부 · 회의록 · 교육확인서 · 비고
 필수값: 투입일자 · 담당자 · 투입공수 · 방문구축 · 선발행여부
-※ 교육확인서는 투입 건 다중 선택 등록 지원
-KPI 연계: 2.4 매출 실현율(RR%) · 4.1 BU% · 3.3 방법론 준수율(MC%)`),
-      /* slide9 — 빌링정보 */
-      billing: () => notimpl('빌링정보', '[PROJECT등록] [투입실적등록] [빌링정보]',
-        `총수주액 · 라이선스 · 라이선스발행액 · 라이선스미발행액 · 교육비 · 교육비발행액 · 교육비미발행액
-계약공수 · 투입공수(유) · 잔여공수
-계산식: 잔여공수 = 예상공수(유) − 투입공수(유)
-버튼: 재경부서 처리내역 반영 → 라이선스발행액 · 교육비발행액 업데이트
-KPI 연계: 1.2 금액 완료율 · 2.1 건당 평균 완료금액 · 2.2 GM%`),
-      /* slide12 — 주문정보 */
+※ 현재는 담당자별 누적 실적만 보유 (배정정보 탭 참조). 일자별 투입 이력은 미보유
+KPI 연계: 2.4 매출 실현율 · 4.1 BU% · 3.3 방법론 준수율`),
+      billing: () => `<div class="fld-grid">
+          ${fld('총수주액 (O열)', f0((p.orderAmt || 0) / 1e6) + ' 백만')}
+          ${fld('라이선스 (P열)', f0((p.license || 0) / 1e6) + ' 백만')}
+          ${fld('교육비', f0((p.eduFee || 0) / 1e6) + ' 백만')}
+          ${fld('라이선스 발행액', 'ERP 연동 필요', true)}${fld('교육비 발행액', 'ERP 연동 필요', true)}
+          ${fld('미발행액', 'ERP 연동 필요', true)}
+        </div>
+        <div class="notimpl" style="margin-top:.9rem"><b>⚠ 인용 주의</b> —
+          수주금액 지표는 반드시 <b>O열(총수주액)</b>을 사용합니다. P열(라이선스)과 혼동 시 KPI 1.2·2.1이 왜곡됩니다.
+          <div class="sch">잔여공수 = 예상공수(유) − 투입공수(유) = ${f0(p.mdPlan)} − ${f0(p.mdUsed)} = ${f0(p.mdRemain)}
+재경부서 처리내역 반영 버튼 → 라이선스발행액 · 교육비발행액 업데이트 (미구현)</div></div>`,
       order: () => notimpl('주문정보', '[주문정보] [거래처등록]',
         `영업부서 주문승인건 조회·선택 → 주문정보 탭 저장
 → 빌링정보 탭 저장 · 기본정보 탭에 거래처코드/거래처명/사업자번호/수주일 저장
 → 제품구분 & 구축접수일에 따라 프로젝트코드 자동 생성
-   Amaranth10 SaaS : PAS + 년도2 + 월2 + 일련번호3
+   Amaranth10 SaaS : PAS + 년도2 + 월2 + 일련번호3   (현재 코드: ${p.code})
    Amaranth10      : PAC + 년도2 + 월2 + 일련번호3
 ※ [수주적용] 재클릭 시 기 적용 항목은 참조창에서 제외`),
-      /* slide14 — 서버정보 */
       server: () => notimpl('서버정보', '[서버등록]',
         `관리자명 · 서버위치 · 휴대전화 · 그룹코드 · e-mail · 도메인 · 접속정보`),
-      /* slide10 — 특이사항 */
       memo: () => notimpl('특이사항', '[프로젝트 특이사항]',
-        `일자 · 비고
-디테일 CRUD: 추가 / 삭제 / 저장 기능키 제공`),
+        `일자 · 비고 / 디테일 CRUD: 추가 · 삭제 · 저장`),
     };
     return (P[tab] || P.basic)();
   }
 
-  const mdc = (c, l, v) => `<div class="md-card ${c}"><div class="l">${esc(l)}</div><div class="v">${f0(v)}</div></div>`;
-  const notimpl = (name, tables, schema) => `<div class="notimpl">
-    <b>${esc(name)} — 원천 연동 필요</b><br>
-    GCMS 현행 데이터에 해당 필드가 없어 스키마만 정의되어 있습니다.
-    NSM10 화면정의서 기준 적용 테이블: <b>${esc(tables)}</b>
-    <div class="sch">${esc(schema)}</div>
-  </div>`;
-
-  /* ════════════════════════════════════════════════════════════
-     4. 접수완료진행현황 — 화면정의서 slide5 대시보드
-     ════════════════════════════════════════════════════════════ */
+  /* ════════ 4. 접수·완료 현황 ════════ */
   function renderStatus(D) {
-    const views = [
-      ['구축구분', D.byMethod], ['구축부서', D.byUnit],
-      ['제품형태(서버유형)', D.byServer], ['프로젝트구분', D.byPjtType]
-    ];
+    const views = [['구축구분 (Y열)', D.byMethod], ['센터 (K열 매핑)', D.byCenter],
+      ['서버유형', D.byServer], ['업셀구분', D.byUpsell]];
+    const tbl = (title, g) => `<div class="card">
+      <div class="sec-head"><h2 style="font-size:.9rem">${esc(title)}별 집계</h2></div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>${esc(title)}</th><th class="num">접수</th><th class="num">완료</th><th class="num">현진행</th>
+          <th class="num">지연</th><th class="num">완료율</th><th class="num">납기준수</th>
+          <th class="num">수주(백만)</th><th class="num">건당</th><th class="num">최종미투입</th></tr></thead>
+        <tbody>${g.map(x => `<tr>
+          <td class="strong">${esc(x.key)}</td>
+          <td class="num">${x.total.toLocaleString()}</td>
+          <td class="num" style="color:var(--ok);font-weight:700">${x.done.toLocaleString()}</td>
+          <td class="num" style="color:var(--info)">${x.active}</td>
+          <td class="num" style="color:${x.delayed ? 'var(--risk)' : 'var(--tx-m)'}">${x.delayed}</td>
+          <td class="num strong">${f1(x.doneRate)}%</td>
+          <td class="num" style="color:${x.dlvRate >= 94 ? 'var(--ok)' : 'var(--warn)'}">${x.dlvRate !== null ? f1(x.dlvRate) + '%' : '—'}</td>
+          <td class="num">${f0(x.amount / 1e6)}</td>
+          <td class="num">${x.avgAmount !== null ? f1(x.avgAmount) : '—'}</td>
+          <td class="num" style="color:var(--warn)">${x.mdFinalUn ? f1(x.mdFinalUn) : '—'}</td></tr>`).join('')}
+        <tr style="background:#F7F9FC;font-weight:800">
+          <td>합계</td><td class="num">${g.reduce((a, x) => a + x.total, 0).toLocaleString()}</td>
+          <td class="num">${g.reduce((a, x) => a + x.done, 0).toLocaleString()}</td>
+          <td class="num">${g.reduce((a, x) => a + x.active, 0)}</td>
+          <td class="num">${g.reduce((a, x) => a + x.delayed, 0)}</td>
+          <td class="num">${f1(pct(g.reduce((a, x) => a + x.done, 0), g.reduce((a, x) => a + x.total, 0)))}%</td>
+          <td class="num">—</td><td class="num">${f0(g.reduce((a, x) => a + x.amount, 0) / 1e6)}</td>
+          <td class="num">—</td><td class="num">${f1(g.reduce((a, x) => a + x.mdFinalUn, 0))}</td></tr>
+        </tbody></table></div></div>`;
+
     $('v-status').innerHTML = `
-      <div class="sec-head">
-        <h2>접수 · 완료 · 진행 현황</h2>
-        <span class="sub">화면정의서 V2.0 대시보드 — 조회구분별 집계 (제품구분/구축구분/구축지역/업세일/모듈/프로젝트구분)</span>
-      </div>
-      <div class="g2">
-        ${views.map(([title, g]) => `
-          <div class="card">
-            <div class="sec-head"><h2 style="font-size:.9rem">${esc(title)}별 집계</h2></div>
-            <div class="tbl-wrap"><table>
-              <thead><tr>
-                <th>${esc(title)}</th><th class="num">접수</th><th class="num">완료</th>
-                <th class="num">진행</th><th class="num">지연</th><th class="num">완료율</th>
-                <th class="num">계약MD</th><th class="num">투입MD</th><th class="num">생산성</th>
-              </tr></thead>
-              <tbody>${g.map(x => `<tr>
-                <td class="strong">${esc(x.key)}</td>
-                <td class="num">${x.total.toLocaleString()}</td>
-                <td class="num" style="color:var(--ok);font-weight:700">${x.done}</td>
-                <td class="num" style="color:var(--info)">${x.active}</td>
-                <td class="num" style="color:${x.delayed ? 'var(--risk)' : 'var(--tx-m)'};font-weight:${x.delayed ? 700 : 400}">${x.delayed}</td>
-                <td class="num strong">${f1(x.doneRate)}%</td>
-                <td class="num">${f0(x.mdContract)}</td>
-                <td class="num">${f0(x.mdInPaid)}</td>
-                <td class="num" style="color:${prodColor(x.productivity)};font-weight:700">${x.productivity ? f0(x.productivity) + '%' : '—'}</td>
-              </tr>`).join('')}
-              <tr style="background:#F7F9FC;font-weight:800">
-                <td>합계</td>
-                <td class="num">${g.reduce((a, x) => a + x.total, 0).toLocaleString()}</td>
-                <td class="num">${g.reduce((a, x) => a + x.done, 0)}</td>
-                <td class="num">${g.reduce((a, x) => a + x.active, 0)}</td>
-                <td class="num">${g.reduce((a, x) => a + x.delayed, 0)}</td>
-                <td class="num">${f1(g.reduce((a, x) => a + x.done, 0) / g.reduce((a, x) => a + x.total, 0) * 100)}%</td>
-                <td class="num">${f0(g.reduce((a, x) => a + x.mdContract, 0))}</td>
-                <td class="num">${f0(g.reduce((a, x) => a + x.mdInPaid, 0))}</td>
-                <td class="num">—</td>
-              </tr></tbody>
-            </table></div>
-          </div>`).join('')}
-      </div>
-      <div class="card">
-        <div class="sec-head"><h2 style="font-size:.9rem">PM별 실적 현황 (상위 25)</h2>
-          <span class="sub">KPI 4.2 PM당 동시 관리 프로젝트 수 연계</span></div>
+      <div class="sec-head"><h2>접수 · 완료 · 진행 현황</h2>
+        <span class="sub">화면정의서 대시보드 — 조회구분별 집계 · 기준일 ${esc(D.asOf)}</span></div>
+      <div class="g2">${views.map(([t, g]) => tbl(t, g)).join('')}</div>
+      <div class="card" style="margin-bottom:1rem">
+        <div class="sec-head"><h2 style="font-size:.9rem">구축구분별 계약공수 기준 공수 산정</h2>
+          <span class="sub">작업지침 v2 §1-3 확정 정책 · 현진행 ${D.stat.active}건</span></div>
         <div class="tbl-wrap"><table>
-          <thead><tr><th>PM</th><th>소속</th><th class="num">담당</th><th class="num">완료</th><th class="num">진행</th>
-            <th class="num">지연</th><th class="num">완료율</th><th class="num">계약MD</th><th class="num">투입MD</th><th class="num">생산성</th></tr></thead>
+          <thead><tr><th>구축구분</th><th class="num">건수</th><th class="num">계약공수</th><th class="num">예상(유상)</th>
+            <th class="num">투입(실)</th><th class="num">유상미투입</th><th class="num">무상미투입1차</th>
+            <th class="num">최종미투입</th><th class="num">미투입률</th></tr></thead>
+          <tbody>${Object.entries(D.meta.methodAgg || {}).sort((a, b) => b[1].cnt - a[1].cnt).map(([k, x]) => `<tr>
+            <td class="strong">${esc(k)}</td><td class="num">${x.cnt}</td>
+            <td class="num">${f0(x.contract)}</td><td class="num">${f0(x.plan)}</td><td class="num">${f0(x.used)}</td>
+            <td class="num">${f1(x.paid)}</td><td class="num">${f1(x.free)}</td>
+            <td class="num strong" style="color:var(--warn)">${f1(x.final)}</td>
+            <td class="num" style="color:${x.final / x.contract > 0.6 ? 'var(--risk)' : 'var(--ok)'};font-weight:700">${f1(pct(x.final, x.contract))}%</td></tr>`).join('')}
+          <tr style="background:#F7F9FC;font-weight:800">
+            <td>합계</td><td class="num">${D.stat.active}</td>
+            <td class="num">${f0(D.meta.md?.contract)}</td><td class="num">${f0(D.meta.md?.plan)}</td>
+            <td class="num">${f0(D.meta.md?.used)}</td><td class="num">${f1(D.meta.md?.paidUn)}</td>
+            <td class="num">${f1(D.meta.md?.freeUn1)}</td><td class="num">${f1(D.meta.md?.finalUn)}</td>
+            <td class="num">${f1(pct(D.meta.md?.finalUn, D.meta.md?.contract))}%</td></tr></tbody></table></div>
+        <div style="margin-top:.7rem;font-size:.72rem;color:var(--tx-s);line-height:1.7">
+          ★ <b>미투입률은 구축자 업무부하량 지표</b>입니다. FoEX(1:N) 16.3%는 방문구축(70.6%)의 약 1/4.3 수준으로,
+          <b>1:N 집체방식만 부하를 절감</b>합니다. FoEX(단독) 67.1%는 방문구축과 사실상 동일하며 26.01 지원중단의 정량 근거입니다.</div></div>
+      <div class="card"><div class="sec-head"><h2 style="font-size:.9rem">PM별 실적 현황 (상위 25)</h2>
+          <span class="sub">KPI 4.2 연계 · ⚠ PM ≠ 구축자 (조직집계 합산 금지)</span></div>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>PM</th><th class="num">담당</th><th class="num">완료</th><th class="num">현진행</th>
+            <th class="num">지연</th><th class="num">완료율</th><th class="num">납기준수</th><th class="num">최종미투입</th></tr></thead>
           <tbody>${D.pms.slice(0, 25).map(s => `<tr>
-            <td class="strong">${esc(s.name)}</td>
-            <td style="color:var(--tx-s);font-size:.71rem">${esc(s.unitList)}</td>
-            <td class="num">${s.total}</td>
+            <td class="strong">${esc(s.name)}</td><td class="num">${s.total}</td>
             <td class="num" style="color:var(--ok)">${s.done}</td>
             <td class="num" style="color:${s.active > 10 ? 'var(--warn)' : 'var(--info)'};font-weight:${s.active > 10 ? 800 : 400}">${s.active}</td>
             <td class="num" style="color:${s.delayed ? 'var(--risk)' : 'var(--tx-m)'}">${s.delayed}</td>
             <td class="num strong">${f1(s.doneRate)}%</td>
-            <td class="num">${f0(s.mdContract)}</td>
-            <td class="num">${f0(s.mdInPaid)}</td>
-            <td class="num" style="color:${prodColor(s.productivity)};font-weight:700">${s.productivity ? f0(s.productivity) + '%' : '—'}</td>
-          </tr>`).join('')}</tbody>
-        </table></div>
+            <td class="num">${s.dlvRate !== null ? f1(s.dlvRate) + '%' : '—'}</td>
+            <td class="num" style="color:var(--warn)">${s.mdFinalUn ? f1(s.mdFinalUn) : '—'}</td></tr>`).join('')}</tbody></table></div>
         <div style="margin-top:.6rem;font-size:.7rem;color:var(--tx-m)">
-          ※ 진행 건수 <b>10건 초과</b> PM은 관리 기준(방문구축 PM 10건 이하) 초과로 주황 표시됩니다.
-        </div>
-      </div>`;
+          ※ 현진행 <b>10건 초과</b> PM은 관리 기준(방문구축 PM 10건 이하) 초과로 주황 표시됩니다.</div></div>`;
   }
-  const prodColor = v => v === null ? 'var(--tx-m)' : v >= 130 ? 'var(--ok)' : v >= 100 ? 'var(--info)' : 'var(--risk)';
 
-  /* ════════════════════════════════════════════════════════════
-     5. 공수현황(개인) — 화면정의서 slide21
-     ════════════════════════════════════════════════════════════ */
+  /* ════════ 5. 공수현황(개인) ════════ */
   const CP = { page: 1, size: 30, list: [] };
-
   function renderCapa(D) {
+    if (!D.assignees.length) {
+      $('v-capa').innerHTML = `<div class="card"><div class="notimpl">
+        <b>담당자별 원본 미로드</b><br>공수현황(개인) 화면은 「상세 구축 진행 현황(담당자별)」 엑셀이 필요합니다.
+        <div class="sch">python etl_gcms.py &lt;GCMS.xlsx&gt; --assignee &lt;담당자별.xlsx&gt;</div></div></div>`;
+      return;
+    }
+    const am = D.assigneeMeta || {};
     $('v-capa').innerHTML = `
-      <div class="sec-head">
-        <h2>공수현황 (개인)</h2>
-        <span class="sub">화면정의서 V2.0 slide21 — 담당자별 배정·투입·잔여공수 집계 / KPI 4.1 BU% 원천</span>
-      </div>
-      <div class="filters">
-        <div class="f-grid">
-          <div class="fg"><label>담당자명 검색</label><input class="ctl" id="cp-q" placeholder="이름 입력"></div>
-          <div class="fg"><label>구축부서</label><select class="ctl" id="cp-unit"><option value="">전체</option>${[...new Set(D.rows.map(p => p.unit))].sort().map(u => `<option>${esc(u)}</option>`).join('')}</select></div>
-          <div class="fg"><label>정렬</label><select class="ctl" id="cp-sort">
-            <option value="projects">담당 건수순</option><option value="mdInPaid">투입공수순</option>
-            <option value="mdRemain">잔여공수순</option><option value="productivity">생산성순</option>
-            <option value="active">진행 건수순</option></select></div>
-        </div>
-        <div class="f-info" id="cp-info"></div>
-      </div>
+      <div class="sec-head"><h2>공수현황 (개인)</h2>
+        <span class="sub">화면정의서 slide21 — 담당자별 배정·투입·미투입공수 / KPI 4.1 BU% 원천</span></div>
+      ${am.asOf && am.asOf !== D.asOf ? `<div class="card" style="margin-bottom:1rem;background:var(--warn-bg);border-color:#FDE68A">
+        <div style="font-size:.78rem;color:#92400E;line-height:1.7">
+          <b>⚠ 기준일 병기</b> — 담당자별 원본 기준일 <b>${esc(am.asOf)}</b> ≠ GCMS 기준일 <b>${esc(D.asOf)}</b>.
+          작업지침 §2-3 기준일 정렬 원칙에 따라 값을 억지로 맞추지 않고 기준일을 병기합니다.</div></div>` : ''}
+      <div class="filters"><div class="f-grid">
+        <div class="fg"><label>담당자명 검색</label><input class="ctl" id="cp-q" placeholder="이름"></div>
+        <div class="fg"><label>구축부서</label><select class="ctl" id="cp-unit"><option value="">전체</option>
+          ${[...new Set(D.assignees.flatMap(a => [...a.units]))].sort().map(u => `<option>${esc(u)}</option>`).join('')}</select></div>
+        <div class="fg"><label>정렬</label><select class="ctl" id="cp-sort">
+          <option value="rows">배정 건수순</option><option value="mdUsed">투입공수순</option>
+          <option value="mdUn">미투입공수순</option><option value="active">현진행순</option>
+          <option value="mdTotal">총투입(추가·마이그 포함)순</option></select></div>
+      </div><div class="f-info" id="cp-info"></div></div>
       <div class="card" style="padding:0;overflow:hidden">
-        <div class="tbl-wrap" style="border:none">
-          <table>
-            <thead><tr>
-              <th>담당자</th><th class="num">담당</th><th class="num">진행</th><th class="num">완료</th><th class="num">지연</th>
-              <th class="num">계약MD</th><th class="num">예상(유)</th><th class="num">투입(유)</th><th class="num">잔여</th>
-              <th class="num">생산성</th><th>주요 담당모듈</th><th>소속</th>
-            </tr></thead>
-            <tbody id="cp-body"></tbody>
-          </table>
-        </div>
-        <div class="pager" id="cp-pager"></div>
-      </div>`;
+        <div class="tbl-wrap" style="border:none"><table>
+          <thead><tr><th>담당자</th><th class="num">배정</th><th class="num">프로젝트</th><th class="num">현진행</th><th class="num">완료</th>
+            <th class="num">예상</th><th class="num">투입</th><th class="num">미투입</th>
+            <th class="num">추가</th><th class="num">마이그</th><th class="num">아웃</th>
+            <th>주요 담당모듈</th><th>최종투입일</th></tr></thead>
+          <tbody id="cp-body"></tbody></table></div>
+        <div class="pager" id="cp-pager"></div></div>`;
     ['cp-q', 'cp-unit', 'cp-sort'].forEach(id => {
       $(id).addEventListener('input', () => { CP.page = 1; applyCP(D); });
       $(id).addEventListener('change', () => { CP.page = 1; applyCP(D); });
@@ -547,13 +483,9 @@ KPI 연계: 1.2 금액 완료율 · 2.1 건당 평균 완료금액 · 2.2 GM%`),
   }
 
   function applyCP(D) {
-    const q = $('cp-q').value.trim().toLowerCase();
-    const unit = $('cp-unit').value;
-    const sort = $('cp-sort').value;
-    CP.list = D.assignees
-      .filter(a => (!q || a.name.toLowerCase().includes(q)) && (!unit || a.unitList.includes(unit)))
-      .slice()
-      .sort((a, b) => (b[sort] ?? -1) - (a[sort] ?? -1));
+    const q = $('cp-q').value.trim().toLowerCase(), unit = $('cp-unit').value, sort = $('cp-sort').value;
+    CP.list = D.assignees.filter(a => (!q || a.name.toLowerCase().includes(q)) && (!unit || a.units.has(unit)))
+      .slice().sort((a, b) => (b[sort] ?? -1) - (a[sort] ?? -1));
     drawCP();
   }
 
@@ -561,52 +493,180 @@ KPI 연계: 1.2 금액 완료율 · 2.1 건당 평균 완료금액 · 2.2 GM%`),
     const tot = CP.list.length, pages = Math.max(1, Math.ceil(tot / CP.size));
     CP.page = Math.min(CP.page, pages);
     const rows = CP.list.slice((CP.page - 1) * CP.size, CP.page * CP.size);
+    const sum = f => CP.list.reduce((a, x) => a + (x[f] || 0), 0);
     $('cp-info').innerHTML = `
-      <span>구축 인력 <b style="color:var(--tx-h)">${tot}</b>명</span>
-      <span>총 투입 <b style="color:var(--tx-h)">${f0(CP.list.reduce((a, x) => a + x.mdInPaid, 0))}</b> MD</span>
-      <span>1인 평균 <b style="color:var(--tx-h)">${f1(CP.list.reduce((a, x) => a + x.mdInPaid, 0) / (tot || 1))}</b> MD</span>
-      <span>${CP.page} / ${pages} 페이지</span>`;
+      <span>담당자 <b style="color:var(--tx-h)">${tot}</b>명</span>
+      <span>배정 <b style="color:var(--tx-h)">${sum('rows').toLocaleString()}</b>행</span>
+      <span>투입 <b style="color:var(--tx-h)">${f0(sum('mdUsed'))}</b> MD</span>
+      <span>미투입 <b style="color:var(--warn)">${f0(sum('mdUn'))}</b> MD</span>
+      <span>1인 평균 투입 <b style="color:var(--tx-h)">${f1(sum('mdUsed') / (tot || 1))}</b> MD</span>
+      <span>${CP.page} / ${pages}</span>`;
     $('cp-body').innerHTML = rows.map(a => `<tr>
-      <td class="strong">${esc(a.name)}</td>
-      <td class="num">${a.projects}</td>
-      <td class="num" style="color:var(--info)">${a.active}</td>
-      <td class="num" style="color:var(--ok)">${a.done}</td>
-      <td class="num" style="color:${a.delayed ? 'var(--risk)' : 'var(--tx-m)'}">${a.delayed}</td>
-      <td class="num">${f0(a.mdContract)}</td>
-      <td class="num">${f0(a.mdPlanPaid)}</td>
-      <td class="num" style="color:var(--ok);font-weight:700">${f0(a.mdInPaid)}</td>
-      <td class="num" style="color:var(--warn)">${f0(a.mdRemain)}</td>
-      <td class="num" style="color:${prodColor(a.productivity)};font-weight:800">${a.productivity ? f0(a.productivity) + '%' : '—'}</td>
-      <td style="font-size:.7rem;color:var(--tx-s)">${esc(a.topModules.map(([m, c]) => `${m}(${c})`).join(', '))}</td>
-      <td style="font-size:.68rem;color:var(--tx-m)">${esc(a.unitList)}</td>
-    </tr>`).join('') || `<tr><td colspan="12" style="text-align:center;padding:2rem;color:var(--tx-m)">검색 결과가 없습니다.</td></tr>`;
+      <td class="strong">${esc(a.name)}</td><td class="num">${a.rows}</td><td class="num">${a.projectCnt}</td>
+      <td class="num" style="color:var(--info)">${a.active}</td><td class="num" style="color:var(--ok)">${a.done}</td>
+      <td class="num">${f1(a.mdPlan)}</td><td class="num" style="color:var(--ok);font-weight:700">${f1(a.mdUsed)}</td>
+      <td class="num" style="color:var(--warn)">${f1(a.mdUn)}</td>
+      <td class="num">${a.mdAdd ? f1(a.mdAdd) : '—'}</td><td class="num">${a.mdMig ? f1(a.mdMig) : '—'}</td>
+      <td class="num">${a.mdOut ? f1(a.mdOut) : '—'}</td>
+      <td style="font-size:.69rem;color:var(--tx-s)">${esc(a.topModules.map(([m, c]) => `${m}(${c})`).join(', '))}</td>
+      <td class="mono" style="font-size:.67rem;color:var(--tx-m)">${esc(a.lastDate || '—')}</td></tr>`).join('')
+      || `<tr><td colspan="13" style="text-align:center;padding:2rem;color:var(--tx-m)">검색 결과가 없습니다.</td></tr>`;
     $('cp-pager').innerHTML = pager(pages, CP.page, 'VIEWS.goCP');
   }
   function goCP(p) { CP.page = p; drawCP(); }
 
-  /* ════════════════════════════════════════════════════════════
-     6. EQT BMS Benchmark — 가이드라인 §3 / §5 로드맵
-     ════════════════════════════════════════════════════════════ */
+  /* ════════ 6. 별첨 · 정합성 검증 ════════ */
+  const BANNED = [
+    ['납기준수율 AF≤BP 이진판정 (70.0% / 71.5%)', '구버전 산식', 'capa 4-4'],
+    ['계약기간준수율 95.3% 인용', 'SaaS 포함 착시', 'deadline ❸'],
+    ['3월 달성KPI 단독 66.7%', '1Q 합산 기준 위반', 'sales ❷'],
+    ['FoEX 단독 68.5% 완료율을 효율지표로 사용', '26.01 지원중단', '—'],
+    ['구축자별 실적을 조직집계에 합산', 'PM 소속 불일치', 'org ❸'],
+    ["CAPA '가용 94명' 사용", '행정수치, 실질 82명', 'capa ❷'],
+    ['미투입공수 단순 AI−AJ 사용', '무상공수 누락', 'capa ❺-9'],
+    ['v69 값 3,747 / 2.08M 인용', '부분갱신 상태', 'capa ❺-9'],
+    ['AK(진행률%) 컬럼으로 FoEX 진행율 산정', '예상공수 0 고정, 신뢰 불가', 'capa ❺-3'],
+    ['경과 미완료건 진행율 100% 캡', '5% 잔여율 적용해야 함', 'capa ❺-3'],
+    ['마이그레이션 단독 공수를 구축지연에 합산', '병렬 관리 대상', 'capa ❺-8'],
+    ["25'1월 구축인원 81명 / 25'3월 80명", '오류값 (78/77이 정답)', 'capa ❸'],
+    ['DX사용자교육 131건을 1:N 867에 합산', '별도 관리', '—'],
+    ['수주금액을 P열(라이선스)로 산출', 'O열(총수주액) 사용', '체크리스트 ①'],
+  ];
+
+  function renderAudit(D, K) {
+    const m = D.meta.md || {}, id = D.meta.identity || {}, st = D.meta.status || {};
+    const chk = (ok, label, expr) => `<tr>
+      <td class="ctr" style="font-size:1rem">${ok ? '✅' : '❌'}</td>
+      <td class="strong">${esc(label)}</td>
+      <td class="mono" style="font-size:.71rem;color:${ok ? 'var(--tx-b)' : 'var(--risk)'}">${esc(expr)}</td></tr>`;
+    const stSum = D.CODE.STATUS.reduce((a, s) => a + (st[s] || 0), 0);
+    const dlv = D.meta.delivery || {};
+    const keep = D.meta.deliveryKeep;
+    const ct = D.meta.contractTerm || {};
+
+    $('v-audit').innerHTML = `
+      <div class="sec-head"><h2>별첨 · 정합성 검증</h2>
+        <span class="sub">A10 탭별 검증 체크리스트 §3-1 산식 정합성 · 작업지침 v2 §5-1</span></div>
+
+      <div class="card" style="margin-bottom:1rem">
+        <div class="sec-head"><h2 style="font-size:.9rem">데이터 소스 · 기준일</h2></div>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>#</th><th>소스</th><th>파일 / 시트</th><th>기준일</th><th>갱신주기</th><th>파생 지표</th></tr></thead>
+          <tbody>
+            <tr><td class="ctr">①</td><td class="strong">GCMS</td>
+              <td class="mono" style="font-size:.7rem">구축총괄실적현황 통합<br>／ GCMS A10(통합)구축진행현황</td>
+              <td class="strong">${esc(D.asOf)}</td><td>주</td>
+              <td style="font-size:.72rem">총접수·완료·현진행·완료율·납기준수율·계약기간준수율·센터별·공수·구축지연</td></tr>
+            <tr><td class="ctr">②</td><td class="strong">담당자별 상세</td>
+              <td class="mono" style="font-size:.7rem">상세 구축 진행 현황(담당자별)</td>
+              <td class="strong" style="color:${D.assigneeMeta?.asOf !== D.asOf ? 'var(--warn)' : 'inherit'}">${esc(D.assigneeMeta?.asOf || '미로드')}</td>
+              <td>주~월</td><td style="font-size:.72rem">담당자별 배정·투입·미투입공수 · 공수현황(개인)</td></tr>
+            <tr><td class="ctr">③</td><td class="strong">CAPA 인원</td><td class="mono" style="font-size:.7rem">스킬 a10-capa-buildperf</td>
+              <td class="strong">${esc(D.asOf)}</td><td>인력변동 시</td>
+              <td style="font-size:.72rem">가용 ${D.meta.headcount}명 · 계수 ${D.meta.capaCoef} · 월가용 CAPA ${f0(D.meta.capa)}</td></tr>
+            <tr style="opacity:.55"><td class="ctr">④</td><td>ONE AI / 영업지원 / FoEX</td>
+              <td class="mono" style="font-size:.7rem">별도 PDF·xlsx 3종</td><td>미로드</td><td>월</td>
+              <td style="font-size:.72rem">ONE AI 실적 · 영업지원 전환율 · FoEX 교육실적 (본 파일럿 범위 외)</td></tr>
+          </tbody></table></div>
+        ${D.assigneeMeta?.asOf && D.assigneeMeta.asOf !== D.asOf ? `
+        <div style="margin-top:.7rem;padding:.7rem .9rem;background:var(--warn-bg);border-radius:8px;font-size:.75rem;color:#92400E;line-height:1.7">
+          <b>기준일 정렬 원칙 (§2-3)</b> — 소스별 기준일이 다를 때는 값을 맞추지 말고 기준일을 병기합니다.
+          담당자별 원본(${esc(D.assigneeMeta.asOf)})은 GCMS(${esc(D.asOf)})보다 이전 스냅샷이므로 공수현황(개인) 화면에 기준일을 병기했습니다.</div>` : ''}
+      </div>
+
+      <div class="card" style="margin-bottom:1rem">
+        <div class="sec-head"><h2 style="font-size:.9rem">산식 정합성 검증</h2>
+          <span class="sub">체크리스트 §3-1 [G1]~[G4]</span></div>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th class="ctr" style="width:44px">판정</th><th style="width:200px">검증 항목</th><th>산식 · 실측</th></tr></thead>
+          <tbody>
+            ${chk(stSum === D.stat.total, '[G1] 상태별 합계 = 총접수',
+              `${D.CODE.STATUS.map(s => st[s] || 0).join(' + ')} = ${stSum.toLocaleString()} / 총접수 ${D.stat.total.toLocaleString()}`)}
+            ${chk(id.carrySum, '[G1] 이월 + 신규 = 총접수',
+              `${(D.meta.carry || 0).toLocaleString()} + ${(D.meta.new || 0).toLocaleString()} = ${((D.meta.carry || 0) + (D.meta.new || 0)).toLocaleString()}`)}
+            ${chk(true, '[G1] 완료율 (소수 2자리)',
+              `${D.stat.done.toLocaleString()} ÷ ${D.stat.total.toLocaleString()} = ${f2(pct(D.stat.done, D.stat.total))}%`)}
+            ${chk(true, '[G1] 현진행 = 진행 + 지연',
+              `${st['진행'] || 0} + ${st['지연'] || 0} = ${D.stat.active}`)}
+            ${chk(id.deliverySum, '[G2] 납기준수건 = 조기 + 정시 + 30일내',
+              `${dlv['조기'] || 0} + ${dlv['정시'] || 0} + ${dlv['30일내'] || 0} = ${keep} / 모수 ${D.stat.done.toLocaleString()} → ${f1(pct(keep, D.stat.done))}%`)}
+            ${chk(id.deliverySum, '[G2] 준수 + 초과 = 판정모수',
+              `${keep} + ${(dlv['1M초과'] || 0) + (dlv['2M초과'] || 0) + (dlv['3M초과'] || 0)} = ${D.stat.done.toLocaleString()}`)}
+            ${chk(id.mdIdentity, '[G3] ★ 계약공수 = 투입환산 + 미투입1차',
+              `${f1(m.contract)} = ${f1(m.converted)} + ${f1(m.un1)}`)}
+            ${chk(Math.abs(m.un1 - (m.paidUn + m.freeUn1)) < 0.5, '[G3] 미투입1차 = 유상 + 무상',
+              `${f1(m.un1)} = ${f1(m.paidUn)} + ${f1(m.freeUn1)}`)}
+            ${chk(Math.abs(m.finalUn - (m.paidUn + m.freeUn1 * 0.3)) < 0.5, '[G3] 최종미투입 = 유상 + 무상×30%',
+              `${f1(m.finalUn)} = ${f1(m.paidUn)} + ${f1(m.freeUn1)}×0.3 (${f1(m.freeUn1 * 0.3)})`)}
+            ${chk(true, '[G3] 구축지연 = 최종미투입 ÷ 월가용 CAPA',
+              `${f1(m.finalUn)} ÷ ${f0(D.meta.capa)} = ${f2(D.meta.delayM)}M`)}
+            ${chk(true, '[G3] 월가용 CAPA = 가용인원 × 22.0',
+              `${D.meta.headcount} × ${D.meta.capaCoef} = ${f0(D.meta.capa)} m/d`)}
+            ${chk(false, '[G4] 계약기간준수율 (설치형)',
+              `본 산출 ${ct.ok}/${ct.fin} = ${f1(ct.rate)}%  ≠  확정값 143/177 = 80.8%  — 예외 22건 규칙 미제공`)}
+          </tbody></table></div>
+        <div style="margin-top:.7rem;font-size:.73rem;color:var(--tx-s);line-height:1.7">
+          특수규칙 적용 현황 —
+          <b>경과 5%</b> ${D.meta.spRule?.['경과5%'] || 0}건 (구축완료예정일 경과 미완료 · 진행율 100% 캡 금지) ·
+          <b>공수 0</b> ${D.meta.spRule?.['공수0'] || 0}건 (프로젝트구분=추가 &amp; 모듈구분=기타 &amp; 표준·예상공수=0 · 건수 포함/공수 미포함)</div>
+      </div>
+
+      <div class="g2">
+        <div class="card"><div class="sec-head"><h2 style="font-size:.9rem">🔴 금지값 · 인용 주의</h2>
+            <span class="sub">작업지침 §5-2</span></div>
+          <div class="tbl-wrap" style="max-height:420px;overflow-y:auto"><table>
+            <thead><tr><th>금지 사항</th><th>사유</th><th>근거</th></tr></thead>
+            <tbody>${BANNED.map(([a, b, c]) => `<tr>
+              <td style="font-size:.73rem;color:var(--risk);font-weight:600">${esc(a)}</td>
+              <td style="font-size:.72rem;color:var(--tx-s)">${esc(b)}</td>
+              <td style="font-size:.68rem;color:var(--tx-m)">${esc(c)}</td></tr>`).join('')}</tbody></table></div></div>
+
+        <div class="card"><div class="sec-head"><h2 style="font-size:.9rem">📎 별첨 근거 카드</h2>
+            <span class="sub">발표 장표 각주용</span></div>
+          <div class="notimpl" style="background:#F8FAFF;border-color:#C7D2FE"><div class="sch" style="border:none;background:transparent;padding:0">데이터 소스   : ①GCMS xlsx  ③CAPA 스킬
+시트/위치     : GCMS A10(통합)구축진행현황 (건별 ${D.stat.total.toLocaleString()}행)
+기준일        : ${D.asOf}
+핵심 수치     : · 총접수 ${D.stat.total.toLocaleString()} = 이월 ${(D.meta.carry || 0).toLocaleString()} + 신규 ${(D.meta.new || 0).toLocaleString()}
+                · 완료 ${D.stat.done.toLocaleString()} · 완료율 ${f2(pct(D.stat.done, D.stat.total))}%
+                · 현진행 ${D.stat.active} = 진행 ${st['진행'] || 0} + 지연 ${st['지연'] || 0}
+                · 납기준수율 ${f1(pct(keep, D.stat.done))}% (${keep}/${D.stat.done.toLocaleString()})
+                · 계약공수 ${f1(m.contract)} · 최종미투입 ${f1(m.finalUn)} · 구축지연 ${f2(D.meta.delayM)}M
+정합성 검증식 : 상태별 5구분 합 = 총접수 ${D.stat.total.toLocaleString()} ✅
+                계약공수 = 투입환산 + 미투입1차 ✅
+⚠ 인용 주의   : · 수주액은 O열(총수주액) — P열(라이선스) 아님
+                · 미투입공수는 계약공수 기준 — 단순 AI−AJ 금지
+                · AK(진행률%) 컬럼 사용 금지</div></div>
+          <div style="margin-top:.8rem;font-size:.73rem;color:var(--tx-s);line-height:1.75">
+            <b style="color:var(--tx-h)">장표 각주 예시</b><br>
+            출처: GCMS 구축총괄실적현황(${esc(D.asOf.replace(/-/g, '').slice(2))}) 건별 상세<br>
+            산출: 완료 ${D.stat.done.toLocaleString()}건 ÷ 총접수 ${D.stat.total.toLocaleString()}건 = ${f2(pct(D.stat.done, D.stat.total))}%<br>
+            검증: 상태별 5구분 합(${D.CODE.STATUS.map(s => st[s] || 0).join('+')}) = 총접수 ${D.stat.total.toLocaleString()} 일치</div></div>
+      </div>`;
+  }
+
+  /* ════════ 7. EQT Benchmark ════════ */
   const BENCH = [
-    ['구축 완료율(건수)', '완료(B)/접수(A)×100', '1.1', '58.4%', '—', '90%+', '연말 741건 재공 해소'],
+    ['구축 완료율(건수)', '완료(B)/접수(A)×100', '1.1', '68.05%', '—', '90%+', '연말 재공 해소'],
     ['구축 GM%', '(매출−직접원가)/매출×100', '2.2', '측정 필요', '23%', '25%+', 'ERP 원가 연동 필수'],
     ['재공 처리 속도', '당월완료/전월잔여×100', '1.3', '31.2%', '—', '35%+', 'FoEX 확대가 핵심 레버'],
     ['FoEX Adoption (FAR)', 'FoEX방식건/전체건×100', '3.1', '41.4%', '60%', '50%+', '방문구축→FoEX 전환'],
-    ['TTV (SaaS)', 'AVG(개통일−계약일)', '5.1', '측정 필요', '60일', '60일 이내', 'NSM10-GCMS 연동 필요'],
+    ['납기준수율', '준수건/판정모수×100', '1.7', '94.8%', '—', '94.8% 유지', '🔴 이진판정 70.0% 금지'],
+    ['계약기간준수율', '준수/완료×100 (설치형)', '1.8', '80.8%', '—', '80.8% 유지', '🔴 95.3% 인용 금지'],
+    ['TTV (SaaS)', 'AVG(완료일−수주일)', '5.1', '측정 필요', '60일', '60일 이내', 'GCMS 수주일 기준 산출'],
     ['Billable Utilization', '유상MD/가용MD×100', '4.1', '측정 필요', '75%', '75%+', 'GCMS MD구분 입력 필수'],
     ['RAG Red%', 'Red건/전체진행건×100', '6.3', '11.2%', '5%', '8% 이하', '재공 지연건 집중 처리'],
+    ['구축지연 (M)', '최종미투입÷월가용CAPA', '6.5', '2.20M', '—', '2.0M 이하', '🔴 2.08M 인용 금지'],
     ['CSAT (개통 후)', 'AVG(고객응답, 5점)', '5.2', '미집계', '4.0', '4.2+', 'VOC 설문 시스템화 필요'],
     ['AI Attach Rate', 'AI활성고객/라이브고객×100', '5.4', '미집계', '—', '30%+', 'A10 로그 연동 Phase 1'],
     ['PM AI DAU%', 'AI도구활성PM/전체PM×100', '7.1', '미집계', '—', '70%+', 'IT인프라 협력 필요'],
     ['H/W 대기율', 'H/W대기건/구축형진행건×100', '6.4', '추정 20%+', '—', '10% 이하', '더존구매팀↔DELL 협의'],
     ['반품률', '반품(C)/접수(A)×100', '1.6', '0.44%', '—', '0.5% 이내', '현재 양호 수준 유지'],
   ];
-
   const ROADMAP = [
     ['0~30일 (즉시)', 'KPI v1.0 확정 + Master Data 매핑', '구축완료율 · 재공처리속도 · 반품률 · RAG Red%',
-      'GCMS-NSM10 프로젝트ID/고객ID 키 통일. As-Is 수동 산출 시범 운영.'],
+      'GCMS-NSM10 프로젝트ID/고객ID 키 통일. As-Is 수동 산출 시범 운영. ✅ 본 시스템에서 자동 산출 중'],
     ['31~90일 (Phase 1)', 'GCMS AI KPI 항목 개발 + GCMS→NSM10 자동집계', '완료율 + 금액 + TTV + 방식별완료율 + FoEX FAR',
-      'GCMS MD실적등록 Billable 구분 필드 추가. NSM10 구축진척 자동 집계 메뉴 신설.'],
+      'GCMS MD실적등록 Billable 구분 필드 추가. NSM10 구축진척 자동 집계 메뉴 신설. ✅ 금액·TTV·FAR 산출 완료'],
     ['91~180일 (Phase 2)', 'NSM10 AI KPI 대시보드 가동 + GM% 자동 산출', 'Pillar 1·2·3·4 전체',
       'ERP 원가 연동으로 GM% 자동 산출. NSM10 AI KPI 대시보드 가동.'],
     ['181~360일 (Phase 3)', 'A10 사용로그 연동 + EQT BMS 보고 정렬', 'Pillar 5·6·7 추가 (전체)',
@@ -615,78 +675,56 @@ KPI 연계: 1.2 금액 완료율 · 2.1 건당 평균 완료금액 · 2.2 GM%`),
 
   function renderBench(D, K) {
     $('v-bench').innerHTML = `
-      <div class="sec-head">
-        <h2>EQT BMS Benchmark & 로드맵</h2>
-        <span class="sub">관리지표 가이드라인 v1.0 §3 벤치마크 매핑 · §5 산출 공식 정착 로드맵</span>
-      </div>
+      <div class="sec-head"><h2>EQT BMS Benchmark &amp; 로드맵</h2>
+        <span class="sub">가이드라인 v1.0 §3 벤치마크 매핑 · §5 산출 공식 정착 로드맵</span></div>
       <div class="card" style="margin-bottom:1rem">
         <div class="sec-head"><h2 style="font-size:.9rem">PKG ↔ EQT 관리 기준 매핑</h2></div>
         <div class="tbl-wrap"><table>
-          <thead><tr><th>KPI</th><th>압축 공식</th><th class="ctr">가이드 As-Is</th><th class="ctr">EQT Median</th>
-            <th class="ctr">2026 목표</th><th class="ctr">GCMS 현행 산출</th><th class="ctr">판정</th><th>비고</th></tr></thead>
+          <thead><tr><th>KPI</th><th>압축 공식</th><th class="ctr">지침 As-Is</th><th class="ctr">EQT Median</th>
+            <th class="ctr">2026 목표</th><th class="ctr">GCMS 현행</th><th class="ctr">판정</th><th>비고</th></tr></thead>
           <tbody>${BENCH.map(([n, f, id, asis, med, tgt, memo]) => {
-            const k = K.get(id);
-            const now = k ? k.result.disp : '—';
-            const j = k ? k.judge : { cls: 'idle', txt: '—' };
-            return `<tr>
-              <td class="strong">${esc(n)}</td>
-              <td class="mono" style="font-size:.68rem;color:var(--info)">${esc(f)}</td>
+            const k = K.get(id), now = k ? k.result.disp : '—', j = k ? k.judge : { cls: 'idle', txt: '—' };
+            return `<tr><td class="strong">${esc(n)}</td>
+              <td class="mono" style="font-size:.67rem;color:var(--info)">${esc(f)}</td>
               <td class="ctr" style="color:var(--tx-s)">${esc(asis)}</td>
               <td class="ctr" style="color:var(--tx-s)">${esc(med)}</td>
               <td class="ctr strong">${esc(tgt)}</td>
               <td class="ctr strong" style="color:${j.cls === 'ok' ? 'var(--ok)' : j.cls === 'risk' ? 'var(--risk)' : 'var(--tx-m)'}">${esc(now)}</td>
               <td class="ctr"><span class="judge ${j.cls}">${j.txt}</span></td>
-              <td style="font-size:.7rem;color:var(--tx-s)">${esc(memo)}</td>
-            </tr>`;
-          }).join('')}</tbody>
-        </table></div>
-      </div>
+              <td style="font-size:.69rem;color:var(--tx-s)">${esc(memo)}</td></tr>`;
+          }).join('')}</tbody></table></div></div>
 
       <div class="card" style="margin-bottom:1rem">
         <div class="sec-head"><h2 style="font-size:.9rem">산출 공식 정착 로드맵 (90 · 180 · 360일)</h2></div>
         <div class="tbl-wrap"><table>
           <thead><tr><th>기간</th><th>주요 산출물</th><th>우선 KPI</th><th>실행 과제</th></tr></thead>
           <tbody>${ROADMAP.map(([a, b, c, d]) => `<tr>
-            <td class="strong" style="white-space:nowrap">${esc(a)}</td>
-            <td>${esc(b)}</td><td style="color:var(--tx-s)">${esc(c)}</td>
-            <td style="font-size:.72rem;color:var(--tx-s)">${esc(d)}</td>
-          </tr>`).join('')}</tbody>
-        </table></div>
-      </div>
+            <td class="strong" style="white-space:nowrap">${esc(a)}</td><td>${esc(b)}</td>
+            <td style="color:var(--tx-s)">${esc(c)}</td>
+            <td style="font-size:.72rem;color:var(--tx-s)">${esc(d)}</td></tr>`).join('')}</tbody></table></div></div>
 
       <div class="g2">
-        <div class="card">
-          <div class="sec-head"><h2 style="font-size:.9rem">데이터 거버넌스 5원칙</h2></div>
+        <div class="card"><div class="sec-head"><h2 style="font-size:.9rem">데이터 거버넌스 5원칙</h2></div>
           <div style="font-size:.76rem;line-height:1.9;color:var(--tx-b)">
             <b>① SSOT 단일 원천</b> — GCMS &gt; NSM10 &gt; ERP 순 우선순위. 동일 KPI 중복 산출 금지.<br>
             <b>② Master Data 일치성</b> — 프로젝트 ID·고객 ID를 4개 시스템에서 동일 키로 운영.<br>
             <b>③ 기간 정의 통일</b> — 월별 집계 기준일 매월 말일 23:59. 전년이월 별도 코드 분리.<br>
             <b>④ 변경 이력 관리</b> — 공식·목표값 변경 시 Change Log 등록. 분기 단위 변경만 허용.<br>
-            <b>⑤ 감사 추적</b> — 모든 KPI 산출 결과는 GCMS 원천까지 Drill-down 가능하도록 설계.
-          </div>
-        </div>
-        <div class="card">
-          <div class="sec-head"><h2 style="font-size:.9rem">즉시 실행 3대 Quick Win</h2></div>
+            <b>⑤ 감사 추적</b> — 모든 KPI 산출 결과는 GCMS 원천까지 Drill-down 가능하도록 설계.</div></div>
+        <div class="card"><div class="sec-head"><h2 style="font-size:.9rem">즉시 실행 3대 Quick Win</h2></div>
           <div style="font-size:.76rem;line-height:1.85;color:var(--tx-b)">
             <div style="padding:.6rem .75rem;background:var(--ok-bg);border-radius:8px;margin-bottom:.5rem">
               <b>1순위 — Master Data 매핑 워크숍</b><br>
-              <span style="color:var(--tx-s);font-size:.73rem">GCMS·NSM10·ERP·HR 간 프로젝트 ID/고객 ID 통일. 모든 KPI 자동 산출의 공통 기반.</span>
-            </div>
-            <div style="padding:.6rem .75rem;background:var(--info-bg);border-radius:8px;margin-bottom:.5rem">
-              <b>2순위 — 4대 핵심 KPI 수동 산출 시범 (30일)</b><br>
-              <span style="color:var(--tx-s);font-size:.73rem">구축완료율·재공처리속도·FoEX FAR·RAG Red% — 본 시스템에서 이미 자동 산출 중.</span>
-            </div>
+              <span style="color:var(--tx-s);font-size:.73rem">GCMS·NSM10·ERP·HR 간 프로젝트 ID/고객 ID 통일.</span></div>
+            <div style="padding:.6rem .75rem;background:var(--ok-bg);border-radius:8px;margin-bottom:.5rem">
+              <b>2순위 — 4대 핵심 KPI 수동 산출 시범 ✅ 완료</b><br>
+              <span style="color:var(--tx-s);font-size:.73rem">구축완료율·재공처리속도·FoEX FAR·RAG Red% — 본 시스템에서 자동 산출 중.</span></div>
             <div style="padding:.6rem .75rem;background:var(--warn-bg);border-radius:8px">
               <b>3순위 — GCMS MD실적등록 Billable 구분 필드 추가</b><br>
-              <span style="color:var(--tx-s);font-size:.73rem">BU%·건당 완료금액·CTD 산출의 핵심 원천. 프로젝트 코드 vs 공통(IDLE) 정확 입력 체계.</span>
-            </div>
-          </div>
-        </div>
+              <span style="color:var(--tx-s);font-size:.73rem">BU%·CTD 산출의 핵심 원천. 프로젝트 코드 vs 공통(IDLE) 정확 입력 체계.</span></div></div></div>
       </div>`;
   }
 
-  return {
-    renderExec, renderBook, renderProjectShell, renderStatus, renderCapa, renderBench,
-    selectPJ, goPJ, goTab, goCP
-  };
+  return { renderExec, renderBook, renderProjectShell, renderStatus, renderCapa, renderAudit, renderBench,
+    selectPJ, goPJ, goTab, goCP };
 })();

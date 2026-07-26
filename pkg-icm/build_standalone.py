@@ -13,7 +13,7 @@ import json, os, re, sys
 BASE = os.path.dirname(os.path.abspath(__file__))
 SRC_HTML = os.path.join(BASE, 'index.html')
 OUT_HTML = os.path.join(BASE, 'index_standalone.html')
-DATA_JSON = os.path.join(BASE, 'data', 'gcms_data.json')
+DATA_JSON = os.path.join(BASE, 'data', 'gcms_full.json')
 CSS_FILES = ['css/app.css']
 JS_FILES = ['js/data.js', 'js/kpi.js', 'js/views.js', 'js/app.js']
 
@@ -47,7 +47,11 @@ def main():
     print('\n[1/4] 데이터 로드...')
     with open(DATA_JSON, encoding='utf-8') as f:
         data = json.load(f)
-    print(f'      프로젝트 {len(data):,}건')
+    if isinstance(data, dict):
+        print(f"      기준일 {data.get('meta', {}).get('asOf', '—')} · "
+              f"프로젝트 {len(data.get('rows', [])):,}건 · 배정 {len(data.get('assignees', [])):,}행")
+    else:
+        print(f'      프로젝트 {len(data):,}건')
 
     print('[2/4] CSS 인라인...')
     css = '\n'.join(read(p) for p in CSS_FILES)
