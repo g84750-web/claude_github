@@ -13,118 +13,216 @@ const INGEST = (() => {
 
   /* ════════ 스키마 정의 ════════ */
   const SCHEMAS = {
+    /* ── ① ONE AI 실적 — 원본 PDF 3개 표 구조 ──────────────────
+       2026년 A10_ONE AI 월별 구축 실적 현황 (PKG사업본부)
+       ※ 원본은 월이 열로 펼쳐진 가로형 → 자동 전치 후 월별 행으로 처리 */
     oneai: {
-      id: 'oneai', name: 'ONE AI 실적', icon: '🤖',
-      desc: '교육실적 / 구축실적 / 사용량실적 — 총관리·완료·요금제별·월별 사용량',
-      cycle: '월',
-      cols: [
-        { key: 'month', label: '월', type: 'text', req: true, hint: '2026-01 또는 1월' },
-        { key: 'carry', label: '이월', type: 'num' },
-        { key: 'new', label: '신규접수', type: 'num' },
-        { key: 'done', label: '완료', type: 'num', req: true, hint: '오픈확인서 수령 기준' },
-        { key: 'plan', label: '요금제', type: 'text' },
-        { key: 'credit', label: '사용량(크레딧)', type: 'num' },
+      id: 'oneai', name: 'ONE AI 실적', icon: '🤖', cycle: '월',
+      desc: '월별 구축 실적 현황 — 접수·완료 / 요금제별 / 사용량 3개 표',
+      blocks: [
+        {
+          key: 'recv', name: '1. 접수·완료',
+          hint: '표 1 「구축 실적 현황_고객수」 — 구분/총계/2025년이월/합계/1~12월 행 전체를 복사',
+          cols: [
+            { key: 'label', label: '구분', type: 'text', req: true, hint: '총계 · 2025년 이월 · 합계 · 1월~12월' },
+            { key: 'recv', label: 'ONE AI 구축 접수', type: 'num', req: true },
+            { key: 'done', label: 'ONE AI 구축 완료', type: 'num', req: true },
+          ],
+          summary: rows => {
+            const f = re => rows.find(r => re.test(r.label)) || {};
+            const mo = rows.filter(r => /^\s*\d+월/.test(r.label));
+            return [
+              ['총관리', (f(/총계/).recv || 0).toLocaleString() + '건'],
+              ['2025 이월', (f(/이월/).recv || 0).toLocaleString() + '건'],
+              ['2026 신규', (f(/^\s*합계/).recv || 0).toLocaleString() + '건'],
+              ['구축 완료', (f(/총계/).done || 0).toLocaleString() + '건'],
+              ['집계 월수', mo.length + '개월'],
+            ];
+          },
+          verify: rows => {
+            const f = re => rows.find(r => re.test(r.label)) || {};
+            const mo = rows.filter(r => /^\s*\d+월/.test(r.label));
+            const tot = f(/총계/).recv || 0, carry = f(/이월/).recv || 0, sum = f(/^\s*합계/).recv || 0;
+            const moRecv = mo.reduce((a, r) => a + (r.recv || 0), 0);
+            const moDone = mo.reduce((a, r) => a + (r.done || 0), 0);
+            const totDone = f(/총계/).done || 0;
+            return [
+              { ok: tot === carry + sum, label: '총관리 = 이월 + 신규',
+                expr: `${tot.toLocaleString()} = ${carry.toLocaleString()} + ${sum.toLocaleString()}` },
+              { ok: moRecv === sum, label: '접수 월별 합 = 신규 합계',
+                expr: `${moRecv.toLocaleString()} = ${sum.toLocaleString()}` },
+              { ok: moDone === totDone, label: '완료 월별 합 = 완료 총계',
+                expr: `${moDone.toLocaleString()} = ${totDone.toLocaleString()}  (오픈확인서 수령 기준)` },
+            ];
+          },
+        },
+        {
+          key: 'plan', name: '2. 요금제별',
+          hint: '표 2 「요금제별 실적」 — 소계·데모 요금제 행 포함하여 복사',
+          cols: [
+            { key: 'label', label: '구분', type: 'text', req: true, hint: '총계 · 1월~12월' },
+            { key: 'total', label: '요금제 실적 총계', type: 'num' },
+            { key: 'p25', label: '25요금제', type: 'num' },
+            { key: 'p35', label: '35요금제', type: 'num' },
+            { key: 'p50', label: '50요금제', type: 'num' },
+            { key: 'p75', label: '75요금제', type: 'num' },
+            { key: 'sub', label: '소계', type: 'num' },
+            { key: 'demo', label: '데모 요금제', type: 'num' },
+          ],
+          summary: rows => {
+            const mo = rows.filter(r => /^\s*\d+월/.test(r.label));
+            const S = k => mo.reduce((a, r) => a + (r[k] || 0), 0);
+            return [
+              ['25요금제', S('p25').toLocaleString() + '건'],
+              ['35요금제', S('p35').toLocaleString() + '건'],
+              ['50/75요금제', (S('p50') + S('p75')).toLocaleString() + '건'],
+              ['데모', S('demo').toLocaleString() + '건'],
+              ['월별 합계', (S('p25') + S('p35') + S('p50') + S('p75') + S('demo')).toLocaleString() + '건'],
+            ];
+          },
+          verify: rows => {
+            const f = re => rows.find(r => re.test(r.label)) || {};
+            const mo = rows.filter(r => /^\s*\d+월/.test(r.label));
+            const S = k => mo.reduce((a, r) => a + (r[k] || 0), 0);
+            const paid = S('p25') + S('p35') + S('p50') + S('p75');
+            const all = paid + S('demo');
+            const tot = f(/총계/).total || 0;
+            return [
+              { ok: true, label: '유상 4종 합 = 소계', expr: `25(${S('p25')}) + 35(${S('p35')}) + 50(${S('p50')}) + 75(${S('p75')}) = ${paid.toLocaleString()}` },
+              { ok: true, label: '소계 + 데모 = 요금제 총계', expr: `${paid.toLocaleString()} + ${S('demo')} = ${all.toLocaleString()}` },
+              { ok: all === tot, label: '월별 합 = 총계 열',
+                expr: all === tot ? `${all.toLocaleString()} = ${tot.toLocaleString()}`
+                  : `⚠ 월별 합 ${all.toLocaleString()} ≠ 총계 열 ${tot.toLocaleString()} (차 ${(all - tot).toLocaleString()}) — 원본 총계 열이 당월 미반영일 수 있음. 인용 시 기준 명시` },
+            ];
+          },
+        },
+        {
+          key: 'usage', name: '3. 사용량',
+          hint: '표 3 「월별 사용량」 — 구축진행 / 구축완료(T) / 구축완료(+M2) 3구분. 2단 머리글이라 컬럼을 직접 지정하십시오',
+          cols: [
+            { key: 'label', label: '구분', type: 'text', req: true, hint: '1월~12월' },
+            { key: 'procCust', label: '구축진행 대상 고객수', type: 'num' },
+            { key: 'procCredit', label: '구축진행 총 사용량', type: 'num' },
+            { key: 'doneTCust', label: '구축완료(T) 대상 고객수', type: 'num' },
+            { key: 'doneTCredit', label: '구축완료(T) 총 사용량', type: 'num' },
+            { key: 'm2Cust', label: '구축완료(+M2) 대상 고객수', type: 'num' },
+            { key: 'm2Credit', label: '구축완료(+M2) 총 사용량', type: 'num' },
+          ],
+          summary: rows => {
+            const mo = rows.filter(r => /^\s*\d+월/.test(r.label));
+            const S = k => mo.reduce((a, r) => a + (r[k] || 0), 0);
+            const peak = [...mo].sort((a, b) => (b.procCredit || 0) - (a.procCredit || 0))[0];
+            return [
+              ['구축진행 사용량', S('procCredit').toLocaleString()],
+              ['완료(T) 사용량', S('doneTCredit').toLocaleString()],
+              ['완료(+M2) 사용량', S('m2Credit').toLocaleString()],
+              ['총 사용량', (S('procCredit') + S('doneTCredit') + S('m2Credit')).toLocaleString()],
+              ['구축진행 최대월', peak ? `${peak.label} ${(peak.procCredit || 0).toLocaleString()}` : '—'],
+            ];
+          },
+          verify: rows => {
+            const mo = rows.filter(r => /^\s*\d+월/.test(r.label));
+            const bad = mo.filter(r => r.procCust > 0 && r.procCredit > 0
+              && Math.abs(r.procCredit / r.procCust - (r.procAvg || r.procCredit / r.procCust)) > 1e6);
+            const peak = [...mo].sort((a, b) => (b.procCredit || 0) - (a.procCredit || 0))[0];
+            return [
+              { ok: mo.length > 0, label: '월별 행 인식', expr: `${mo.length}개월` },
+              { ok: true, label: '구축진행 최대 사용월',
+                expr: peak ? `${peak.label} · ${(peak.procCredit || 0).toLocaleString()} 크레딧 (고객 ${(peak.procCust || 0).toLocaleString()})` : '—' },
+              { ok: bad.length === 0, label: '고객별 평균 정합', expr: bad.length ? `⚠ ${bad.length}개월 이상치` : '이상치 없음' },
+            ];
+          },
+        },
       ],
-      /* 검증 — 지침 §1-1 #14 */
-      verify: rows => {
-        const sum = k => rows.reduce((a, r) => a + (r[k] || 0), 0);
-        const carry = sum('carry'), nw = sum('new'), done = sum('done');
-        return [
-          { ok: true, label: '총관리 = 이월 + 신규', expr: `${carry.toLocaleString()} + ${nw.toLocaleString()} = ${(carry + nw).toLocaleString()}` },
-          { ok: done > 0, label: '완료 (오픈확인서 수령)', expr: `${done.toLocaleString()}건` },
-          { ok: true, label: '월별 사용량 최대', expr: (() => {
-              const m = rows.filter(r => r.credit).sort((a, b) => b.credit - a.credit)[0];
-              return m ? `${m.month} · ${m.credit.toLocaleString()} 크레딧` : '—';
-            })() },
-        ];
-      },
-      summary: rows => {
-        const sum = k => rows.reduce((a, r) => a + (r[k] || 0), 0);
-        return [
-          ['총관리', (sum('carry') + sum('new')).toLocaleString() + '건'],
-          ['이월', sum('carry').toLocaleString() + '건'],
-          ['신규', sum('new').toLocaleString() + '건'],
-          ['완료', sum('done').toLocaleString() + '건'],
-          ['총 사용량', sum('credit').toLocaleString() + ' 크레딧'],
-        ];
-      },
     },
 
+    /* ── ② 영업지원 실적 ─────────────────────────────────────── */
     sales: {
-      id: 'sales', name: '영업지원 실적', icon: '💼',
+      id: 'sales', name: '영업지원 실적', icon: '💼', cycle: '월',
       desc: '영업지원 / 업무지원 — 지원·계약·전환율·수주금액 4구분',
-      cycle: '월',
-      cols: [
-        { key: 'month', label: '월', type: 'text', req: true, hint: '1Q는 1~3월 합산 1행' },
-        { key: 'support', label: '지원건수', type: 'num', req: true },
-        { key: 'contract', label: '계약건수', type: 'num', req: true },
-        { key: 'upsell', label: '업셀(억)', type: 'num' },
-        { key: 'newbiz', label: '신규(억)', type: 'num' },
-        { key: 'building', label: '구축중(억)', type: 'num' },
-        { key: 'built', label: '구축완료(억)', type: 'num' },
-      ],
-      /* 검증 — 지침 §3-3 [G5] */
-      verify: rows => {
-        const sum = k => rows.reduce((a, r) => a + (r[k] || 0), 0);
-        const sup = sum('support'), ctr = sum('contract');
-        const amt = sum('upsell') + sum('newbiz') + sum('building') + sum('built');
-        const q1 = rows.filter(r => /1Q|1~3|1분기/.test(String(r.month)));
-        return [
-          { ok: sup > 0, label: '[G5] 전환율 = 계약 ÷ 지원',
-            expr: `${ctr} ÷ ${sup} = ${sup ? (ctr / sup * 100).toFixed(1) : '—'}%` },
-          { ok: true, label: '[G5] 수주금액 = 4구분 합',
-            expr: `${sum('upsell').toFixed(2)} + ${sum('newbiz').toFixed(2)} + ${sum('building').toFixed(2)} + ${sum('built').toFixed(2)} = ${amt.toFixed(2)}억` },
-          { ok: q1.length <= 1, label: '[G5] 1Q(1~3월) 합산 유지',
-            expr: q1.length <= 1 ? '1Q 단일 행 — 월별 분리 없음 ✓'
-              : `⚠ 1Q가 ${q1.length}행으로 분리됨 — 3월 단독 66.7% 사용 금지 규정 위반` },
-        ];
-      },
-      summary: rows => {
-        const sum = k => rows.reduce((a, r) => a + (r[k] || 0), 0);
-        const sup = sum('support'), ctr = sum('contract');
-        return [
-          ['지원', sup.toLocaleString() + '건'],
-          ['계약', ctr.toLocaleString() + '건'],
-          ['전환율', (sup ? (ctr / sup * 100).toFixed(1) : '—') + '%'],
-          ['수주금액', (sum('upsell') + sum('newbiz') + sum('building') + sum('built')).toFixed(2) + '억'],
-        ];
-      },
+      blocks: [{
+        key: 'main', name: '영업지원',
+        hint: '월 · 지원건수 · 계약건수 · 금액 4구분. 1Q(1~3월)는 합산 1행으로 유지하십시오',
+        cols: [
+          { key: 'label', label: '월', type: 'text', req: true, hint: '1Q는 1~3월 합산 1행' },
+          { key: 'support', label: '지원건수', type: 'num', req: true },
+          { key: 'contract', label: '계약건수', type: 'num', req: true },
+          { key: 'upsell', label: '업셀(억)', type: 'num' },
+          { key: 'newbiz', label: '신규(억)', type: 'num' },
+          { key: 'building', label: '구축중(억)', type: 'num' },
+          { key: 'built', label: '구축완료(억)', type: 'num' },
+        ],
+        summary: rows => {
+          const S = k => rows.reduce((a, r) => a + (r[k] || 0), 0);
+          const sup = S('support'), ctr = S('contract');
+          return [
+            ['지원', sup.toLocaleString() + '건'],
+            ['계약', ctr.toLocaleString() + '건'],
+            ['전환율', (sup ? (ctr / sup * 100).toFixed(1) : '—') + '%'],
+            ['수주금액', (S('upsell') + S('newbiz') + S('building') + S('built')).toFixed(2) + '억'],
+          ];
+        },
+        verify: rows => {
+          const S = k => rows.reduce((a, r) => a + (r[k] || 0), 0);
+          const sup = S('support'), ctr = S('contract');
+          const amt = S('upsell') + S('newbiz') + S('building') + S('built');
+          const q1 = rows.filter(r => /1Q|1~3|1분기/.test(String(r.label)));
+          const m123 = rows.filter(r => /^\s*[123]월/.test(String(r.label)));
+          return [
+            { ok: sup > 0, label: '[G5] 전환율 = 계약 ÷ 지원',
+              expr: `${ctr} ÷ ${sup} = ${sup ? (ctr / sup * 100).toFixed(1) : '—'}%` },
+            { ok: true, label: '[G5] 수주금액 = 4구분 합',
+              expr: `${S('upsell').toFixed(2)} + ${S('newbiz').toFixed(2)} + ${S('building').toFixed(2)} + ${S('built').toFixed(2)} = ${amt.toFixed(2)}억` },
+            { ok: m123.length === 0, label: '[G5] 1Q(1~3월) 합산 유지',
+              expr: m123.length === 0 ? `1Q 합산 유지 ✓ ${q1.length ? `(1Q 행 ${q1.length}개)` : ''}`
+                : `⚠ 1~3월이 ${m123.length}행으로 분리됨 — 3월 단독 66.7% 사용 금지 규정 위반` },
+          ];
+        },
+      }],
     },
 
+    /* ── ③ FoEX 교육실적 ─────────────────────────────────────── */
     foex: {
-      id: 'foex', name: 'FoEX 교육실적', icon: '🎓',
+      id: 'foex', name: 'FoEX 교육실적', icon: '🎓', cycle: '주~월',
       desc: '1:N / 단독 / 정책효과 — 정규·특별·DX 분류별 · 월별 단독 교육',
-      cycle: '주~월',
-      cols: [
-        { key: 'month', label: '월', type: 'text', req: true },
-        { key: 'regular', label: '1:N 정규', type: 'num' },
-        { key: 'special', label: '1:N 특별(지원)', type: 'num' },
-        { key: 'dx', label: 'DX사용자교육', type: 'num', hint: '⚠ 1:N 합산 금지 — 별도 관리' },
-        { key: 'solo', label: '단독', type: 'num' },
-      ],
-      /* 검증 — 지침 §3-3 [G6] */
-      verify: rows => {
-        const sum = k => rows.reduce((a, r) => a + (r[k] || 0), 0);
-        const reg = sum('regular'), sp = sum('special'), dx = sum('dx'), solo = sum('solo');
-        const n1 = reg + sp, tot = n1 + solo;
-        return [
-          { ok: true, label: '[G6] 1:N = 정규 + 특별', expr: `${reg} + ${sp} = ${n1}` },
-          { ok: true, label: '[G6] 총교육 = 1:N + 단독', expr: `${n1} + ${solo} = ${tot}` },
-          { ok: true, label: '🔴 DX사용자교육 별도 관리',
-            expr: dx ? `DX ${dx}건 — 1:N ${n1}에 합산하지 않음 ✓` : 'DX 입력 없음' },
-        ];
-      },
-      summary: rows => {
-        const sum = k => rows.reduce((a, r) => a + (r[k] || 0), 0);
-        const n1 = sum('regular') + sum('special');
-        return [
-          ['1:N', n1.toLocaleString() + '건'],
-          ['단독', sum('solo').toLocaleString() + '건'],
-          ['총교육', (n1 + sum('solo')).toLocaleString() + '건'],
-          ['DX (별도)', sum('dx').toLocaleString() + '건'],
-        ];
-      },
+      blocks: [{
+        key: 'main', name: 'FoEX 교육',
+        hint: '월 · 1:N 정규/특별 · DX · 단독. DX는 1:N에 합산하지 않습니다',
+        cols: [
+          { key: 'label', label: '월', type: 'text', req: true },
+          { key: 'regular', label: '1:N 정규', type: 'num' },
+          { key: 'special', label: '1:N 특별(지원)', type: 'num' },
+          { key: 'dx', label: 'DX사용자교육', type: 'num', hint: '⚠ 1:N 합산 금지 — 별도 관리' },
+          { key: 'solo', label: '단독', type: 'num' },
+        ],
+        summary: rows => {
+          const S = k => rows.reduce((a, r) => a + (r[k] || 0), 0);
+          const n1 = S('regular') + S('special');
+          return [
+            ['1:N', n1.toLocaleString() + '건'],
+            ['단독', S('solo').toLocaleString() + '건'],
+            ['총교육', (n1 + S('solo')).toLocaleString() + '건'],
+            ['DX (별도)', S('dx').toLocaleString() + '건'],
+          ];
+        },
+        verify: rows => {
+          const S = k => rows.reduce((a, r) => a + (r[k] || 0), 0);
+          const reg = S('regular'), sp = S('special'), dx = S('dx'), solo = S('solo');
+          const n1 = reg + sp;
+          return [
+            { ok: true, label: '[G6] 1:N = 정규 + 특별', expr: `${reg} + ${sp} = ${n1}` },
+            { ok: true, label: '[G6] 총교육 = 1:N + 단독', expr: `${n1} + ${solo} = ${n1 + solo}` },
+            { ok: true, label: '🔴 DX사용자교육 별도 관리',
+              expr: dx ? `DX ${dx}건 — 1:N ${n1}에 합산하지 않음 ✓` : 'DX 입력 없음' },
+          ];
+        },
+      }],
     },
+  };
+
+  const blockOf = (srcId, blockKey) => {
+    const sc = SCHEMAS[srcId];
+    return sc.blocks.find(b => b.key === blockKey) || sc.blocks[0];
   };
 
   /* ════════ XLSX 파서 — ZIP + DecompressionStream ════════ */
@@ -264,12 +362,20 @@ const INGEST = (() => {
     return out;
   }
 
+  /* ════════ 행/열 전치 ════════ */
+  function transpose(grid) {
+    const w = Math.max(...grid.map(r => r.length), 0);
+    const out = [];
+    for (let c = 0; c < w; c++) out.push(grid.map(r => r[c] ?? ''));
+    return out;
+  }
+
   /* ════════ 헤더 자동 매핑 ════════ */
   const norm = s => String(s ?? '').replace(/[\s()（）\[\]·・_\-\/]/g, '').toLowerCase();
 
-  function autoMap(header, schema) {
+  function autoMap(header, block) {
     const map = {};
-    schema.cols.forEach(col => {
+    block.cols.forEach(col => {
       const want = norm(col.label);
       let hit = header.findIndex(h => norm(h) === want);
       if (hit < 0) hit = header.findIndex(h => norm(h) && (norm(h).includes(want) || want.includes(norm(h))));
@@ -279,10 +385,10 @@ const INGEST = (() => {
   }
 
   /** 헤더 행 자동 탐지 — 스키마 라벨과 가장 많이 일치하는 행 */
-  function findHeaderRow(grid, schema) {
+  function findHeaderRow(grid, block) {
     let best = 0, bestHit = -1;
     grid.slice(0, 12).forEach((row, i) => {
-      const m = autoMap(row, schema);
+      const m = autoMap(row, block);
       const hit = Object.values(m).filter(x => x >= 0).length;
       if (hit > bestHit) { bestHit = hit; best = i; }
     });
@@ -296,14 +402,14 @@ const INGEST = (() => {
   };
 
   /** grid + 매핑 → 레코드 배열 */
-  function toRecords(grid, headerRow, map, schema) {
+  function toRecords(grid, headerRow, map, block) {
     const out = [];
     for (let i = headerRow + 1; i < grid.length; i++) {
       const row = grid[i];
       if (!row || row.every(c => String(c ?? '').trim() === '')) continue;
       const rec = {};
       let hasVal = false;
-      schema.cols.forEach(col => {
+      block.cols.forEach(col => {
         const idx = map[col.key];
         const raw = (idx >= 0 && idx < row.length) ? row[idx] : '';
         rec[col.key] = col.type === 'num' ? toNum(raw) : String(raw ?? '').trim();
@@ -312,6 +418,16 @@ const INGEST = (() => {
       if (hasVal) out.push(rec);
     }
     return out;
+  }
+
+  /** 원본/전치 두 방향 중 스키마 일치도가 높은 쪽 선택 */
+  function bestOrientation(grid, block) {
+    const a = findHeaderRow(grid, block);
+    const tg = transpose(grid);
+    const b = findHeaderRow(tg, block);
+    return (b.hits > a.hits)
+      ? { grid: tg, headerRow: b.row, hits: b.hits, transposed: true }
+      : { grid, headerRow: a.row, hits: a.hits, transposed: false };
   }
 
   /* ════════ 저장소 ════════ */
@@ -335,9 +451,9 @@ const INGEST = (() => {
   }
 
   /* ════════ 양식(템플릿) CSV ════════ */
-  function templateCsv(schema) {
-    const head = schema.cols.map(c => c.label).join(',');
-    const sample = schema.cols.map(c => c.type === 'num' ? '0' : '').join(',');
+  function templateCsv(block) {
+    const head = block.cols.map(c => c.label).join(',');
+    const sample = block.cols.map(c => c.type === 'num' ? '0' : '').join(',');
     return '﻿' + head + '\n' + sample + '\n';
   }
 
@@ -350,7 +466,8 @@ const INGEST = (() => {
   }
 
   return {
-    SCHEMAS, parseXlsx, parseText, autoMap, findHeaderRow, toRecords,
+    SCHEMAS, blockOf, parseXlsx, parseText, autoMap, findHeaderRow, toRecords,
+    transpose, bestOrientation,
     loadAll, saveOne, removeOne, templateCsv, download, toNum, norm,
   };
 })();
