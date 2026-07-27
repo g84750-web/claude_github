@@ -107,7 +107,7 @@ const VIEWS = (() => {
             <div class="md-card c1"><div class="l">계약공수</div><div class="v">${f0(m.contract)}</div></div>
             <div class="md-card c2"><div class="l">투입환산</div><div class="v">${f0(m.converted)}</div></div>
             <div class="md-card c3"><div class="l">최종 미투입</div><div class="v">${f1(m.finalUn)}</div></div>
-            <div class="md-card c4"><div class="l">구축지연</div><div class="v">${f2(D.meta.delayM)}M</div></div>
+            <div class="md-card c4"><div class="l">구축지연</div><div class="v">${f1(D.meta.delayM)}M</div></div>
           </div>
           <div style="font-size:.7rem;color:var(--tx-s);line-height:1.7;font-family:ui-monospace,monospace">
             ${f1(m.contract)} = ${f1(m.converted)} + ${f1(m.un1)} ✓<br>
@@ -622,7 +622,7 @@ KPI 연계: 2.4 매출 실현율 · 4.1 BU% · 3.3 방법론 준수율`),
             ${chk(Math.abs(m.finalUn - (m.paidUn + m.freeUn1 * 0.3)) < 0.5, '[G3] 최종미투입 = 유상 + 무상×30%',
               `${f1(m.finalUn)} = ${f1(m.paidUn)} + ${f1(m.freeUn1)}×0.3 (${f1(m.freeUn1 * 0.3)})`)}
             ${chk(true, '[G3] 구축지연 = 최종미투입 ÷ 월가용 CAPA',
-              `${f1(m.finalUn)} ÷ ${f0(D.meta.capa)} = ${f2(D.meta.delayM)}M`)}
+              `${f1(m.finalUn)} ÷ ${f0(D.meta.capa)} = ${f1(D.meta.delayM)}M`)}
             ${chk(true, '[G3] 월가용 CAPA = 가용인원 × 22.0',
               `${D.meta.headcount} × ${D.meta.capaCoef} = ${f0(D.meta.capa)} m/d`)}
             ${chk(true, '[G4] 계약기간 모집단 (설치형)',
@@ -667,7 +667,7 @@ KPI 연계: 2.4 매출 실현율 · 4.1 BU% · 3.3 방법론 준수율`),
                 · 완료 ${D.stat.done.toLocaleString()} · 완료율 ${f2(pct(D.stat.done, D.stat.total))}%
                 · 현진행 ${D.stat.active} = 진행 ${st['진행'] || 0} + 지연 ${st['지연'] || 0}
                 · 납기준수율 ${f1(pct(keep, D.stat.done))}% (${keep}/${D.stat.done.toLocaleString()})
-                · 계약공수 ${f1(m.contract)} · 최종미투입 ${f1(m.finalUn)} · 구축지연 ${f2(D.meta.delayM)}M
+                · 계약공수 ${f1(m.contract)} · 최종미투입 ${f1(m.finalUn)} · 구축지연 ${f1(D.meta.delayM)}M
 정합성 검증식 : 상태별 5구분 합 = 총접수 ${D.stat.total.toLocaleString()} ✅
                 계약공수 = 투입환산 + 미투입1차 ✅
 ⚠ 인용 주의   : · 수주액은 O열(총수주액) — P열(라이선스) 아님
@@ -1099,6 +1099,27 @@ KPI 연계: 2.4 매출 실현율 · 4.1 BU% · 3.3 방법론 준수율`),
     return agg;
   }
 
+  /* 비가용 인원 구성 — 사람에 대한 직무 비가용(휴직)과 업무 비가용을 분리한다
+     (「인원CAPA」 비가용 상세 항목을 3개 군으로 묶음. 3군 합 = A10 비가용인원) */
+  const UNAVAIL_GROUPS = [
+    { name: '인적 비가용 (휴직)', note: '사람 자체가 부재 — 직무 비가용',
+      items: ['육아휴직', '병가휴직'], color: 'var(--risk)' },
+    { name: '업무 비가용', note: '재직하나 구축 미투입 — 공수 차감 개념',
+      items: ['유닛장 업무(2명, 50%)', '인바운드유선 4명', 'FoEX교육시스템운영(총괄)'], color: 'var(--warn)' },
+    { name: '구축지원 등', note: '계약직·사업관리·직무전환교육',
+      items: ['계약직-구축지원', '구축지원-사업관리', '기타-직무전환교육'], color: 'var(--info)' },
+  ];
+
+  function unavailGroups(trend) {
+    const find = lab => (trend.detail || []).find(d => d.label === lab);
+    return UNAVAIL_GROUPS.map(g => {
+      const rows = g.items.map(find).filter(Boolean);
+      if (!rows.length) return null;
+      const sum = trend.months.map((_, i) => rows.reduce((a, r) => a + (r.values[i] || 0), 0));
+      return { ...g, rows, sum };
+    }).filter(Boolean);
+  }
+
   /* 월별 CAPA 변동 추이 — 확정 / 현재(편집 즉시반영) / 예정 3구간 */
   function capaTrendChart(t) {
     const max = Math.max(...t.series.map(s => Math.max(s.capa, s.liveCapa || 0))) || 1;
@@ -1106,14 +1127,17 @@ KPI 연계: 2.4 매출 실현율 · 4.1 BU% · 3.3 방법론 준수율`),
     return `<div class="chart trend">${t.series.map(s => `
       <div class="col" title="${esc(s.ym)} · ${esc(s.kind)} ${f0(s.capa)} m/d (구축가용 ${f0(s.avail)}명)${
         s.liveCapa !== undefined ? ` · 인력풀 산출 ${f0(s.liveCapa)} m/d (${f0(s.liveAvail)}명)` : ''}">
-        <div class="v">${f0(s.liveCapa !== undefined ? s.liveCapa : s.capa)}</div>
+        <div class="v">${s.liveCapa !== undefined
+          ? `${f0(s.capa)}<span style="color:var(--warn)">/${f0(s.liveCapa)}</span>` : f0(s.capa)}</div>
         <div class="bars">
           <div class="b${s.kind === '예정' ? ' plan' : ''}" style="height:${h(s.capa)}%"></div>
           ${s.liveCapa !== undefined ? `<div class="b now" style="height:${h(s.liveCapa)}%"></div>` : ''}
         </div>
-        <div class="l">${esc(s.ym)}</div>
+        <div class="l">${esc(s.ym)}<b>${s.liveAvail !== undefined
+          ? `${f0(s.avail)}<span style="color:var(--warn)">/${f0(s.liveAvail)}</span>` : f0(s.avail)}명</b></div>
       </div>`).join('')}</div>
       <div class="chart-legend">
+        <span style="color:var(--tx-h)">막대 = 가용 CAPA(m/d) · 축 아래 = 구축가용 인원(명)</span>
         <span><i style="background:#3B4FC8"></i>확정 (인원CAPA 실측)</span>
         <span><i style="background:#F59E0B"></i>${esc(t.nowYm)} 인력풀 산출 · 편집 즉시반영</span>
         <span><i style="background:#9CA3AF"></i>예정 (복귀예정월 반영)</span>
@@ -1170,10 +1194,14 @@ KPI 연계: 2.4 매출 실현율 · 4.1 BU% · 3.3 방법론 준수율`),
         <div class="card"><div class="sec-head"><h2 style="font-size:.9rem">가용 판정 결과</h2>
             ${changes ? '<span class="sub">변경 반영</span>' : ''}</div>
           <div class="md-cards" style="grid-template-columns:1fr 1fr">
-            <div class="md-card c2"><div class="l">구축가용</div><div class="v">${cm.available}명</div></div>
-            <div class="md-card c4"><div class="l">평가중</div><div class="v">${st['평가중'] || 0}명</div></div>
-            <div class="md-card c3"><div class="l">비가용</div><div class="v">${st['비가용'] || 0}명</div></div>
-            <div class="md-card c5"><div class="l">구축제외</div><div class="v">${st['구축제외'] || 0}명</div></div>
+            <div class="md-card c2"><div class="l">구축가용</div><div class="v">${cm.available}명</div>
+              <div class="s">${f0(cm.capa)} m/d</div></div>
+            <div class="md-card c4"><div class="l">평가중</div><div class="v">${st['평가중'] || 0}명</div>
+              <div class="s">${f0((st['평가중'] || 0) * cm.capaCoef)} m/d</div></div>
+            <div class="md-card c3"><div class="l">비가용</div><div class="v">${st['비가용'] || 0}명</div>
+              <div class="s">${f0((st['비가용'] || 0) * cm.capaCoef)} m/d</div></div>
+            <div class="md-card c5"><div class="l">구축제외</div><div class="v">${st['구축제외'] || 0}명</div>
+              <div class="s">${f0((st['구축제외'] || 0) * cm.capaCoef)} m/d</div></div>
           </div>
           <div style="font-size:.73rem;color:var(--tx-s);line-height:1.7">
             인력 총계 <b>${cm.total}명</b> · 가용비율 <b>${f1(pct(cm.available, cm.total))}%</b>
@@ -1182,8 +1210,10 @@ KPI 연계: 2.4 매출 실현율 · 4.1 BU% · 3.3 방법론 준수율`),
 
         <div class="card"><div class="sec-head"><h2 style="font-size:.9rem">월가용 CAPA 산출</h2></div>
           <div class="md-cards" style="grid-template-columns:1fr 1fr">
-            <div class="md-card c1"><div class="l">인력풀 산출</div><div class="v">${f0(cm.capa)}</div></div>
-            <div class="md-card c2"><div class="l">KPI 적용값</div><div class="v">${f0(D.meta.capa)}</div></div>
+            <div class="md-card c1"><div class="l">인력풀 산출</div><div class="v">${f0(cm.capa)}</div>
+              <div class="s">m/d · ${cm.available}명</div></div>
+            <div class="md-card c2"><div class="l">KPI 적용값</div><div class="v">${f0(D.meta.capa)}</div>
+              <div class="s">m/d · ${D.meta.headcount}명</div></div>
           </div>
           <div style="font-size:.72rem;color:var(--tx-s);line-height:1.8;font-family:ui-monospace,monospace">
             인력풀 ${cm.available}명 × ${cm.capaCoef} = ${f0(cm.capa)} m/d<br>
@@ -1231,7 +1261,43 @@ KPI 연계: 2.4 매출 실현율 · 4.1 BU% · 3.3 방법론 준수율`),
           <b>예정 ${esc(tr.series[tr.series.length - 1].ym)}까지</b> — 시트 예정 CAPA(구축자별 복귀예정월 반영)
           ${tr.adjust ? ` + 화면 편집분 <b>${tr.adjust > 0 ? '+' : ''}${tr.adjust}명</b>` : ''}
           ${tr.planned ? ` + 화면 등록 복귀예정 <b>+${tr.planned}명</b>` : ''}
-        </div></div>` : ''}
+        </div>
+
+        ${(() => {
+          const gs = unavailGroups(D.capaMeta.trend);
+          if (!gs.length) return '';
+          const ms = D.capaMeta.trend.months, i0 = ms.indexOf(tr.series[0].ym);
+          const cut = i => i >= i0;
+          const hi = i => ms[i] === tr.nowYm ? 'background:#FFFBEB;' : '';
+          const cells = vals => ms.map((_, i) => cut(i)
+            ? `<td class="num" style="${hi(i)}">${vals[i] ? f0(vals[i]) : '—'}</td>` : '').join('');
+          const totals = ms.map((_, i) => gs.reduce((a, g) => a + g.sum[i], 0));
+          return `<div style="margin-top:1.1rem;padding-top:.9rem;border-top:1px dashed var(--bd-light)">
+            <div class="sec-head"><h2 style="font-size:.85rem">비가용 인원 구성</h2>
+              <span class="sub">사람에 대한 <b>직무 비가용</b>과 재직 중 구축 미투입인 <b>업무 비가용</b>을 분리 표기</span></div>
+            <div class="tbl-wrap"><table>
+              <thead><tr><th>구분</th><th>항목</th>${ms.map((m, i) => cut(i)
+                ? `<th class="num" style="${hi(i)}">${esc(m)}</th>` : '').join('')}</tr></thead>
+              <tbody>${gs.map(g => `
+                ${g.rows.map((r, j) => `<tr>
+                  ${j === 0 ? `<td class="strong" rowspan="${g.rows.length + 1}" style="color:${g.color};vertical-align:top">
+                    ${esc(g.name)}<div style="font-weight:500;font-size:.66rem;color:var(--tx-m);line-height:1.4;margin-top:.2rem">${esc(g.note)}</div></td>` : ''}
+                  <td style="font-size:.71rem">${esc(r.label)}</td>${cells(r.values)}</tr>`).join('')}
+                <tr style="background:#F7F9FC;font-weight:800">
+                  <td style="font-size:.71rem">소계</td>${cells(g.sum)}</tr>`).join('')}
+                <tr style="background:#EEF2F7;font-weight:900">
+                  <td colspan="2">비가용 인원 합계</td>${cells(totals)}</tr>
+              </tbody></table></div>
+            <div style="margin-top:.6rem;font-size:.71rem;color:var(--tx-s);line-height:1.7">
+              ${esc(tr.nowYm)} 기준 — 인적 비가용 <b style="color:var(--risk)">${f0(gs[0].sum[ms.indexOf(tr.nowYm)])}명</b>
+              · 업무 비가용 <b style="color:var(--warn)">${f0((gs[1] || { sum: [] }).sum[ms.indexOf(tr.nowYm)] || 0)}명</b>
+              · 구축지원 등 <b style="color:var(--info)">${f0((gs[2] || { sum: [] }).sum[ms.indexOf(tr.nowYm)] || 0)}명</b>
+              = 합계 <b>${f0(totals[ms.indexOf(tr.nowYm)])}명</b><br>
+              업무 비가용은 재직 인원이지만 구축에 투입되지 않으므로 <b>공수 차감 개념</b>으로 가용인원에서 제외합니다.
+              (인바운드 4명 × 22일 = 88 m/d 등)
+            </div></div>`;
+        })()}
+      </div>` : ''}
 
       <div class="g2 eq">
         <div class="card"><div class="sec-head"><h2 style="font-size:.9rem">센터·직급별 구축가용 대시보드</h2>
@@ -1544,7 +1610,7 @@ KPI 연계: 2.4 매출 실현율 · 4.1 BU% · 3.3 방법론 준수율`),
           ${mdc('c2', '완료', m.done.toLocaleString())}
           ${mdc('c5', '현진행', m.active.toLocaleString())}
           ${mdc('c3', '최종미투입', f1(md.finalUn))}
-          ${mdc('c4', '구축지연', f2(m.delayM) + 'M')}
+          ${mdc('c4', '구축지연', f1(m.delayM) + 'M')}
         </div>
         <div class="tbl-wrap"><table>
           <thead><tr><th>항목</th><th class="num">업로드본</th><th class="num">현재 적용본</th><th class="num">차이</th></tr></thead>

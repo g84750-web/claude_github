@@ -108,22 +108,34 @@ body{
 .card + .card{margin-top:1rem}
 
 /* ── Executive KPI 카드 ──────────────────────────────────────── */
-.exec-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(212px,1fr));gap:.9rem;margin-bottom:1.4rem}
+/* 6대 핵심 KPI — 항상 한 행 6칸. 카드 폭·높이를 모두 균일하게 맞춘다 */
+.exec-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:.65rem;margin-bottom:1.4rem;align-items:stretch}
 .exec-card{
   background:var(--bg-card); border:1px solid var(--bd-light); border-top:4px solid var(--acc,#3B4FC8);
-  border-radius:var(--radius); padding:1.05rem 1.15rem; box-shadow:var(--shadow-sm);
+  border-radius:var(--radius); padding:.85rem .9rem; box-shadow:var(--shadow-sm);
   transition:transform .18s, box-shadow .18s;
+  display:flex; flex-direction:column; height:100%; min-width:0;
 }
 .exec-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg)}
-.exec-card .k-name{font-size:.72rem;font-weight:800;color:var(--tx-s);letter-spacing:.2px;margin-bottom:.4rem}
-.exec-card .k-val{font-size:1.85rem;font-weight:900;color:var(--acc,#3B4FC8);line-height:1.05;letter-spacing:-1px}
-.exec-card .k-val .unit{font-size:.9rem;font-weight:700;margin-left:.12rem}
-.exec-card .k-meta{font-size:.72rem;color:var(--tx-m);margin-top:.35rem;font-weight:500}
-.exec-card .k-target{
-  display:flex;align-items:center;justify-content:space-between;gap:.5rem;
-  margin-top:.6rem;padding-top:.55rem;border-top:1px dashed var(--bd-light);
-  font-size:.7rem;font-weight:700;color:var(--tx-s);
+.exec-card .k-name{
+  font-size:.7rem;font-weight:800;color:var(--tx-s);letter-spacing:-.1px;margin-bottom:.35rem;
+  line-height:1.35;min-height:2.7em;                 /* 2줄 고정 — 카드마다 값 위치를 맞춘다 */
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
 }
+.exec-card .k-val{font-size:1.6rem;font-weight:900;color:var(--acc,#3B4FC8);line-height:1.05;letter-spacing:-1.2px}
+.exec-card .k-val .unit{font-size:.85rem;font-weight:700;margin-left:.12rem}
+.exec-card .k-meta{
+  font-size:.67rem;color:var(--tx-m);margin-top:.3rem;font-weight:500;line-height:1.45;
+  min-height:2.9em;word-break:keep-all;
+}
+.exec-card .bar{margin-top:auto}                     /* 목표선을 카드 하단에 고정 */
+.exec-card .k-target{
+  display:flex;align-items:center;justify-content:space-between;gap:.35rem;
+  margin-top:.55rem;padding-top:.5rem;border-top:1px dashed var(--bd-light);
+  font-size:.66rem;font-weight:700;color:var(--tx-s);white-space:nowrap;
+}
+.exec-card .k-target .judge{flex:0 0 auto}
+@media(max-width:1240px){.exec-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 
 /* ── 진행 바 ─────────────────────────────────────────────────── */
 .bar{height:6px;background:#EDF0F5;border-radius:99px;overflow:hidden;margin-top:.5rem}
@@ -248,6 +260,7 @@ tbody tr.sel td{background:#EEF2FF}
 .md-card{border-radius:10px;padding:.75rem .85rem;text-align:center;border:1px solid var(--bd-light)}
 .md-card .l{font-size:.68rem;color:var(--tx-s);font-weight:700;margin-bottom:.25rem}
 .md-card .v{font-size:1.2rem;font-weight:900;letter-spacing:-.5px}
+.md-card .s{font-size:.65rem;color:var(--tx-s);font-weight:700;margin-top:.15rem}
 .md-card.c1{background:#EFF6FF}.md-card.c1 .v{color:#2563EB}
 .md-card.c2{background:#F0FDF4}.md-card.c2 .v{color:#16A34A}
 .md-card.c3{background:#FFF7ED}.md-card.c3 .v{color:#EA580C}
@@ -281,6 +294,7 @@ tbody tr.sel td{background:#EEF2FF}
 
 /* 월별 CAPA 추이 — 확정 / 현재(편집 반영) / 예정 */
 .chart.trend{height:168px}
+.chart.trend .col .l b{display:block;font-size:.63rem;color:var(--tx-b);font-weight:800;margin-top:1px}
 .chart.trend .col .bars .b{max-width:26px}
 .chart.trend .col .bars .b.now{background:linear-gradient(180deg,#FBBF24,#F59E0B)}
 .chart.trend .col .bars .b.plan{
@@ -345,7 +359,7 @@ tbody tr.sel td{background:#EEF2FF}
   .app-header{padding:.85rem 1rem;flex-direction:column;align-items:flex-start}
   .nav{padding:0 .5rem}
   .pillar-body{grid-template-columns:1fr}
-  .exec-grid{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+  .exec-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media print{
   .nav,.pager,.filters{display:none!important}
@@ -1698,7 +1712,7 @@ const KPI = (() => {
         const v = pct(done, total);
         const carry = D.meta.carry, nw = D.meta.new;
         return {
-          v, disp: f2(v) + '%',
+          v, disp: f1(v) + '%',
           sub: `완료 ${done.toLocaleString()}건 / 접수 ${total.toLocaleString()}건`,
           detail: [
             { label: '이월 + 신규', value: `${carry?.toLocaleString()} + ${nw?.toLocaleString()} = ${total.toLocaleString()}` },
@@ -1807,7 +1821,7 @@ const KPI = (() => {
       calc: D => {
         const c = D.rows.filter(p => p.status === '반품').length;
         const v = pct(c, D.stat.total);
-        return { v, disp: f2(v) + '%', sub: `반품 ${c}건 / 접수 ${D.stat.total.toLocaleString()}건` };
+        return { v, disp: f1(v) + '%', sub: `반품 ${c}건 / 접수 ${D.stat.total.toLocaleString()}건` };
       }
     },
     {
@@ -2381,7 +2395,7 @@ const KPI = (() => {
         const m = D.meta.md || {};
         const v = D.meta.delayM;
         return {
-          v, disp: f2(v) + 'M',
+          v, disp: f1(v) + 'M',
           sub: `최종미투입 ${f1(m.finalUn)} ÷ CAPA ${f0(D.meta.capa)}`,
           detail: [
             { label: '계약공수', value: `${f1(m.contract)} m/d` },
@@ -2596,7 +2610,7 @@ const VIEWS = (() => {
             <div class="md-card c1"><div class="l">계약공수</div><div class="v">${f0(m.contract)}</div></div>
             <div class="md-card c2"><div class="l">투입환산</div><div class="v">${f0(m.converted)}</div></div>
             <div class="md-card c3"><div class="l">최종 미투입</div><div class="v">${f1(m.finalUn)}</div></div>
-            <div class="md-card c4"><div class="l">구축지연</div><div class="v">${f2(D.meta.delayM)}M</div></div>
+            <div class="md-card c4"><div class="l">구축지연</div><div class="v">${f1(D.meta.delayM)}M</div></div>
           </div>
           <div style="font-size:.7rem;color:var(--tx-s);line-height:1.7;font-family:ui-monospace,monospace">
             ${f1(m.contract)} = ${f1(m.converted)} + ${f1(m.un1)} ✓<br>
@@ -3111,7 +3125,7 @@ KPI 연계: 2.4 매출 실현율 · 4.1 BU% · 3.3 방법론 준수율`),
             ${chk(Math.abs(m.finalUn - (m.paidUn + m.freeUn1 * 0.3)) < 0.5, '[G3] 최종미투입 = 유상 + 무상×30%',
               `${f1(m.finalUn)} = ${f1(m.paidUn)} + ${f1(m.freeUn1)}×0.3 (${f1(m.freeUn1 * 0.3)})`)}
             ${chk(true, '[G3] 구축지연 = 최종미투입 ÷ 월가용 CAPA',
-              `${f1(m.finalUn)} ÷ ${f0(D.meta.capa)} = ${f2(D.meta.delayM)}M`)}
+              `${f1(m.finalUn)} ÷ ${f0(D.meta.capa)} = ${f1(D.meta.delayM)}M`)}
             ${chk(true, '[G3] 월가용 CAPA = 가용인원 × 22.0',
               `${D.meta.headcount} × ${D.meta.capaCoef} = ${f0(D.meta.capa)} m/d`)}
             ${chk(true, '[G4] 계약기간 모집단 (설치형)',
@@ -3156,7 +3170,7 @@ KPI 연계: 2.4 매출 실현율 · 4.1 BU% · 3.3 방법론 준수율`),
                 · 완료 ${D.stat.done.toLocaleString()} · 완료율 ${f2(pct(D.stat.done, D.stat.total))}%
                 · 현진행 ${D.stat.active} = 진행 ${st['진행'] || 0} + 지연 ${st['지연'] || 0}
                 · 납기준수율 ${f1(pct(keep, D.stat.done))}% (${keep}/${D.stat.done.toLocaleString()})
-                · 계약공수 ${f1(m.contract)} · 최종미투입 ${f1(m.finalUn)} · 구축지연 ${f2(D.meta.delayM)}M
+                · 계약공수 ${f1(m.contract)} · 최종미투입 ${f1(m.finalUn)} · 구축지연 ${f1(D.meta.delayM)}M
 정합성 검증식 : 상태별 5구분 합 = 총접수 ${D.stat.total.toLocaleString()} ✅
                 계약공수 = 투입환산 + 미투입1차 ✅
 ⚠ 인용 주의   : · 수주액은 O열(총수주액) — P열(라이선스) 아님
@@ -3588,6 +3602,27 @@ KPI 연계: 2.4 매출 실현율 · 4.1 BU% · 3.3 방법론 준수율`),
     return agg;
   }
 
+  /* 비가용 인원 구성 — 사람에 대한 직무 비가용(휴직)과 업무 비가용을 분리한다
+     (「인원CAPA」 비가용 상세 항목을 3개 군으로 묶음. 3군 합 = A10 비가용인원) */
+  const UNAVAIL_GROUPS = [
+    { name: '인적 비가용 (휴직)', note: '사람 자체가 부재 — 직무 비가용',
+      items: ['육아휴직', '병가휴직'], color: 'var(--risk)' },
+    { name: '업무 비가용', note: '재직하나 구축 미투입 — 공수 차감 개념',
+      items: ['유닛장 업무(2명, 50%)', '인바운드유선 4명', 'FoEX교육시스템운영(총괄)'], color: 'var(--warn)' },
+    { name: '구축지원 등', note: '계약직·사업관리·직무전환교육',
+      items: ['계약직-구축지원', '구축지원-사업관리', '기타-직무전환교육'], color: 'var(--info)' },
+  ];
+
+  function unavailGroups(trend) {
+    const find = lab => (trend.detail || []).find(d => d.label === lab);
+    return UNAVAIL_GROUPS.map(g => {
+      const rows = g.items.map(find).filter(Boolean);
+      if (!rows.length) return null;
+      const sum = trend.months.map((_, i) => rows.reduce((a, r) => a + (r.values[i] || 0), 0));
+      return { ...g, rows, sum };
+    }).filter(Boolean);
+  }
+
   /* 월별 CAPA 변동 추이 — 확정 / 현재(편집 즉시반영) / 예정 3구간 */
   function capaTrendChart(t) {
     const max = Math.max(...t.series.map(s => Math.max(s.capa, s.liveCapa || 0))) || 1;
@@ -3595,14 +3630,17 @@ KPI 연계: 2.4 매출 실현율 · 4.1 BU% · 3.3 방법론 준수율`),
     return `<div class="chart trend">${t.series.map(s => `
       <div class="col" title="${esc(s.ym)} · ${esc(s.kind)} ${f0(s.capa)} m/d (구축가용 ${f0(s.avail)}명)${
         s.liveCapa !== undefined ? ` · 인력풀 산출 ${f0(s.liveCapa)} m/d (${f0(s.liveAvail)}명)` : ''}">
-        <div class="v">${f0(s.liveCapa !== undefined ? s.liveCapa : s.capa)}</div>
+        <div class="v">${s.liveCapa !== undefined
+          ? `${f0(s.capa)}<span style="color:var(--warn)">/${f0(s.liveCapa)}</span>` : f0(s.capa)}</div>
         <div class="bars">
           <div class="b${s.kind === '예정' ? ' plan' : ''}" style="height:${h(s.capa)}%"></div>
           ${s.liveCapa !== undefined ? `<div class="b now" style="height:${h(s.liveCapa)}%"></div>` : ''}
         </div>
-        <div class="l">${esc(s.ym)}</div>
+        <div class="l">${esc(s.ym)}<b>${s.liveAvail !== undefined
+          ? `${f0(s.avail)}<span style="color:var(--warn)">/${f0(s.liveAvail)}</span>` : f0(s.avail)}명</b></div>
       </div>`).join('')}</div>
       <div class="chart-legend">
+        <span style="color:var(--tx-h)">막대 = 가용 CAPA(m/d) · 축 아래 = 구축가용 인원(명)</span>
         <span><i style="background:#3B4FC8"></i>확정 (인원CAPA 실측)</span>
         <span><i style="background:#F59E0B"></i>${esc(t.nowYm)} 인력풀 산출 · 편집 즉시반영</span>
         <span><i style="background:#9CA3AF"></i>예정 (복귀예정월 반영)</span>
@@ -3659,10 +3697,14 @@ KPI 연계: 2.4 매출 실현율 · 4.1 BU% · 3.3 방법론 준수율`),
         <div class="card"><div class="sec-head"><h2 style="font-size:.9rem">가용 판정 결과</h2>
             ${changes ? '<span class="sub">변경 반영</span>' : ''}</div>
           <div class="md-cards" style="grid-template-columns:1fr 1fr">
-            <div class="md-card c2"><div class="l">구축가용</div><div class="v">${cm.available}명</div></div>
-            <div class="md-card c4"><div class="l">평가중</div><div class="v">${st['평가중'] || 0}명</div></div>
-            <div class="md-card c3"><div class="l">비가용</div><div class="v">${st['비가용'] || 0}명</div></div>
-            <div class="md-card c5"><div class="l">구축제외</div><div class="v">${st['구축제외'] || 0}명</div></div>
+            <div class="md-card c2"><div class="l">구축가용</div><div class="v">${cm.available}명</div>
+              <div class="s">${f0(cm.capa)} m/d</div></div>
+            <div class="md-card c4"><div class="l">평가중</div><div class="v">${st['평가중'] || 0}명</div>
+              <div class="s">${f0((st['평가중'] || 0) * cm.capaCoef)} m/d</div></div>
+            <div class="md-card c3"><div class="l">비가용</div><div class="v">${st['비가용'] || 0}명</div>
+              <div class="s">${f0((st['비가용'] || 0) * cm.capaCoef)} m/d</div></div>
+            <div class="md-card c5"><div class="l">구축제외</div><div class="v">${st['구축제외'] || 0}명</div>
+              <div class="s">${f0((st['구축제외'] || 0) * cm.capaCoef)} m/d</div></div>
           </div>
           <div style="font-size:.73rem;color:var(--tx-s);line-height:1.7">
             인력 총계 <b>${cm.total}명</b> · 가용비율 <b>${f1(pct(cm.available, cm.total))}%</b>
@@ -3671,8 +3713,10 @@ KPI 연계: 2.4 매출 실현율 · 4.1 BU% · 3.3 방법론 준수율`),
 
         <div class="card"><div class="sec-head"><h2 style="font-size:.9rem">월가용 CAPA 산출</h2></div>
           <div class="md-cards" style="grid-template-columns:1fr 1fr">
-            <div class="md-card c1"><div class="l">인력풀 산출</div><div class="v">${f0(cm.capa)}</div></div>
-            <div class="md-card c2"><div class="l">KPI 적용값</div><div class="v">${f0(D.meta.capa)}</div></div>
+            <div class="md-card c1"><div class="l">인력풀 산출</div><div class="v">${f0(cm.capa)}</div>
+              <div class="s">m/d · ${cm.available}명</div></div>
+            <div class="md-card c2"><div class="l">KPI 적용값</div><div class="v">${f0(D.meta.capa)}</div>
+              <div class="s">m/d · ${D.meta.headcount}명</div></div>
           </div>
           <div style="font-size:.72rem;color:var(--tx-s);line-height:1.8;font-family:ui-monospace,monospace">
             인력풀 ${cm.available}명 × ${cm.capaCoef} = ${f0(cm.capa)} m/d<br>
@@ -3720,7 +3764,43 @@ KPI 연계: 2.4 매출 실현율 · 4.1 BU% · 3.3 방법론 준수율`),
           <b>예정 ${esc(tr.series[tr.series.length - 1].ym)}까지</b> — 시트 예정 CAPA(구축자별 복귀예정월 반영)
           ${tr.adjust ? ` + 화면 편집분 <b>${tr.adjust > 0 ? '+' : ''}${tr.adjust}명</b>` : ''}
           ${tr.planned ? ` + 화면 등록 복귀예정 <b>+${tr.planned}명</b>` : ''}
-        </div></div>` : ''}
+        </div>
+
+        ${(() => {
+          const gs = unavailGroups(D.capaMeta.trend);
+          if (!gs.length) return '';
+          const ms = D.capaMeta.trend.months, i0 = ms.indexOf(tr.series[0].ym);
+          const cut = i => i >= i0;
+          const hi = i => ms[i] === tr.nowYm ? 'background:#FFFBEB;' : '';
+          const cells = vals => ms.map((_, i) => cut(i)
+            ? `<td class="num" style="${hi(i)}">${vals[i] ? f0(vals[i]) : '—'}</td>` : '').join('');
+          const totals = ms.map((_, i) => gs.reduce((a, g) => a + g.sum[i], 0));
+          return `<div style="margin-top:1.1rem;padding-top:.9rem;border-top:1px dashed var(--bd-light)">
+            <div class="sec-head"><h2 style="font-size:.85rem">비가용 인원 구성</h2>
+              <span class="sub">사람에 대한 <b>직무 비가용</b>과 재직 중 구축 미투입인 <b>업무 비가용</b>을 분리 표기</span></div>
+            <div class="tbl-wrap"><table>
+              <thead><tr><th>구분</th><th>항목</th>${ms.map((m, i) => cut(i)
+                ? `<th class="num" style="${hi(i)}">${esc(m)}</th>` : '').join('')}</tr></thead>
+              <tbody>${gs.map(g => `
+                ${g.rows.map((r, j) => `<tr>
+                  ${j === 0 ? `<td class="strong" rowspan="${g.rows.length + 1}" style="color:${g.color};vertical-align:top">
+                    ${esc(g.name)}<div style="font-weight:500;font-size:.66rem;color:var(--tx-m);line-height:1.4;margin-top:.2rem">${esc(g.note)}</div></td>` : ''}
+                  <td style="font-size:.71rem">${esc(r.label)}</td>${cells(r.values)}</tr>`).join('')}
+                <tr style="background:#F7F9FC;font-weight:800">
+                  <td style="font-size:.71rem">소계</td>${cells(g.sum)}</tr>`).join('')}
+                <tr style="background:#EEF2F7;font-weight:900">
+                  <td colspan="2">비가용 인원 합계</td>${cells(totals)}</tr>
+              </tbody></table></div>
+            <div style="margin-top:.6rem;font-size:.71rem;color:var(--tx-s);line-height:1.7">
+              ${esc(tr.nowYm)} 기준 — 인적 비가용 <b style="color:var(--risk)">${f0(gs[0].sum[ms.indexOf(tr.nowYm)])}명</b>
+              · 업무 비가용 <b style="color:var(--warn)">${f0((gs[1] || { sum: [] }).sum[ms.indexOf(tr.nowYm)] || 0)}명</b>
+              · 구축지원 등 <b style="color:var(--info)">${f0((gs[2] || { sum: [] }).sum[ms.indexOf(tr.nowYm)] || 0)}명</b>
+              = 합계 <b>${f0(totals[ms.indexOf(tr.nowYm)])}명</b><br>
+              업무 비가용은 재직 인원이지만 구축에 투입되지 않으므로 <b>공수 차감 개념</b>으로 가용인원에서 제외합니다.
+              (인바운드 4명 × 22일 = 88 m/d 등)
+            </div></div>`;
+        })()}
+      </div>` : ''}
 
       <div class="g2 eq">
         <div class="card"><div class="sec-head"><h2 style="font-size:.9rem">센터·직급별 구축가용 대시보드</h2>
@@ -4033,7 +4113,7 @@ KPI 연계: 2.4 매출 실현율 · 4.1 BU% · 3.3 방법론 준수율`),
           ${mdc('c2', '완료', m.done.toLocaleString())}
           ${mdc('c5', '현진행', m.active.toLocaleString())}
           ${mdc('c3', '최종미투입', f1(md.finalUn))}
-          ${mdc('c4', '구축지연', f2(m.delayM) + 'M')}
+          ${mdc('c4', '구축지연', f1(m.delayM) + 'M')}
         </div>
         <div class="tbl-wrap"><table>
           <thead><tr><th>항목</th><th class="num">업로드본</th><th class="num">현재 적용본</th><th class="num">차이</th></tr></thead>
@@ -4191,8 +4271,8 @@ const APP = (() => {
     document.getElementById('meta').innerHTML = `
       <span class="chip live">● GCMS ${S.D.asOf}</span>
       <span class="chip">${S.D.stat.total.toLocaleString()}건</span>
-      <span class="chip">완료율 ${(S.D.stat.done / S.D.stat.total * 100).toFixed(2)}%</span>
-      <span class="chip">구축지연 ${S.D.meta.delayM}M</span>
+      <span class="chip">완료율 ${(S.D.stat.done / S.D.stat.total * 100).toFixed(1)}%</span>
+      <span class="chip">구축지연 ${S.D.meta.delayM.toFixed(1)}M</span>
       <span class="chip">KPI ${s.total}개 (산출 ${s.auto + s.proxy})</span>`;
     document.getElementById('foot-info').textContent =
       `총 ${S.D.stat.total.toLocaleString()}건 · 완료 ${S.D.stat.done.toLocaleString()} · 현진행 ${S.D.stat.active} · ` +

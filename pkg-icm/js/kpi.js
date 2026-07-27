@@ -56,7 +56,7 @@ const KPI = (() => {
         const v = pct(done, total);
         const carry = D.meta.carry, nw = D.meta.new;
         return {
-          v, disp: f2(v) + '%',
+          v, disp: f1(v) + '%',
           sub: `완료 ${done.toLocaleString()}건 / 접수 ${total.toLocaleString()}건`,
           detail: [
             { label: '이월 + 신규', value: `${carry?.toLocaleString()} + ${nw?.toLocaleString()} = ${total.toLocaleString()}` },
@@ -165,7 +165,7 @@ const KPI = (() => {
       calc: D => {
         const c = D.rows.filter(p => p.status === '반품').length;
         const v = pct(c, D.stat.total);
-        return { v, disp: f2(v) + '%', sub: `반품 ${c}건 / 접수 ${D.stat.total.toLocaleString()}건` };
+        return { v, disp: f1(v) + '%', sub: `반품 ${c}건 / 접수 ${D.stat.total.toLocaleString()}건` };
       }
     },
     {
@@ -739,7 +739,7 @@ const KPI = (() => {
         const m = D.meta.md || {};
         const v = D.meta.delayM;
         return {
-          v, disp: f2(v) + 'M',
+          v, disp: f1(v) + 'M',
           sub: `최종미투입 ${f1(m.finalUn)} ÷ CAPA ${f0(D.meta.capa)}`,
           detail: [
             { label: '계약공수', value: `${f1(m.contract)} m/d` },

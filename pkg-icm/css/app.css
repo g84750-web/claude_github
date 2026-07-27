@@ -101,22 +101,34 @@ body{
 .card + .card{margin-top:1rem}
 
 /* ── Executive KPI 카드 ──────────────────────────────────────── */
-.exec-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(212px,1fr));gap:.9rem;margin-bottom:1.4rem}
+/* 6대 핵심 KPI — 항상 한 행 6칸. 카드 폭·높이를 모두 균일하게 맞춘다 */
+.exec-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:.65rem;margin-bottom:1.4rem;align-items:stretch}
 .exec-card{
   background:var(--bg-card); border:1px solid var(--bd-light); border-top:4px solid var(--acc,#3B4FC8);
-  border-radius:var(--radius); padding:1.05rem 1.15rem; box-shadow:var(--shadow-sm);
+  border-radius:var(--radius); padding:.85rem .9rem; box-shadow:var(--shadow-sm);
   transition:transform .18s, box-shadow .18s;
+  display:flex; flex-direction:column; height:100%; min-width:0;
 }
 .exec-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg)}
-.exec-card .k-name{font-size:.72rem;font-weight:800;color:var(--tx-s);letter-spacing:.2px;margin-bottom:.4rem}
-.exec-card .k-val{font-size:1.85rem;font-weight:900;color:var(--acc,#3B4FC8);line-height:1.05;letter-spacing:-1px}
-.exec-card .k-val .unit{font-size:.9rem;font-weight:700;margin-left:.12rem}
-.exec-card .k-meta{font-size:.72rem;color:var(--tx-m);margin-top:.35rem;font-weight:500}
-.exec-card .k-target{
-  display:flex;align-items:center;justify-content:space-between;gap:.5rem;
-  margin-top:.6rem;padding-top:.55rem;border-top:1px dashed var(--bd-light);
-  font-size:.7rem;font-weight:700;color:var(--tx-s);
+.exec-card .k-name{
+  font-size:.7rem;font-weight:800;color:var(--tx-s);letter-spacing:-.1px;margin-bottom:.35rem;
+  line-height:1.35;min-height:2.7em;                 /* 2줄 고정 — 카드마다 값 위치를 맞춘다 */
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
 }
+.exec-card .k-val{font-size:1.6rem;font-weight:900;color:var(--acc,#3B4FC8);line-height:1.05;letter-spacing:-1.2px}
+.exec-card .k-val .unit{font-size:.85rem;font-weight:700;margin-left:.12rem}
+.exec-card .k-meta{
+  font-size:.67rem;color:var(--tx-m);margin-top:.3rem;font-weight:500;line-height:1.45;
+  min-height:2.9em;word-break:keep-all;
+}
+.exec-card .bar{margin-top:auto}                     /* 목표선을 카드 하단에 고정 */
+.exec-card .k-target{
+  display:flex;align-items:center;justify-content:space-between;gap:.35rem;
+  margin-top:.55rem;padding-top:.5rem;border-top:1px dashed var(--bd-light);
+  font-size:.66rem;font-weight:700;color:var(--tx-s);white-space:nowrap;
+}
+.exec-card .k-target .judge{flex:0 0 auto}
+@media(max-width:1240px){.exec-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 
 /* ── 진행 바 ─────────────────────────────────────────────────── */
 .bar{height:6px;background:#EDF0F5;border-radius:99px;overflow:hidden;margin-top:.5rem}
@@ -241,6 +253,7 @@ tbody tr.sel td{background:#EEF2FF}
 .md-card{border-radius:10px;padding:.75rem .85rem;text-align:center;border:1px solid var(--bd-light)}
 .md-card .l{font-size:.68rem;color:var(--tx-s);font-weight:700;margin-bottom:.25rem}
 .md-card .v{font-size:1.2rem;font-weight:900;letter-spacing:-.5px}
+.md-card .s{font-size:.65rem;color:var(--tx-s);font-weight:700;margin-top:.15rem}
 .md-card.c1{background:#EFF6FF}.md-card.c1 .v{color:#2563EB}
 .md-card.c2{background:#F0FDF4}.md-card.c2 .v{color:#16A34A}
 .md-card.c3{background:#FFF7ED}.md-card.c3 .v{color:#EA580C}
@@ -274,6 +287,7 @@ tbody tr.sel td{background:#EEF2FF}
 
 /* 월별 CAPA 추이 — 확정 / 현재(편집 반영) / 예정 */
 .chart.trend{height:168px}
+.chart.trend .col .l b{display:block;font-size:.63rem;color:var(--tx-b);font-weight:800;margin-top:1px}
 .chart.trend .col .bars .b{max-width:26px}
 .chart.trend .col .bars .b.now{background:linear-gradient(180deg,#FBBF24,#F59E0B)}
 .chart.trend .col .bars .b.plan{
@@ -338,7 +352,7 @@ tbody tr.sel td{background:#EEF2FF}
   .app-header{padding:.85rem 1rem;flex-direction:column;align-items:flex-start}
   .nav{padding:0 .5rem}
   .pillar-body{grid-template-columns:1fr}
-  .exec-grid{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+  .exec-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media print{
   .nav,.pager,.filters{display:none!important}

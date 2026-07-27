@@ -76,8 +76,8 @@ const APP = (() => {
     document.getElementById('meta').innerHTML = `
       <span class="chip live">● GCMS ${S.D.asOf}</span>
       <span class="chip">${S.D.stat.total.toLocaleString()}건</span>
-      <span class="chip">완료율 ${(S.D.stat.done / S.D.stat.total * 100).toFixed(2)}%</span>
-      <span class="chip">구축지연 ${S.D.meta.delayM}M</span>
+      <span class="chip">완료율 ${(S.D.stat.done / S.D.stat.total * 100).toFixed(1)}%</span>
+      <span class="chip">구축지연 ${S.D.meta.delayM.toFixed(1)}M</span>
       <span class="chip">KPI ${s.total}개 (산출 ${s.auto + s.proxy})</span>`;
     document.getElementById('foot-info').textContent =
       `총 ${S.D.stat.total.toLocaleString()}건 · 완료 ${S.D.stat.done.toLocaleString()} · 현진행 ${S.D.stat.active} · ` +
