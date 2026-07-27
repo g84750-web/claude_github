@@ -1256,7 +1256,166 @@ KPI 연계: 2.4 매출 실현율 · 4.1 BU% · 3.3 방법론 준수율`),
   }
   function goPL(p) { PL.page = p; drawPL(); }
 
-  return { renderExec, renderPool, goPL, renderBook, renderProjectShell, renderStatus, renderCapa, renderAudit, renderBench,
+  /* ════════ 10. 프로젝트 일괄등록 (GCMS 엑셀 업로드) ════════ */
+  const BK = { file: '', asOf: '', sheets: [], sheet: '', result: null, err: '', busy: false };
+
+  function renderBulk(D) {
+    const r = BK.result;
+    $('v-bulk').innerHTML = `
+      <div class="sec-head"><h2>프로젝트 일괄등록</h2>
+        <span class="sub">GCMS 구축총괄실적현황 엑셀 업로드 — 3번째 시트 「${esc(BULK.SHEET)}」</span></div>
+
+      <div class="card" style="margin-bottom:1rem;background:#F8FAFF;border-color:#C7D2FE">
+        <div style="font-size:.77rem;line-height:1.85;color:var(--tx-b)">
+          <b style="color:var(--tx-h)">Python 없이 데이터를 갱신합니다.</b>
+          업로드한 엑셀을 브라우저에서 직접 파싱하여 <b>계약공수 기준 공수 산정</b>(작업지침 v2 §1-3)을 적용하고,
+          <b>항등식 검증을 통과한 경우에만</b> 화면 전체에 반영합니다.
+          산식은 <code>etl_gcms.py</code> 와 동일하며, 파일은 서버로 전송되지 않습니다.</div></div>
+
+      <div class="g2" style="align-items:start">
+        <div class="card">
+          <div class="sec-head"><h2 style="font-size:.9rem">엑셀 업로드</h2></div>
+          <div class="f-grid" style="grid-template-columns:1fr 1fr;margin-bottom:.8rem">
+            <div class="fg"><label>GCMS 엑셀 파일 (.xlsx)</label>
+              <input class="ctl" type="file" id="bk-file" accept=".xlsx" onchange="VIEWS.bkFile(this)"></div>
+            <div class="fg"><label>기준일 (파일명에서 자동 인식)</label>
+              <input class="ctl" type="date" id="bk-asof" value="${esc(BK.asOf || D.asOf)}"
+                onchange="VIEWS.bkAsOf(this.value)"></div>
+          </div>
+          ${BK.sheets.length ? `<div class="fg" style="margin-bottom:.8rem">
+            <label>시트 선택</label>
+            <select class="ctl" onchange="VIEWS.bkSheet(this.value)">
+              ${BK.sheets.map(x => `<option ${x === BK.sheet ? 'selected' : ''}>${esc(x)}</option>`).join('')}
+            </select></div>` : ''}
+          ${BK.busy ? `<div class="loading" style="padding:1.4rem"><div class="sp"></div>엑셀 파싱 중…</div>` : ''}
+          ${BK.err ? `<div class="err" style="padding:.85rem 1rem;font-size:.78rem">${esc(BK.err)}</div>` : ''}
+          ${BK.file && !BK.busy ? `<div style="font-size:.74rem;color:var(--tx-s);line-height:1.7">
+            읽은 파일 <b>${esc(BK.file)}</b>${BK.sheet ? ` · 시트 <b>${esc(BK.sheet)}</b>` : ''}
+            ${r ? ` · 원본 ${r.gridRows.toLocaleString()}행 → 유효 <b>${r.rows.length.toLocaleString()}</b>건` : ''}</div>` : ''}
+
+          <div style="margin-top:.9rem;padding-top:.8rem;border-top:1px dashed var(--bd-light)">
+            <div style="font-size:.72rem;font-weight:800;color:var(--tx-s);margin-bottom:.4rem">적용 산식</div>
+            <div style="font-family:ui-monospace,monospace;font-size:.69rem;background:#F8FAFC;border:1px solid var(--bd-light);border-radius:6px;padding:.6rem .7rem;line-height:1.75;white-space:pre-wrap">계약공수  FoEX(1:N)계열 = 표준공수(AH) · 그 외 = 예상공수(AI)
+미투입    1:N = 계약공수 × 잔여율 (×30%)
+          1:N+방문 = 유상(AI−AJ) + 무상×잔여율 (무상만 ×30%)
+          방문·단독 = AI − AJ
+특수규칙  ① 완료 → 0  ② 완료예정일 경과 → 잔여율 5%(1:N계열)
+          ③ 추가&amp;기타&amp;표준0&amp;예상0 → 공수 0
+진행율    경과 ÷ 구축기간 · 상한 1.0만 적용 (착수 전 하한 클램프 없음)</div></div>
+        </div>
+
+        <div class="card">
+          <div class="sec-head"><h2 style="font-size:.9rem">항등식 검증</h2>
+            ${r ? `<span class="sub">${BULK.checks(r.meta).filter(c => c.ok).length} / ${BULK.checks(r.meta).length} 통과</span>` : ''}</div>
+          ${r ? (() => {
+            const cs = BULK.checks(r.meta);
+            const allOk = cs.every(c => c.ok);
+            return `<div class="tbl-wrap" style="max-height:330px;overflow:auto"><table><tbody>
+              ${cs.map(c => `<tr>
+                <td class="ctr" style="width:42px;font-size:1rem">${c.ok ? '✅' : '❌'}</td>
+                <td class="strong" style="width:210px;font-size:.75rem">${esc(c.label)}</td>
+                <td class="mono" style="font-size:.71rem;color:${c.ok ? 'var(--tx-b)' : 'var(--risk)'}">${esc(c.expr)}</td>
+              </tr>`).join('')}</tbody></table></div>
+              <div style="margin-top:.8rem;display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+                <button class="pg" style="background:${allOk ? 'var(--ok)' : 'var(--idle)'};color:#fff;border-color:${allOk ? 'var(--ok)' : 'var(--idle)'}"
+                  ${allOk ? '' : 'disabled'} onclick="VIEWS.bkApply()">이 데이터로 전체 화면 반영</button>
+                <span style="font-size:.73rem;color:${allOk ? 'var(--ok)' : 'var(--risk)'}">
+                  ${allOk ? '전 항목 통과 — 반영 가능' : '검증 실패 항목이 있어 반영할 수 없습니다. 원본을 확인하세요.'}</span>
+              </div>` })()
+            : `<div class="notimpl"><b>엑셀을 먼저 업로드하세요</b><br>
+                업로드하면 3번째 시트를 자동 인식하여 파싱하고, 항등식 4종을 검증합니다.
+                검증을 통과해야 반영 버튼이 활성화됩니다.</div>`}
+        </div>
+      </div>
+
+      ${r ? bulkSummary(r) : ''}`;
+  }
+
+  function bulkSummary(r) {
+    const m = r.meta, md = m.md;
+    const cur = APP.D;
+    const dv = (a, b) => { const d = a - b; return d === 0 ? '—' : `${d > 0 ? '+' : ''}${f0(d)}`; };
+    return `
+      <div class="card" style="margin-top:1rem">
+        <div class="sec-head"><h2 style="font-size:.9rem">집계 결과 · 현재 적용본과 비교</h2>
+          <span class="sub">기준일 ${esc(m.asOf)}</span></div>
+        <div class="md-cards">
+          ${mdc('c1', '총접수', m.total.toLocaleString())}
+          ${mdc('c2', '완료', m.done.toLocaleString())}
+          ${mdc('c5', '현진행', m.active.toLocaleString())}
+          ${mdc('c3', '최종미투입', f1(md.finalUn))}
+          ${mdc('c4', '구축지연', f2(m.delayM) + 'M')}
+        </div>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>항목</th><th class="num">업로드본</th><th class="num">현재 적용본</th><th class="num">차이</th></tr></thead>
+          <tbody>
+            ${[['총접수', m.total, cur.stat.total], ['완료', m.done, cur.stat.done],
+               ['현진행', m.active, cur.stat.active],
+               ['이월', m.carry, cur.meta.carry], ['신규', m.new, cur.meta.new],
+               ['납기준수건', m.deliveryKeep, cur.meta.deliveryKeep],
+               ['계약공수', md.contract, cur.meta.md.contract],
+               ['최종미투입', md.finalUn, cur.meta.md.finalUn]].map(([l, a, b]) => `<tr>
+              <td class="strong">${esc(l)}</td>
+              <td class="num">${f0(a)}</td><td class="num" style="color:var(--tx-s)">${f0(b)}</td>
+              <td class="num" style="color:${a === b ? 'var(--tx-m)' : 'var(--info)'};font-weight:700">${dv(a, b)}</td></tr>`).join('')}
+          </tbody></table></div>
+        <div style="margin-top:.7rem;font-size:.73rem;color:var(--tx-s);line-height:1.7">
+          구축구분별 계약공수 —
+          ${Object.entries(m.methodAgg).map(([k, v]) => `<b>${esc(k)}</b> ${v.cnt}건 ${f0(v.contract)}MD`).join(' · ')}<br>
+          특수규칙 — ${Object.entries(m.spRule || {}).map(([k, v]) => `${esc(k)} ${v}건`).join(' · ') || '없음'}
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:1rem;padding:0;overflow:hidden">
+        <div class="sec-head" style="padding:1.1rem 1.3rem 0"><h2 style="font-size:.9rem">미리보기 (상위 40건)</h2></div>
+        <div class="tbl-wrap" style="border:none;max-height:420px;overflow:auto"><table>
+          <thead><tr><th>프로젝트코드</th><th>거래처명</th><th>PM</th><th>진행상태</th><th>구축구분</th>
+            <th class="num">계약공수</th><th class="num">투입</th><th class="num">최종미투입</th><th>접수일</th><th>완료예정일</th></tr></thead>
+          <tbody>${r.rows.slice(0, 40).map(p => `<tr>
+            <td class="mono strong">${esc(p.code)}</td><td>${esc(p.customer)}</td><td>${esc(p.pm)}</td>
+            <td><span class="bdg ${esc(p.status)}">${esc(p.status)}</span></td>
+            <td style="font-size:.71rem;color:var(--tx-s)">${esc(p.method)}</td>
+            <td class="num">${f0(p.mdContract || p.mdPlan)}</td><td class="num">${f0(p.mdUsed)}</td>
+            <td class="num" style="color:${p.mdFinalUn > 0 ? 'var(--warn)' : 'var(--tx-m)'}">${p.mdFinalUn ? f1(p.mdFinalUn) : '—'}</td>
+            <td class="mono" style="font-size:.68rem">${esc(p.recvDate || '')}</td>
+            <td class="mono" style="font-size:.68rem">${esc(p.dueDate || '')}</td></tr>`).join('')}</tbody>
+        </table></div></div>`;
+  }
+
+  /* ── 일괄등록 핸들러 ── */
+  function bkAsOf(v) { BK.asOf = v; }
+  function bkSheet(v) { BK.sheet = v; if (BK.buf) bkRun(BK.buf); }
+
+  async function bkFile(input) {
+    const f = input.files && input.files[0]; if (!f) return;
+    BK.file = f.name;
+    BK.asOf = BULK.asOfFromName(f.name) || BK.asOf || APP.D.asOf;
+    BK.buf = await f.arrayBuffer();
+    BK.sheet = '';
+    bkRun(BK.buf);
+  }
+
+  async function bkRun(buf) {
+    BK.busy = true; BK.err = ''; BK.result = null;
+    renderBulk(APP.D);
+    try {
+      const r = await BULK.parse(buf, BK.asOf, BK.sheet || undefined);
+      BK.result = r; BK.sheets = r.sheets || []; BK.sheet = r.sheet;
+    } catch (e) {
+      BK.err = String(e.message || e);
+    }
+    BK.busy = false;
+    renderBulk(APP.D);
+  }
+
+  function bkApply() {
+    if (!BK.result) return;
+    const cs = BULK.checks(BK.result.meta);
+    if (!cs.every(c => c.ok)) return;
+    APP.reload({ meta: BK.result.meta, rows: BK.result.rows });
+  }
+
+  return { renderExec, renderBulk, bkFile, bkAsOf, bkSheet, bkApply, renderPool, goPL, renderBook, renderProjectShell, renderStatus, renderCapa, renderAudit, renderBench,
     renderIngest, selectPJ, goPJ, goTab, goCP,
     ingSrc, ingBlock, ingAsOf, ingHeader, ingMap, ingClear, ingRemove, ingTemplate,
     ingPaste, ingFile, ingFlip, ingApply, ingSave, ingSavePreset, ingDropPreset };

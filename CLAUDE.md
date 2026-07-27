@@ -109,12 +109,13 @@ pkg-icm/
 ├── etl_gcms.py              원본 엑셀 → data/gcms_full.json + 항등식 검증
 ├── build_standalone.py      → index_standalone.html (더블클릭 실행본)
 ├── build_artifact.py        → artifact.html (웹 배포본, 외부요청 0건)
-├── js/{ingest,data,kpi,views,app}.js
+├── js/{ingest,bulk,data,kpi,views,app}.js
+│   ※ bulk.js = etl_gcms.py 산식의 JS 포트. 두 곳을 항상 함께 수정할 것
 │   ※ etl_gcms.py 는 --assignee(담당자별) · --capa(인력풀) 옵션으로 원천 3종을 함께 로드
 └── data/gcms_full.json      프로젝트 2,360건 + 배정 7,456행
 ```
 
-- 화면 9종 / KPI 36개 (자동산출 20 · 대체산출 4 · 연동필요 12)
+- 화면 10종 / KPI 36개 (자동산출 20 · 대체산출 4 · 연동필요 12)
 - 원천: GCMS `GCMS A10(통합)구축진행현황` 시트 + 담당자별 상세
 - 소스별 기준일이 다르면 **값을 맞추지 말고 기준일을 병기**한다 (작업지침 §2-3)
 

@@ -25,7 +25,7 @@ SRC_HTML = os.path.join(BASE, 'index.html')
 OUT_HTML = os.path.join(BASE, 'index_standalone.html')
 DATA_JSON = os.path.join(BASE, 'data', 'gcms_full.json')
 CSS_FILES = ['css/app.css']
-JS_FILES = ['js/ingest.js', 'js/data.js', 'js/kpi.js', 'js/views.js', 'js/app.js']
+JS_FILES = ['js/ingest.js', 'js/bulk.js', 'js/data.js', 'js/kpi.js', 'js/views.js', 'js/app.js']
 
 
 def die(msg):
@@ -84,6 +84,7 @@ def main():
     # 개별 <script src="js/*.js"> 태그를 통째로 번들로 교체
     html = re.sub(
         r'(<script src="js/ingest\.js"></script>\s*)'
+        r'(<script src="js/bulk\.js"></script>\s*)'
         r'(<script src="js/data\.js"></script>\s*)'
         r'(<script src="js/kpi\.js"></script>\s*)'
         r'(<script src="js/views\.js"></script>\s*)'

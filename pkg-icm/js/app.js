@@ -10,6 +10,7 @@ const APP = (() => {
     { id: 'status',  label: '📈 접수·완료 현황',  render: D => VIEWS.renderStatus(D), once: true },
     { id: 'capa',    label: '👥 공수현황(개인)',  render: D => VIEWS.renderCapa(D), once: true },
     { id: 'pool',    label: '🧑‍🔧 구축인력풀 등록', render: D => VIEWS.renderPool(D), once: true },
+    { id: 'bulk',    label: '📤 프로젝트 일괄등록', render: D => VIEWS.renderBulk(D) },
     { id: 'ingest',  label: '📥 데이터 입력(3종)', render: D => VIEWS.renderIngest(D) },
     { id: 'audit',   label: '🔍 별첨·정합성 검증', render: (D, K) => VIEWS.renderAudit(D, K) },
     { id: 'bench',   label: '🎯 EQT Benchmark',   render: (D, K) => VIEWS.renderBench(D, K), once: true },
@@ -52,18 +53,7 @@ const APP = (() => {
       S.D = DATA.build(raw);
       S.K = KPI.computeAll(S.D);
 
-      const s = KPI.summary(S.K);
-      document.getElementById('meta').innerHTML = `
-        <span class="chip live">● GCMS ${S.D.asOf}</span>
-        <span class="chip">${S.D.stat.total.toLocaleString()}건</span>
-        <span class="chip">완료율 ${(S.D.stat.done / S.D.stat.total * 100).toFixed(2)}%</span>
-        <span class="chip">구축지연 ${S.D.meta.delayM}M</span>
-        <span class="chip">KPI ${s.total}개 (산출 ${s.auto + s.proxy})</span>`;
-
-      document.getElementById('foot-info').textContent =
-        `총 ${S.D.stat.total.toLocaleString()}건 · 완료 ${S.D.stat.done.toLocaleString()} · 현진행 ${S.D.stat.active} · ` +
-        `구축인력 ${S.D.assignees.length}명 · 접수기간 ${S.D.firstRecv} ~ ${S.D.lastRecv}`;
-
+      paintHeader();
       go('exec');
     } catch (e) {
       document.getElementById('boot').innerHTML = `
@@ -80,12 +70,46 @@ const APP = (() => {
     }
   }
 
+  /* ── 헤더·푸터 갱신 ─────────────────────────────────────────── */
+  function paintHeader() {
+    const s = KPI.summary(S.K);
+    document.getElementById('meta').innerHTML = `
+      <span class="chip live">● GCMS ${S.D.asOf}</span>
+      <span class="chip">${S.D.stat.total.toLocaleString()}건</span>
+      <span class="chip">완료율 ${(S.D.stat.done / S.D.stat.total * 100).toFixed(2)}%</span>
+      <span class="chip">구축지연 ${S.D.meta.delayM}M</span>
+      <span class="chip">KPI ${s.total}개 (산출 ${s.auto + s.proxy})</span>`;
+    document.getElementById('foot-info').textContent =
+      `총 ${S.D.stat.total.toLocaleString()}건 · 완료 ${S.D.stat.done.toLocaleString()} · 현진행 ${S.D.stat.active} · ` +
+      `구축인력 ${S.D.assignees.length}명 · 접수기간 ${S.D.firstRecv} ~ ${S.D.lastRecv}`;
+  }
+
+  /* ── 데이터 교체 (프로젝트 일괄등록) ────────────────────────────
+     업로드본에는 담당자별·인력풀 원천이 없으므로 기존 값을 승계한다. */
+  function reload(payload) {
+    const prev = S.D;
+    const merged = {
+      meta: { ...payload.meta,
+              assigneeMeta: prev.meta.assigneeMeta || null,
+              capaMeta: prev.meta.capaMeta || null },
+      rows: payload.rows,
+      assignees: prev.rawAssignees || [],
+      people: prev.people || [],
+    };
+    S.D = DATA.build(merged);
+    S.K = KPI.computeAll(S.D);
+    S.drawn.clear();
+    paintHeader();
+    go(S.current);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
   const escapeHtml = s => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 
   document.addEventListener('DOMContentLoaded', boot);
 
   return {
-    go,
+    go, reload,
     get D() { return S.D; },
     get K() { return S.K; },
   };

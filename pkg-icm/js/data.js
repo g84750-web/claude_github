@@ -160,6 +160,7 @@ const DATA = (() => {
     return {
       meta, asOf, rows, active, CODE, ACTIVE, FREE_COEF, groupBy, byCode, assignByCode,
       firstRecv: dates[0] || '', lastRecv: dates[dates.length - 1] || '',
+      rawAssignees: payload.assignees || [],
       assignees: buildAssignees(payload.assignees, byCode),
       // WBS(배정) 집계 — 화면정의서 [배정등록]·[투입실적등록] 기준
       wbs: (() => {
