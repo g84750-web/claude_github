@@ -159,6 +159,30 @@ const DATA = (() => {
       meta, asOf, rows, active, CODE, ACTIVE, FREE_COEF, groupBy, byCode, assignByCode,
       firstRecv: dates[0] || '', lastRecv: dates[dates.length - 1] || '',
       assignees: buildAssignees(payload.assignees, byCode),
+      // WBS(배정) 집계 — 화면정의서 [배정등록]·[투입실적등록] 기준
+      wbs: (() => {
+        const ar = payload.assignees || [];
+        const agg = sel => {
+          const S = k => sel.reduce((a, x) => a + (x[k] || 0), 0);
+          const plan = S('mdPlan'), used = S('mdUsed');
+          const net = used + S('mdAdd') + S('mdMig') + S('mdOut');
+          return {
+            n: sel.length, plan, used, net, un: S('mdUn'),
+            add: S('mdAdd'), mig: S('mdMig'), out: S('mdOut'),
+            rate: plan > 0 ? net / plan * 100 : null,          // 순공수 기준
+            usedRate: plan > 0 ? used / plan * 100 : null,      // 본투입 기준
+            fulfilled: sel.filter(x => (x.mdUn || 0) <= 0).length,
+          };
+        };
+        const act = ar.filter(r => ACTIVE.includes(r.status));
+        const fin = ar.filter(r => r.status === '완료');
+        return {
+          all: agg(ar), active: agg(act), done: agg(fin),
+          people: new Set(ar.map(r => r.person)).size,
+          activePeople: new Set(act.map(r => r.person)).size,
+          projects: new Set(ar.map(r => r.code)).size,
+        };
+      })(),
       assigneeMeta: meta.assigneeMeta || null,
       pms: buildPMs(rows),
       monthly: buildMonthly(rows, asOf),

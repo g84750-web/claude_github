@@ -191,16 +191,18 @@ const KPI = (() => {
       }
     },
     {
-      id: '1.8', pillar: 1, name: '계약기간준수율 (설치형 전용)',
-      def: '설치형(Amaranth10) 신규 계약 중 계약종료일 이내 구축완료한 비율. 260726 신규 지표.',
+      id: '1.8', pillar: 1, name: '계약기간준수율 (설치형 · 참고지표)',
+      def: '설치형(Amaranth10) 신규 계약 중 계약종료일 이내 구축완료한 비율. ' +
+           '설치형은 계약기간을 적용받을 수 있어 확인하는 보조 지표이며, 대표 납기 지표는 1.9 구축기간 준수율이다.',
       formula: '계약기간준수율(%) = 준수건 / 완료건 × 100\n모집단: 프로젝트구분=신규 & 제품구분=Amaranth10 & 계약시작일·종료일 존재\n※ PAC240528003(신영) 제외',
       source: 'GCMS: H·G·AY·AZ·AF열',
       cycle: '월간',
-      target: '80.8% 유지', targetVal: 80, op: 'gte', unit: '%',
-      asIs: '80.8% = 143/177 (확정)', state: 'proxy',
-      note: '예외 건(변경완료예정일 보유 = 납기 변경 발생 22건)은 계약기간이 아닌 기본 구축기간 납기준수율(KPI 1.9)로 별도 판정한다. ' +
-            '※ 모집단(302→301→완료 177)은 확정값과 일치하나 준수 건수는 6건 차이가 남는다(137 vs 143). ' +
-            'GCMS 보유 컬럼 조합으로는 재현되지 않아 스킬 a10-deadline-compliance ❸의 원 산출 스크립트 확인이 필요하다. 🔴 95.3%(SaaS 포함) 인용 금지.',
+      target: '참고 수준 (대표 지표는 1.9)', unit: '%',
+      asIs: '80.8% = 143/177 (지침)', state: 'proxy',
+      note: '⚠ 데이터 품질 한계 — 계약시작일·종료일은 구축자가 NSM·계약서를 기반으로 GCMS에 등록하며, ' +
+            '영업에서 진행하는 계약정보 변경이력이 실시간 공유되지 않아 일부 프로젝트에서 오입력이 발생할 수 있다. ' +
+            '따라서 본 지표는 참고용이며 지침 확정값과의 소수 건 차이는 추적하지 않는다. ' +
+            '납기 변경 발생 건은 1.9 구축기간 준수율로 판정한다. 🔴 95.3%(SaaS 포함) 인용 금지.',
       calc: D => {
         const ct = D.meta.contractTerm || {};
         const v = ct.rate;
@@ -211,21 +213,23 @@ const KPI = (() => {
             { label: '모집단', value: `${ct.pop} → 신영 제외 ${ct.popEx} → 완료 ${ct.fin}` },
             { label: '계약종료일(AZ) 기준 준수', value: `${ct.ok} / ${ct.fin} = ${f1(ct.rate)}%` },
             { label: '예외 (납기 변경 발생 건)', value: `${ct.exception}건 → KPI 1.9로 판정` },
-            { label: '기본 구축기간(AD) 기준', value: `${ct.baseKeep} / ${ct.fin} = ${f1(ct.baseRate)}%` },
-            { label: '확정값 (작업지침 §1-1)', value: `143 / ${ct.fin} = 80.8% — 6건 미재현` },
+            { label: '구축기간(AD) 기준 동일 모집단', value: `${ct.baseKeep} / ${ct.fin} = ${f1(ct.baseRate)}%` },
+            { label: '※ 계약일자 정합성', value: '영업 계약변경 이력 미연동 — 오입력 가능' },
           ]
         };
       }
     },
     {
-      id: '1.9', pillar: 1, name: '기본 구축기간 납기준수율',
-      def: '납기 변경(연장)을 반영하지 않은 최초 구축완료예정일 기준 납기준수율. KPI 1.7과의 차이가 곧 납기 연장 효과이며, 계약기간준수율(1.8)의 예외 건 판정 기준이다.',
+      id: '1.9', pillar: 1, star: true, name: '구축기간 준수율 ★핵심',
+      def: '최초 구축완료예정일(기본 구축기간) 기준 납기 준수율. 납기 변경(연장)을 반영하지 않으므로 ' +
+           '실제 구축 일정 이행력을 가장 직접적으로 나타내는 대표 지표이며, 계약기간준수율(1.8)의 예외 건도 본 지표로 판정한다.',
       formula: '기본 구축기간 준수율(%) = 준수건 / 완료건 × 100\n판정 기준일 = 구축완료예정일(AD) 단독  ※ 변경완료예정일(AE) 미적용\n준수 = 조기 + 정시 + 30일이내\n연장 효과(%p) = KPI 1.7 − KPI 1.9',
       source: 'GCMS: 구축완료예정일(AD), 구축완료일(AF)',
       cycle: '주간 / 월간',
       target: '90%+ 유지', targetVal: 90, op: 'gte', unit: '%',
       asIs: '90.4% = 1,452/1,606', state: 'auto',
-      note: 'KPI 1.7(94.8%)은 변경완료예정일을 반영한 값이므로, 두 지표의 차이만큼 납기 변경으로 준수 판정이 뒤바뀐 건이 존재한다. 계약기간준수율(1.8)의 예외 건은 본 지표로 판정한다.',
+      note: 'KPI 1.7(94.8%)은 변경완료예정일을 반영한 값이므로 두 지표의 차이가 곧 납기 연장 효과다. ' +
+            '계약일자와 달리 구축완료예정일은 구축자가 직접 관리하는 필드라 데이터 신뢰도가 높다.',
       calc: D => {
         const keep = D.meta.deliveryBaseKeep, mo = D.meta.deliveryBaseJudged;
         const v = pct(keep, mo);
@@ -518,6 +522,38 @@ const KPI = (() => {
       }
     },
 
+    {
+      id: '4.6', pillar: 4, star: true, name: 'WBS 준수율 ★핵심',
+      def: 'WBS(모듈별 배정)에 계획된 개별 예상공수 대비 실제 순공수 투입 비율. ' +
+           '배정 계획이 실제로 이행되었는지를 나타내는 대표 지표로, 구축기간 준수율과 함께 핵심 관리 대상이다.',
+      formula: 'WBS 준수율(%) = 순공수 / 개별 예상공수 × 100\n' +
+               '순공수 = 개별 투입공수 + 추가진행 + 마이그레이션 + 아웃바운드\n' +
+               '※ 배정은 프로젝트 × 모듈 전량 집계 (중복 아님)',
+      source: '담당자별 상세: 개별 예상/투입/미투입공수 · 추가·마이그·아웃바운드 (WBS 배정 원천)',
+      cycle: '주간 / 담당자·모듈별',
+      target: '80%+ 유지', targetVal: 80, op: 'gte', unit: '%',
+      asIs: '77.7% (미해결 과제 #5 — WBS 순공수 기준)', state: 'auto',
+      note: '⚠ PM ≠ 구축자 — 조직집계에 합산 금지 (검증체크리스트 ③). ' +
+            '담당자별 원본과 GCMS의 기준일이 다르면 별첨 화면에 병기된다.',
+      calc: D => {
+        const w = D.wbs;
+        if (!w || !w.all.n) return NA;
+        const a = w.all;
+        return {
+          v: a.rate, disp: f1(a.rate) + '%',
+          sub: `순공수 ${f0(a.net)} / 예상 ${f0(a.plan)} MD · 배정 ${a.n.toLocaleString()}행`,
+          detail: [
+            { label: '본투입 기준', value: `${f0(a.used)} / ${f0(a.plan)} = ${f1(a.usedRate)}%` },
+            { label: '추가 · 마이그 · 아웃', value: `${f0(a.add)} · ${f0(a.mig)} · ${f0(a.out)} MD` },
+            { label: '현진행 배정', value: `${w.active.n.toLocaleString()}행 · ${f1(w.active.rate)}% (담당 ${w.activePeople}명)` },
+            { label: '완료 배정', value: `${w.done.n.toLocaleString()}행 · ${f1(w.done.rate)}%` },
+            { label: '배정 소진 완료', value: `${a.fulfilled.toLocaleString()} / ${a.n.toLocaleString()}행 = ${f1(pct(a.fulfilled, a.n))}%` },
+            { label: '구축 인력 · 대상 프로젝트', value: `${w.people}명 · ${w.projects.toLocaleString()}건` },
+          ]
+        };
+      }
+    },
+
     /* ═══════════ Pillar 5 ═══════════ */
     {
       id: '5.1', pillar: 5, star: true, name: 'Time to Value (TTV — 개통 소요기간)',
@@ -735,7 +771,8 @@ const KPI = (() => {
   ];
 
   /* Executive Dashboard — 가이드라인 §2 6대 KPI + 주간보고 4대 KPI */
-  const EXEC = ['1.1', '1.7', '6.5', '3.1', '1.5', '1.6'];
+  /* Executive 6대 카드 — 구축기간 준수율·WBS 준수율을 최우선 배치 */
+  const EXEC = ['1.9', '4.6', '1.1', '6.5', '1.7', '1.6'];
 
   function judge(k, v) {
     if (v === null || v === undefined || !isFinite(v) || k.targetVal === undefined)
