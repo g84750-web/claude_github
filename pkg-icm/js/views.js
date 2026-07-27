@@ -1099,6 +1099,39 @@ KPI 연계: 2.4 매출 실현율 · 4.1 BU% · 3.3 방법론 준수율`),
     return agg;
   }
 
+  /* 월별 CAPA 변동 추이 — 확정 / 현재(편집 즉시반영) / 예정 3구간 */
+  function capaTrendChart(t) {
+    const max = Math.max(...t.series.map(s => Math.max(s.capa, s.liveCapa || 0))) || 1;
+    const h = v => (v / max * 100).toFixed(1);
+    return `<div class="chart trend">${t.series.map(s => `
+      <div class="col" title="${esc(s.ym)} · ${esc(s.kind)} ${f0(s.capa)} m/d (구축가용 ${f0(s.avail)}명)${
+        s.liveCapa !== undefined ? ` · 인력풀 산출 ${f0(s.liveCapa)} m/d (${f0(s.liveAvail)}명)` : ''}">
+        <div class="v">${f0(s.liveCapa !== undefined ? s.liveCapa : s.capa)}</div>
+        <div class="bars">
+          <div class="b${s.kind === '예정' ? ' plan' : ''}" style="height:${h(s.capa)}%"></div>
+          ${s.liveCapa !== undefined ? `<div class="b now" style="height:${h(s.liveCapa)}%"></div>` : ''}
+        </div>
+        <div class="l">${esc(s.ym)}</div>
+      </div>`).join('')}</div>
+      <div class="chart-legend">
+        <span><i style="background:#3B4FC8"></i>확정 (인원CAPA 실측)</span>
+        <span><i style="background:#F59E0B"></i>${esc(t.nowYm)} 인력풀 산출 · 편집 즉시반영</span>
+        <span><i style="background:#9CA3AF"></i>예정 (복귀예정월 반영)</span>
+      </div>`;
+  }
+
+  /* 가로 막대 — 총원 트랙 위에 가용 인원을 겹쳐 표기 */
+  function hbars(rows, accent) {
+    const max = Math.max(...rows.map(r => r.total)) || 1;
+    return `<div class="hb">${rows.map(r => `
+      <div class="hb-row" title="${esc(r.label)} · 총원 ${r.total}명 / 구축가용 ${r.avail}명">
+        <div class="hb-l">${esc(r.label)}</div>
+        <div class="hb-t"><div class="hb-b" style="width:${(r.total / max * 100).toFixed(1)}%"></div>
+          <div class="hb-a" style="width:${(r.avail / max * 100).toFixed(1)}%;background:${accent}"></div></div>
+        <div class="hb-v"><b>${r.avail}</b><span>/${r.total}</span></div>
+      </div>`).join('')}</div>`;
+  }
+
   function renderPool(D) {
     if (!D.people || !D.people.length) {
       $('v-pool').innerHTML = `<div class="card"><div class="notimpl">
@@ -1110,9 +1143,13 @@ KPI 연계: 2.4 매출 실현율 · 4.1 BU% · 3.3 방법론 준수율`),
     const st = cm.status || {};
     const diff = cm.available - (D.meta.headcount || 0);
     const changes = POOL.changeCount();
+    // 편집분 전파량을 구하기 위해 '편집 전' 가용인원을 같은 규칙으로 한 번 더 산출한다
+    const baseAvail = POOL.aggregate(D.people, {
+      asOf: cm.asOf, evalMonths: cm.evalMonths, capaCoef: cm.capaCoef }).available;
+    const tr = POOL.trend(D.capaMeta && D.capaMeta.trend, cm, { baseAvailable: baseAvail });
 
     $('v-pool').innerHTML = `
-      <div class="sec-head"><h2>구축인력풀 등록</h2>
+      <div class="sec-head"><h2>구축CAPA관리</h2>
         <span class="sub">구축인력 CAPA 관리 — 인력 ${cm.total}명 · 기준일 ${esc(cm.asOf)}</span>
         <span class="spacer"></span>
         ${changes ? `<span class="st proxy">변경 ${changes}건 저장됨</span>
@@ -1129,7 +1166,7 @@ KPI 연계: 2.4 매출 실현율 · 4.1 BU% · 3.3 방법론 준수율`),
 
       ${PL.edit ? poolForm(cm) : ''}
 
-      <div class="g3">
+      <div class="g3 eq">
         <div class="card"><div class="sec-head"><h2 style="font-size:.9rem">가용 판정 결과</h2>
             ${changes ? '<span class="sub">변경 반영</span>' : ''}</div>
           <div class="md-cards" style="grid-template-columns:1fr 1fr">
@@ -1172,8 +1209,45 @@ KPI 연계: 2.4 매출 실현율 · 4.1 BU% · 3.3 방법론 준수율`),
         </div>
       </div>
 
-      <div class="g2">
-        <div class="card"><div class="sec-head"><h2 style="font-size:.9rem">센터별 가용 집계</h2></div>
+      ${tr ? `<div class="card" style="margin-bottom:1rem">
+        <div class="sec-head"><h2 style="font-size:.9rem">월별 CAPA 변동 추이</h2>
+          <span class="sub">25년말 → 26.12 · 월가용 CAPA(m/d)</span><span class="spacer"></span>
+          <span class="st auto">현재 ${esc(tr.nowYm)}</span></div>
+        ${capaTrendChart(tr)}
+        <div class="tbl-wrap" style="margin-top:.9rem"><table>
+          <thead><tr><th>구분</th>${tr.series.map(s => `<th class="num">${esc(s.ym)}</th>`).join('')}</tr></thead>
+          <tbody>
+            <tr><td class="strong">구축가용 인원</td>${tr.series.map(s => `<td class="num" style="color:${s.kind === '예정' ? 'var(--tx-m)' : 'var(--tx-h)'}">${f0(s.avail)}</td>`).join('')}</tr>
+            <tr><td class="strong">가용 CAPA (m/d)</td>${tr.series.map(s => `<td class="num strong" style="color:${s.kind === '예정' ? 'var(--tx-m)' : 'var(--info)'}">${f0(s.capa)}</td>`).join('')}</tr>
+            <tr style="background:#FFFBEB"><td class="strong">인력풀 산출 (편집 반영)</td>${tr.series.map(s =>
+              `<td class="num strong" style="color:${s.liveCapa !== undefined ? 'var(--warn)' : 'var(--bd-light)'}">${s.liveCapa !== undefined ? f0(s.liveCapa) : '—'}</td>`).join('')}</tr>
+            <tr><td>구분</td>${tr.series.map(s => `<td class="num" style="font-size:.68rem;color:var(--tx-m)">${esc(s.kind)}</td>`).join('')}</tr>
+          </tbody></table></div>
+        <div style="margin-top:.7rem;font-size:.72rem;color:var(--tx-s);line-height:1.75">
+          <b>확정</b> 25.12 ~ ${esc(tr.nowYm)} — 「인원CAPA」시트 실측값을 가공 없이 그대로 표기<br>
+          <b>현재 ${esc(tr.nowYm)}</b> — KPI 적용 <b>${f0(tr.now.capa)}</b> m/d(${f0(tr.now.avail)}명)와
+          인력풀 산출 <b style="color:var(--warn)">${f0(cm.capa)}</b> m/d(${cm.available}명 × ${tr.coef})를 병기합니다.
+          목록에서 상태값을 수정하면 인력풀 산출값이 즉시 갱신됩니다.<br>
+          <b>예정 ${esc(tr.series[tr.series.length - 1].ym)}까지</b> — 시트 예정 CAPA(구축자별 복귀예정월 반영)
+          ${tr.adjust ? ` + 화면 편집분 <b>${tr.adjust > 0 ? '+' : ''}${tr.adjust}명</b>` : ''}
+          ${tr.planned ? ` + 화면 등록 복귀예정 <b>+${tr.planned}명</b>` : ''}
+        </div></div>` : ''}
+
+      <div class="g2 eq">
+        <div class="card"><div class="sec-head"><h2 style="font-size:.9rem">센터·직급별 구축가용 대시보드</h2>
+            <span class="sub">총원 대비 가용</span></div>
+          <div style="font-size:.72rem;font-weight:800;color:var(--tx-s);margin:.2rem 0 .5rem">센터별</div>
+          ${hbars(cm.byCenter.map(c => ({ label: `${c.center} · ${c.region}`, avail: c.available, total: c.total })), 'linear-gradient(90deg,#4ADE80,#16A34A)')}
+          <div style="font-size:.72rem;font-weight:800;color:var(--tx-s);margin:.9rem 0 .5rem">직급별</div>
+          ${hbars(cm.byGrade.map(g => ({ label: g.grade, avail: g.available, total: g.total })), 'linear-gradient(90deg,#818CF8,#3B4FC8)')}
+          <div class="spacer" style="flex:1"></div>
+          <div style="margin-top:.8rem;font-size:.72rem;color:var(--tx-s);line-height:1.7">
+            총원 <b>${cm.total}명</b> 중 구축가용 <b style="color:var(--ok)">${cm.available}명</b>
+            (<b>${f1(pct(cm.available, cm.total))}%</b>) · 월가용 CAPA <b>${f0(cm.capa)} m/d</b>
+            ${Object.keys(cm.reasons).length ? `<br><b>비가용 사유</b> — ${Object.entries(cm.reasons).map(([k, v]) => `${esc(k)} ${v}명`).join(' · ')}` : ''}</div>
+        </div>
+
+        <div class="card"><div class="sec-head"><h2 style="font-size:.9rem">센터·직급별 가용 집계표</h2></div>
           <div class="tbl-wrap"><table>
             <thead><tr><th>센터</th><th>지역</th><th class="num">인원총계</th><th class="num">구축제외</th>
               <th class="num">비가용</th><th class="num">평가중</th><th class="num">구축가용</th><th class="num">가용비율</th></tr></thead>
@@ -1189,9 +1263,9 @@ KPI 연계: 2.4 매출 실현율 · 4.1 BU% · 3.3 방법론 준수율`),
               <td class="num">${st['구축제외'] || 0}</td><td class="num">${st['비가용'] || 0}</td>
               <td class="num">${st['평가중'] || 0}</td><td class="num">${cm.available}</td>
               <td class="num">${f1(pct(cm.available, cm.total))}%</td></tr>
-            </tbody></table></div></div>
+            </tbody></table></div>
 
-        <div class="card"><div class="sec-head"><h2 style="font-size:.9rem">직급별 구축가용 인원</h2></div>
+          <div style="font-size:.72rem;font-weight:800;color:var(--tx-s);margin:1rem 0 .4rem">직급별 구축가용 인원</div>
           <div class="tbl-wrap"><table>
             <thead><tr><th>직급</th><th class="num">인원</th><th class="num">가용</th>
               ${cm.centers.map(c => `<th class="num">${esc(c)}</th>`).join('')}</tr></thead>
@@ -1203,8 +1277,9 @@ KPI 연계: 2.4 매출 실현율 · 4.1 BU% · 3.3 방법론 준수율`),
               <td>계</td><td class="num">${cm.total}</td><td class="num">${cm.available}</td>
               ${cm.centers.map(c => `<td class="num">${cm.byCenter.find(x => x.center === c)?.available || 0}</td>`).join('')}</tr>
             </tbody></table></div>
-          ${Object.keys(cm.reasons).length ? `<div style="margin-top:.7rem;font-size:.73rem;color:var(--tx-s);line-height:1.7">
-            <b>비가용 사유</b> — ${Object.entries(cm.reasons).map(([k, v]) => `${esc(k)} ${v}명`).join(' · ')}</div>` : ''}
+          <div class="spacer" style="flex:1"></div>
+          <div style="margin-top:.7rem;font-size:.71rem;color:var(--tx-m);line-height:1.6">
+            직급별 센터 열은 <b>구축가용</b> 인원만 집계합니다. 상태를 수정하면 두 표가 함께 갱신됩니다.</div>
         </div>
       </div>
 

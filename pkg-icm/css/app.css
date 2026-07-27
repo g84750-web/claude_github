@@ -272,6 +272,24 @@ tbody tr.sel td{background:#EEF2FF}
 .chart-legend{display:flex;gap:1.1rem;justify-content:center;margin-top:.7rem;font-size:.7rem;color:var(--tx-s);font-weight:700}
 .chart-legend i{display:inline-block;width:10px;height:10px;border-radius:2px;vertical-align:-1px;margin-right:.25rem}
 
+/* 월별 CAPA 추이 — 확정 / 현재(편집 반영) / 예정 */
+.chart.trend{height:168px}
+.chart.trend .col .bars .b{max-width:26px}
+.chart.trend .col .bars .b.now{background:linear-gradient(180deg,#FBBF24,#F59E0B)}
+.chart.trend .col .bars .b.plan{
+  background:repeating-linear-gradient(135deg,#D1D5DB 0 5px,#9CA3AF 5px 10px);
+}
+
+/* ── 가로 막대 (총원 트랙 + 가용 오버레이) ───────────────────── */
+.hb{display:flex;flex-direction:column;gap:.34rem}
+.hb-row{display:grid;grid-template-columns:118px 1fr 62px;align-items:center;gap:.5rem}
+.hb-l{font-size:.71rem;font-weight:700;color:var(--tx-b);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hb-t{position:relative;height:16px;background:#F1F4F9;border-radius:8px;overflow:hidden}
+.hb-b{position:absolute;inset:0 auto 0 0;background:#DDE3EC;border-radius:8px}
+.hb-a{position:absolute;inset:0 auto 0 0;border-radius:8px;transition:width .6s cubic-bezier(.22,1,.36,1)}
+.hb-v{font-size:.72rem;text-align:right;color:var(--tx-s);font-weight:600}
+.hb-v b{font-size:.82rem;color:var(--tx-h);font-weight:900}
+
 /* ── 랭크 바 (부서/유형별) ───────────────────────────────────── */
 .rank{margin-bottom:.6rem}
 .rank .rh{display:flex;justify-content:space-between;font-size:.75rem;margin-bottom:.25rem;gap:.5rem}
@@ -288,6 +306,10 @@ tbody tr.sel td{background:#EEF2FF}
 /* ── 2단 그리드 ──────────────────────────────────────────────── */
 .g2{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:1rem;margin-bottom:1rem}
 .g3{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem;margin-bottom:1rem}
+/* 같은 행 카드 높이를 맞춘다 (카드 내부는 세로 flex로 여백을 아래로 밀어냄) */
+.g2.eq,.g3.eq{align-items:stretch}
+.g2.eq>.card,.g3.eq>.card{display:flex;flex-direction:column;height:100%}
+.g2.eq>.card>.tbl-wrap,.g3.eq>.card>.tbl-wrap{flex:0 0 auto}
 
 /* ── 로딩 / 에러 ─────────────────────────────────────────────── */
 .loading{text-align:center;padding:4rem 1rem;color:var(--tx-s)}

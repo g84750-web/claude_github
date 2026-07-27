@@ -81,6 +81,63 @@ const POOL = (() => {
     };
   }
 
+  /* ── 월별 CAPA 변동 추이 ────────────────────────────────────
+     · 25.12 ~ 현재월 직전 : 「인원CAPA」 확정 실측값을 그대로 표기 (가공 없음)
+     · 현재월(기준월)       : 화면에서 수정한 상태값을 즉시 반영 (가용 × 계수)
+     · 이후 월             : 시트의 예정 CAPA + 현재월 조정분 + 복귀예정월 반영
+     복귀예정(availFrom)은 원본 시트의 예정치에 이미 반영되어 있으므로,
+     화면에서 추가·수정한 인력의 복귀예정월만 추가로 가산해 중복을 피한다.
+  ------------------------------------------------------------------ */
+  const ymOf = iso => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    return `${String(d.getFullYear()).slice(2)}.${String(d.getMonth() + 1).padStart(2, '0')}`;
+  };
+
+  function trend(base, cm, opts = {}) {
+    if (!base || !base.months || !base.capa) return null;
+    const from = opts.from || '25.12';
+    const i0 = Math.max(0, base.months.indexOf(from));
+    const months = base.months.slice(i0);
+    const pick = k => (base[k] || []).slice(i0);
+    const bAvail = pick('avail'), bCapa = pick('capa'), bUnavail = pick('unavail');
+
+    const nowYm = ymOf(cm.asOf);
+    let now = months.indexOf(nowYm);
+    if (now < 0) now = months.length - 1;                 // 기준월이 표에 없으면 마지막 확정월
+
+    // 화면 편집분의 복귀예정월 — 월별 순증
+    // (원본 인력의 복귀예정은 시트의 예정 CAPA 에 이미 반영되어 있으므로 제외)
+    const back = {};
+    (cm.list || []).forEach(p => {
+      if (!(p._added || p._edited)) return;
+      if (p.status === '가용' || !p.availFrom) return;
+      const m = ymOf(p.availFrom);
+      if (m) back[m] = (back[m] || 0) + 1;
+    });
+
+    const coef = cm.capaCoef || CAPA_COEF;
+    // 편집으로 늘고 준 인원만 예정월에 전파한다 (편집 전이면 0 → 시트 예정치 그대로)
+    const dAvail = cm.available - (opts.baseAvailable ?? cm.available);
+    let cum = 0;
+    const series = months.map((m, i) => {
+      const row = { ym: m, avail: bAvail[i], capa: bCapa[i], unavail: bUnavail[i], kind: '확정' };
+      if (i === now) {
+        row.kind = '현재';
+        row.liveAvail = cm.available;                     // 인력풀 판정 (편집 즉시반영)
+        row.liveCapa = cm.capa;
+      } else if (i > now) {
+        row.kind = '예정';
+        cum += back[m] || 0;
+        row.avail = Math.max(0, (bAvail[i] ?? bAvail[now]) + dAvail + cum);
+        row.capa = Math.round(row.avail * coef);
+      }
+      return row;
+    });
+    return { series, nowYm: months[now], adjust: dAvail, planned: cum, coef,
+             now: series[now] };
+  }
+
   /* ── 저장소 — 변경분만 보관 ─────────────────────────────────── */
   const KEY = 'pkg-icm.pool.v1';
   let mem = null;
@@ -163,7 +220,7 @@ const POOL = (() => {
   });
 
   return {
-    judge, aggregate, merge, upsert, setStatus, remove, restore, reset,
+    judge, aggregate, trend, merge, upsert, setStatus, remove, restore, reset,
     load, save, changeCount, blank,
     GRADES, KINDS, CENTERS, REGION_OF, STATUSES, CAPA_COEF,
   };

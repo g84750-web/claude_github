@@ -282,6 +282,7 @@ def load_assignees(path):
 P_SHEET = '②인력마스터'
 P_RULE = '①가용판정규칙'
 P_HIST = '④월별변동이력'
+P_TREND = '인원CAPA'
 P = dict(no=0, name=1, grade=2, kind=3, center=4, region=5, module=6, career=7,
          joinDate=8, placeDate=9, isBuild=10, unavailReason=11, availFrom=12, evalDone=13)
 
@@ -306,6 +307,75 @@ def judge_person(r, asof, eval_months=1):
         if pd and asof < pd + dt.timedelta(days=int(eval_months * 30.44)):
             return '평가중'
     return '가용'                                           # ④ 그 외
+
+
+def month_label(v):
+    """인원CAPA 헤더의 월 표기를 'YY.MM' 으로 정규화한다.
+
+    엑셀에 25' 1월 / 26.01(수치) / '26.10월'(문자) 이 섞여 있고,
+    26.10 은 수치로 읽으면 26.1 이 되므로 소수 2자리로 고정한다.
+    """
+    if v is None:
+        return ''
+    if isinstance(v, (int, float)):
+        return f'{float(v):.2f}'
+    t = s(v)
+    m = re.match(r"(\d{2})'?\s*[.\-]?\s*(\d{1,2})\s*월?$", t)
+    if m:
+        return f'{m.group(1)}.{int(m.group(2)):02d}'
+    return t
+
+
+# 인원CAPA 시트에서 가져올 행 (B열 라벨 → 반환 키)
+TREND_ROWS = {
+    'A10 총인원': 'total', 'A10 구축인원': 'build',
+    'A10 가용인원': 'avail', 'A10 비가용인원': 'unavail',
+    '가용CAPA': 'capa', '구축지연(M)': 'delay',
+}
+TREND_DETAIL = ['육아휴직', '병가휴직', '유닛장 업무(2명, 50%)', '인바운드유선 4명',
+                'FoEX교육시스템운영(총괄)', '계약직-구축지원', '구축지원-사업관리', '기타-직무전환교육']
+
+
+def load_trend(wb):
+    """「인원CAPA」시트의 월별 인원·CAPA 확정 실측 추이를 그대로 읽는다.
+
+    이 값은 화면에서 가공하지 않고 '기존 월별 구축CAPA현황 그대로' 표기한다.
+    """
+    if P_TREND not in wb.sheetnames:
+        return None
+    rows = list(wb[P_TREND].iter_rows(values_only=True))
+
+    # '구분' 다음 칸부터 월 표기가 끊기지 않고 6개 이상 이어지는 행만 헤더로 인정한다.
+    # (같은 시트에 월 표기가 한 칸 건너뛴 다른 머리행이 있어 오탐하기 쉽다)
+    cands = []
+    for r in rows:
+        cells = [s(c) for c in r]
+        if '구분' not in cells:
+            continue
+        i = cells.index('구분')
+        months = []
+        for x in r[i + 1:]:
+            m = month_label(x)
+            if not re.fullmatch(r'\d{2}\.\d{2}', m):
+                break
+            months.append(m)
+        if len(months) >= 6:
+            cands.append((i, months))
+
+    for base, head in cands:
+        out = dict(months=head, detail=[])
+        seen = set()
+        for r in rows:
+            lab = s(r[base]) if base < len(r) else ''
+            vals = [n(x) for x in r[base + 1:base + 1 + len(head)]]
+            if lab in TREND_ROWS and TREND_ROWS[lab] not in seen:
+                seen.add(TREND_ROWS[lab])
+                out[TREND_ROWS[lab]] = [round(v, 2) for v in vals]
+            elif lab in TREND_DETAIL and not any(d['label'] == lab for d in out['detail']):
+                out['detail'].append(dict(label=lab, values=[round(v, 2) for v in vals]))
+        if 'capa' in out and 'avail' in out:
+            return out
+    return None
 
 
 def load_capa(path, gcms_asof):
@@ -364,6 +434,9 @@ def load_capa(path, gcms_asof):
                     vals = [n(x) for x in r[base + 1:base + 1 + len(months)]]
                     if any(vals) and not any(h['type'] == lab for h in hist):
                         hist.append(dict(type=lab, months=months, values=vals))
+
+    # ── 인원CAPA (월별 인원·CAPA 확정 추이) ──
+    trend = load_trend(wb)
     wb.close()
 
     # ── 집계 ──
@@ -392,7 +465,7 @@ def load_capa(path, gcms_asof):
         capa=round(cnt['가용'] * CAPA_COEF),
         byCenter=byCenter, byGrade=byGrade, centers=centers,
         reasons=dict(Counter(p['unavailReason'] for p in people if p['unavailReason'])),
-        history=hist, people=people,
+        history=hist, trend=trend, people=people,
     )
 
 
