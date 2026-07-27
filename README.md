@@ -24,42 +24,62 @@ NSM 화면정의서 기준의 PROJECT 등록 · 공수현황 · 정합성 검증
 
 ---
 
-## 실행 방법
+## 운영 절차 (배포본 생성 → 데이터 갱신 → 실행 → 링크 재배포)
 
-### 방법 0 — 배포된 웹 링크 (테스트용 · 권장)
+### ① 배포본 생성 — 원클릭
+
+```bash
+cd pkg-icm
+python update.py <GCMS.xlsx> --assignee <담당자별.xlsx>
+```
+
+한 번에 3단계를 수행합니다.
+
+| 단계 | 산출물 | 내용 |
+|---|---|---|
+| 1 | `data/gcms_full.json` | 원본 엑셀 → JSON + **항등식 검증 출력** |
+| 2 | `index_standalone.html` | 더블클릭 실행본 (웹서버·인터넷 불필요) |
+| 3 | `artifact.html` | 웹 배포본 (외부 네트워크 요청 0건) |
+
+### ② 데이터 갱신 — 원본 엑셀만 교체
+
+```bash
+python update.py 2026년_솔루션구축센터_구축총괄실적현황_통합__PKG사업본부_260731.xlsx                  --assignee 상세_구축_진행_현황_담당자별_20260731.xlsx
+```
+
+- 파일명의 `YYMMDD` / `YYYYMMDD` 를 **기준일로 자동 인식**합니다 (`--asof YYYY-MM-DD` 로 직접 지정 가능)
+- 실행 중 **항등식 4종 검증 결과가 출력**됩니다. `OK` 가 아니면 그 자리에서 중단하고 원본을 확인하십시오
 
 ```
-https://claude.ai/code/artifact/6d3c599b-120f-4cb7-bad8-c5efd0cde218
+총접수 2,360 = 이월 919 + 신규 1441   OK
+상태별 합계검증 OK
+납기준수 1522/1606 = 94.8%  OK
+계약공수 7,105.0 = 투입환산 2,363.9 + 미투입1차 4,741.1  OK
 ```
 
-브라우저에서 링크만 열면 됩니다. 다운로드·설치 불필요.
-`build_artifact.py` 가 생성한 배포본이며 외부 네트워크 요청이 0건인 완전 자립 페이지입니다.
-
-### 방법 1 — 웹서버 없이 실행 (권장)
+### ③ 실행
 
 ```
 pkg-icm/index_standalone.html  →  더블클릭
 ```
 
-데이터가 HTML에 내장된 단독 실행 파일입니다. 설치·인터넷 없이 동작합니다.
+설치·인터넷·웹서버 없이 브라우저에서 바로 열립니다.
+개발 중 확인이 필요하면 `python -m http.server 8080` 후 `http://localhost:8080` 도 가능합니다.
 
-### 원본 엑셀 갱신 (주간 작업)
+### ④ 링크 재배포
 
-```bash
-cd pkg-icm
-python etl_gcms.py <GCMS.xlsx> --assignee <담당자별.xlsx>
-python build_standalone.py
+배포 URL — **https://claude.ai/code/artifact/6d3c599b-120f-4cb7-bad8-c5efd0cde218**
+
+Claude Code 세션에서 이렇게 요청하면 **같은 링크에 갱신**됩니다.
+
+```
+artifact.html 재배포해줘
 ```
 
-`etl_gcms.py` 는 파일명의 `YYMMDD` 를 기준일로 자동 인식하고, 실행 시 항등식 검증 결과를 출력합니다.
+> **다른 대화에서 재배포할 때는 위 URL을 함께 알려주어야** 같은 링크가 유지됩니다.
+> URL 없이 요청하면 새 링크가 생성됩니다.
 
-### 방법 2 — 웹서버로 실행 (개발용)
-
-```bash
-cd pkg-icm
-python -m http.server 8080
-# 브라우저에서 http://localhost:8080 접속
-```
+---
 
 ---
 

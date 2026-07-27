@@ -13,6 +13,16 @@ Artifact 런타임 제약에 맞춰 조정한다.
 """
 import os, re, sys
 
+
+def pause(msg='\n엔터를 누르면 종료합니다...'):
+    """더블클릭 실행 시에만 멈춘다. 파이프라인 자동 실행 시에는 그대로 진행."""
+    if os.environ.get('PKG_NOPAUSE') or not sys.stdin.isatty():
+        return
+    try:
+        input(msg)
+    except (EOFError, KeyboardInterrupt):
+        pass
+
 BASE = os.path.dirname(os.path.abspath(__file__))
 SRC = os.path.join(BASE, 'index_standalone.html')
 OUT = os.path.join(BASE, 'artifact.html')
