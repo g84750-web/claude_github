@@ -557,27 +557,29 @@ const KPI = (() => {
     /* ═══════════ Pillar 5 ═══════════ */
     {
       id: '5.1', pillar: 5, star: true, name: 'Time to Value (TTV — 개통 소요기간)',
-      def: '계약(수주) → 구축완료까지의 평균 소요 기간. A10 빠른 가치 실현의 핵심 지표.',
-      formula: 'TTV(일) = AVG(구축완료일 − 수주일)  [완료 프로젝트]\n※ 구축방식별·서버유형별 분리 산출 필수',
-      source: 'GCMS: 수주일(N열), 구축완료일(AF열)',
+      def: '구축접수 → 구축완료까지의 평균 소요 기간. A10 빠른 가치 실현의 핵심 지표.',
+      formula: 'TTV(일) = AVG(구축완료일 − 구축접수일)  [완료 프로젝트]\n※ 구축방식별·서버유형별 분리 산출 필수',
+      source: 'GCMS: 구축접수일(Z열), 구축완료일(AF열)',
       cycle: '월간 / 구축방식·서버유형별',
       target: 'SaaS 60일 이내, 구축형 90일 이내, FoEX단독 40일 이내', targetVal: 60, op: 'lte', unit: '일',
       asIs: 'SaaS 45일 / 구축형 75일 (EQT Median 60일)', state: 'auto',
-      note: '수주일 기준 산출. 개통확인서 발행일이 별도 관리되면 정합 산출로 대체 가능.',
+      note: '⚠ 기산점은 수주일(N열)이 아니라 <b>구축접수일(Z열)</b>이다. ' +
+            '수주일 기준으로 구축접수가 이루어지지 않으므로 수주일을 기산점으로 쓰면 영업 리드타임이 섞여 구축 소요기간이 과대 계상된다. ' +
+            '가이드라인 v1.0의 관리 기준(SaaS 60일 등)은 계약 기산 전제로 설정된 값이므로, 접수 기산으로 재기준선 설정이 필요하다.',
       calc: D => {
-        const fin = D.rows.filter(p => p.status === '완료' && p.ttv !== null && p.ttv >= 0);
+        const fin = D.rows.filter(p => p.status === '완료' && p.leadTime !== null && p.leadTime >= 0);
         if (!fin.length) return NA;
-        const v = avg(fin.map(p => p.ttv));
+        const v = avg(fin.map(p => p.leadTime));
         const med = a => { const s = [...a].sort((x, y) => x - y); return s[Math.floor(s.length / 2)]; };
         return {
           v, disp: f0(v) + '일',
-          sub: `완료 ${fin.length.toLocaleString()}건 평균 (중앙값 ${med(fin.map(p => p.ttv))}일)`,
+          sub: `완료 ${fin.length.toLocaleString()}건 평균 (중앙값 ${med(fin.map(p => p.leadTime))}일) · 접수→완료`,
           detail: [
             ...D.CODE.SERVER.map(s => ({
-              label: s, value: `${f0(avg(fin.filter(p => p.server === s).map(p => p.ttv)))}일`
+              label: s, value: `${f0(avg(fin.filter(p => p.server === s).map(p => p.leadTime)))}일`
             })),
             ...D.CODE.METHOD.map(m => ({
-              label: m, value: `${f0(avg(fin.filter(p => p.method === m).map(p => p.ttv)))}일`
+              label: m, value: `${f0(avg(fin.filter(p => p.method === m).map(p => p.leadTime)))}일`
             })),
           ]
         };

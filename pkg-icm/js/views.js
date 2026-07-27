@@ -288,7 +288,8 @@ const VIEWS = (() => {
         ${fld('약정일 BP (AE→AD)', p.bpDate || '—')}${fld('구축완료일 (AF)', p.doneDate || '—')}
         ${fld('납기 판정', p.dlvBucket ? `${p.dlvBucket} (${p.dlvDelta > 0 ? '+' : ''}${p.dlvDelta}일)` : '—')}
         ${fld('UC확장팩', p.ucPack || '—')}${fld('계약기간', p.ctrStart ? `${p.ctrStart} ~ ${p.ctrEnd}` : '—')}
-        ${fld('TTV (수주→완료)', p.ttv !== null ? p.ttv + '일' : '—')}
+        ${fld('TTV (접수→완료)', p.leadTime !== null ? p.leadTime + '일' : '—')}
+        ${fld('참고: 수주→접수', (p.orderDate && p.recvDate) ? Math.round((new Date(p.recvDate) - new Date(p.orderDate)) / 86400000) + '일' : '—')}
       </div>
       <div class="notimpl" style="margin-top:.9rem"><b>KPI 연계</b> —
         약정일 BP는 <b>변경완료예정일(AE) 1순위 → 구축완료예정일(AD) 2순위</b>로 결정되며, KPI 1.7 납기준수율의 판정 기준입니다.

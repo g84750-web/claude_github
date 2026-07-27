@@ -136,9 +136,11 @@ const DATA = (() => {
       recvYM: (r.recvDate || '').slice(0, 7),
       recvYear: (r.recvDate || '').slice(0, 4),
       doneYM: (r.doneDate || '').slice(0, 7),
-      // 수행기간 — 수주일→구축완료일 (TTV 원천)
-      ttv: day(r.orderDate, r.doneDate),
+      // TTV(개통 소요기간) = 구축접수일 → 구축완료일
+      //   ※ 수주일 기준으로 구축접수가 이루어지지 않으므로 수주일을 기산점으로 쓰지 않는다.
+      //     수주일 기산은 영업 리드타임이 섞여 구축 소요기간이 과대 계상된다.
       leadTime: day(r.recvDate, r.doneDate),
+      salesLead: day(r.orderDate, r.recvDate),   // 참고: 수주 → 구축접수 (영업 리드타임)
       mdRemain: (r.mdPlan || 0) - (r.mdUsed || 0),
       progress: r.mdPlan > 0 ? Math.min(100, (r.mdUsed || 0) / r.mdPlan * 100) : 0,
     }));
