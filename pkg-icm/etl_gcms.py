@@ -451,13 +451,18 @@ def load_capa(path, gcms_asof):
             excluded=sc['구축제외'], unavailable=sc['비가용'], evaluating=sc['평가중'],
             available=sc['가용'],
             rate=round(sc['가용'] / len(sub) * 100, 1) if sub else 0))
+    # 직급이 비었거나 목록에 없는 인원도 '미지정'으로 집계 (총원과 반드시 일치)
+    def grade_of(p):
+        return p['grade'] if p['grade'] in GRADES else '미지정'
+
     byGrade = []
-    for g in GRADES:
-        sub = [p for p in people if p['grade'] == g]
+    for g in GRADES + ['미지정']:
+        sub = [p for p in people if grade_of(p) == g]
         if not sub: continue
         byGrade.append(dict(grade=g, total=len(sub),
                             available=sum(1 for p in sub if p['status'] == '가용'),
-                            byCenter={c: sum(1 for p in sub if p['center'] == c and p['status'] == '가용')
+                            # 직급별은 인원현황만 집계 (업무비가용 = 가상 업무투입 공수)
+                            byCenter={c: sum(1 for p in sub if p['center'] == c)
                                       for c in centers}))
     return dict(
         asOf=asof.isoformat(), evalMonths=eval_months, capaCoef=CAPA_COEF,

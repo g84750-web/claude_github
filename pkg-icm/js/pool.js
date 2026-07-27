@@ -37,6 +37,8 @@ const POOL = (() => {
     return '가용';                                       // ④ 그 외
   }
 
+  const gradeOf = p => GRADES.includes(S(p.grade)) ? S(p.grade) : '미지정';
+
   /* ── 집계 — capaMeta 와 동일 형태 ───────────────────────────── */
   function aggregate(people, opts = {}) {
     const asOf = opts.asOf, evalMonths = opts.evalMonths ?? 1;
@@ -58,13 +60,18 @@ const POOL = (() => {
       };
     });
 
-    const byGrade = GRADES.filter(g => list.some(p => p.grade === g)).map(g => {
-      const sub = list.filter(p => p.grade === g);
+    // 직급이 비었거나 목록에 없는 인원도 '미지정'으로 반드시 집계한다
+    // (인원현황 표가 총원과 맞아야 하므로 누락 불가)
+    const gradeKeys = [...GRADES, '미지정'].filter(g => list.some(p => gradeOf(p) === g));
+    const byGrade = gradeKeys.map(g => {
+      const sub = list.filter(p => gradeOf(p) === g);
       return {
         grade: g, total: sub.length,
         available: sub.filter(p => p.status === '가용').length,
+        // 직급별은 인원현황만 집계한다 — 업무비가용은 가상 업무투입 공수라
+        // 직급 단위로 가용/비가용을 나누는 것이 의미가 없다
         byCenter: Object.fromEntries(centers.map(c =>
-          [c, sub.filter(p => p.center === c && p.status === '가용').length])),
+          [c, sub.filter(p => p.center === c).length])),
       };
     });
 

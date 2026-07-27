@@ -1144,16 +1144,19 @@ KPI 연계: 2.4 매출 실현율 · 4.1 BU% · 3.3 방법론 준수율`),
       </div>`;
   }
 
-  /* 가로 막대 — 총원 트랙 위에 가용 인원을 겹쳐 표기 */
+  /* 가로 막대 — 총원 트랙 위에 가용 인원을 겹쳐 표기.
+     avail 이 없으면 인원현황 단독 막대로 그린다 (직급별처럼 가용 구분이 없는 축) */
   function hbars(rows, accent) {
     const max = Math.max(...rows.map(r => r.total)) || 1;
-    return `<div class="hb">${rows.map(r => `
-      <div class="hb-row" title="${esc(r.label)} · 총원 ${r.total}명 / 구축가용 ${r.avail}명">
+    const w = v => (v / max * 100).toFixed(1);
+    return `<div class="hb">${rows.map(r => {
+      const solo = r.avail === undefined;
+      return `<div class="hb-row" title="${esc(r.label)} · 인원 ${r.total}명${solo ? '' : ` / 구축가용 ${r.avail}명`}">
         <div class="hb-l">${esc(r.label)}</div>
-        <div class="hb-t"><div class="hb-b" style="width:${(r.total / max * 100).toFixed(1)}%"></div>
-          <div class="hb-a" style="width:${(r.avail / max * 100).toFixed(1)}%;background:${accent}"></div></div>
-        <div class="hb-v"><b>${r.avail}</b><span>/${r.total}</span></div>
-      </div>`).join('')}</div>`;
+        <div class="hb-t">${solo ? '' : `<div class="hb-b" style="width:${w(r.total)}%"></div>`}
+          <div class="hb-a" style="width:${w(solo ? r.total : r.avail)}%;background:${accent}"></div></div>
+        <div class="hb-v">${solo ? `<b>${r.total}</b><span>명</span>` : `<b>${r.avail}</b><span>/${r.total}</span>`}</div>
+      </div>`; }).join('')}</div>`;
   }
 
   function renderPool(D) {
@@ -1300,12 +1303,12 @@ KPI 연계: 2.4 매출 실현율 · 4.1 BU% · 3.3 방법론 준수율`),
       </div>` : ''}
 
       <div class="g2 eq">
-        <div class="card"><div class="sec-head"><h2 style="font-size:.9rem">센터·직급별 구축가용 대시보드</h2>
-            <span class="sub">총원 대비 가용</span></div>
-          <div style="font-size:.72rem;font-weight:800;color:var(--tx-s);margin:.2rem 0 .5rem">센터별</div>
+        <div class="card"><div class="sec-head"><h2 style="font-size:.9rem">센터·직급별 구축인력 대시보드</h2>
+            <span class="sub">센터 = 가용/총원 · 직급 = 인원현황</span></div>
+          <div style="font-size:.72rem;font-weight:800;color:var(--tx-s);margin:.2rem 0 .5rem">센터별 <span style="font-weight:600;color:var(--tx-m)">— 구축가용 / 인원총계</span></div>
           ${hbars(cm.byCenter.map(c => ({ label: `${c.center} · ${c.region}`, avail: c.available, total: c.total })), 'linear-gradient(90deg,#4ADE80,#16A34A)')}
-          <div style="font-size:.72rem;font-weight:800;color:var(--tx-s);margin:.9rem 0 .5rem">직급별</div>
-          ${hbars(cm.byGrade.map(g => ({ label: g.grade, avail: g.available, total: g.total })), 'linear-gradient(90deg,#818CF8,#3B4FC8)')}
+          <div style="font-size:.72rem;font-weight:800;color:var(--tx-s);margin:.9rem 0 .5rem">직급별 <span style="font-weight:600;color:var(--tx-m)">— 인원현황 (가용/비가용 구분 없음)</span></div>
+          ${hbars(cm.byGrade.map(g => ({ label: g.grade, total: g.total })), 'linear-gradient(90deg,#818CF8,#3B4FC8)')}
           <div class="spacer" style="flex:1"></div>
           <div style="margin-top:.8rem;font-size:.72rem;color:var(--tx-s);line-height:1.7">
             총원 <b>${cm.total}명</b> 중 구축가용 <b style="color:var(--ok)">${cm.available}명</b>
@@ -1313,39 +1316,48 @@ KPI 연계: 2.4 매출 실현율 · 4.1 BU% · 3.3 방법론 준수율`),
             ${Object.keys(cm.reasons).length ? `<br><b>비가용 사유</b> — ${Object.entries(cm.reasons).map(([k, v]) => `${esc(k)} ${v}명`).join(' · ')}` : ''}</div>
         </div>
 
-        <div class="card"><div class="sec-head"><h2 style="font-size:.9rem">센터·직급별 가용 집계표</h2></div>
+        <div class="card"><div class="sec-head"><h2 style="font-size:.9rem">센터·직급별 인원현황</h2>
+            <span class="sub">인원수 기준</span></div>
           <div class="tbl-wrap"><table>
-            <thead><tr><th>센터</th><th>지역</th><th class="num">인원총계</th><th class="num">구축제외</th>
-              <th class="num">비가용</th><th class="num">평가중</th><th class="num">구축가용</th><th class="num">가용비율</th></tr></thead>
+            <thead><tr><th>직급</th>${cm.centers.map(c => `<th class="num">${esc(c)}</th>`).join('')}
+              <th class="num">인원계</th><th class="num">구성비</th></tr></thead>
+            <tbody>${cm.byGrade.map(g => `<tr>
+              <td class="strong">${esc(g.grade)}</td>
+              ${cm.centers.map(c => `<td class="num">${g.byCenter[c] || 0}</td>`).join('')}
+              <td class="num strong">${g.total}</td>
+              <td class="num" style="color:var(--tx-s)">${f1(pct(g.total, cm.total))}%</td></tr>`).join('')}
+            <tr style="background:#F7F9FC;font-weight:800">
+              <td>계</td>
+              ${cm.centers.map(c => `<td class="num">${cm.byCenter.find(x => x.center === c)?.total || 0}</td>`).join('')}
+              <td class="num">${cm.total}</td><td class="num">100.0%</td></tr>
+            </tbody></table></div>
+          <div style="margin-top:.5rem;font-size:.71rem;color:var(--tx-m);line-height:1.6">
+            직급별은 <b>가용/비가용을 구분하지 않습니다</b> — 업무비가용은 특정 인원의 상태가 아니라
+            <b>가상 업무투입 공수</b>(인바운드·FoEX운영·유닛장 업무 등)이므로 직급 단위 귀속이 성립하지 않습니다.</div>
+
+          <div class="sec-head" style="margin:1.1rem 0 .6rem"><h2 style="font-size:.85rem">센터별 가용/비가용 집계표</h2></div>
+          <div class="tbl-wrap"><table>
+            <thead><tr><th>센터</th><th>지역</th><th class="num">인원총계</th>
+              <th class="num">구축가용</th><th class="num">비가용</th><th class="num">평가중</th>
+              <th class="num">구축제외</th><th class="num">가용비율</th></tr></thead>
             <tbody>${cm.byCenter.map(c => `<tr>
               <td class="strong">${esc(c.center)}</td><td style="color:var(--tx-s);font-size:.72rem">${esc(c.region)}</td>
-              <td class="num">${c.total}</td><td class="num" style="color:var(--tx-m)">${c.excluded}</td>
-              <td class="num" style="color:var(--warn)">${c.unavailable}</td>
-              <td class="num" style="color:var(--warn)">${c.evaluating}</td>
+              <td class="num">${c.total}</td>
               <td class="num strong" style="color:var(--ok)">${c.available}</td>
+              <td class="num" style="color:var(--risk)">${c.unavailable}</td>
+              <td class="num" style="color:var(--warn)">${c.evaluating}</td>
+              <td class="num" style="color:var(--tx-m)">${c.excluded}</td>
               <td class="num strong">${f1(c.rate)}%</td></tr>`).join('')}
             <tr style="background:#F7F9FC;font-weight:800">
               <td>합계</td><td>—</td><td class="num">${cm.total}</td>
-              <td class="num">${st['구축제외'] || 0}</td><td class="num">${st['비가용'] || 0}</td>
-              <td class="num">${st['평가중'] || 0}</td><td class="num">${cm.available}</td>
+              <td class="num">${cm.available}</td><td class="num">${st['비가용'] || 0}</td>
+              <td class="num">${st['평가중'] || 0}</td><td class="num">${st['구축제외'] || 0}</td>
               <td class="num">${f1(pct(cm.available, cm.total))}%</td></tr>
             </tbody></table></div>
-
-          <div style="font-size:.72rem;font-weight:800;color:var(--tx-s);margin:1rem 0 .4rem">직급별 구축가용 인원</div>
-          <div class="tbl-wrap"><table>
-            <thead><tr><th>직급</th><th class="num">인원</th><th class="num">가용</th>
-              ${cm.centers.map(c => `<th class="num">${esc(c)}</th>`).join('')}</tr></thead>
-            <tbody>${cm.byGrade.map(g => `<tr>
-              <td class="strong">${esc(g.grade)}</td><td class="num">${g.total}</td>
-              <td class="num strong" style="color:var(--ok)">${g.available}</td>
-              ${cm.centers.map(c => `<td class="num">${g.byCenter[c] || 0}</td>`).join('')}</tr>`).join('')}
-            <tr style="background:#F7F9FC;font-weight:800">
-              <td>계</td><td class="num">${cm.total}</td><td class="num">${cm.available}</td>
-              ${cm.centers.map(c => `<td class="num">${cm.byCenter.find(x => x.center === c)?.available || 0}</td>`).join('')}</tr>
-            </tbody></table></div>
           <div class="spacer" style="flex:1"></div>
-          <div style="margin-top:.7rem;font-size:.71rem;color:var(--tx-m);line-height:1.6">
-            직급별 센터 열은 <b>구축가용</b> 인원만 집계합니다. 상태를 수정하면 두 표가 함께 갱신됩니다.</div>
+          <div style="margin-top:.6rem;font-size:.71rem;color:var(--tx-m);line-height:1.6">
+            여기의 <b>비가용</b>은 인력마스터의 비가용사유(휴직·육아·출산 등) 보유 인원입니다.
+            업무비가용(가상 공수)은 「비가용 인원 구성」 표에서 별도 관리합니다.</div>
         </div>
       </div>
 
