@@ -2575,10 +2575,22 @@ const VIEWS = (() => {
   }
 
   /* ════════ 1. Executive ════════ */
+  /* 6대 핵심 KPI 카드 색 — Pillar 색을 그대로 쓰면 6개 중 4개가 Pillar 1(녹색)로
+     겹치므로, 카드마다 고유 색조를 배정한다 (테두리·KPI 숫자·진행바 공통 적용).
+     판정(달성/주의)은 우측 배지가 담당하므로 카드 색은 식별용 구분값이다. */
+  const EXEC_ACC = {
+    '1.9': '#16A34A',   // 구축기간 준수율 — 그린
+    '4.6': '#4F46E5',   // WBS 준수율 — 인디고
+    '1.1': '#0891B2',   // 구축 완료율 — 시안
+    '6.5': '#DC2626',   // 구축지연(M) — 레드
+    '1.7': '#DB2777',   // 납기준수율 — 마젠타
+    '1.6': '#D97706',   // 반품률 — 앰버
+  };
+
   function renderExec(D, K) {
     const cards = KPI.EXEC.map(id => {
       const k = K.get(id); if (!k) return '';
-      const r = k.result, acc = `var(--p${k.pillar}-acc)`;
+      const r = k.result, acc = EXEC_ACC[id] || `var(--p${k.pillar}-acc)`;
       const prog = (k.targetVal !== undefined && r.v !== null && isFinite(r.v))
         ? Math.max(0, Math.min(100, k.op === 'lte'
           ? (r.v <= 0 ? 100 : Math.min(100, k.targetVal / r.v * 100)) : r.v / k.targetVal * 100)) : 0;
