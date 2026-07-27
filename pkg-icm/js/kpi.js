@@ -513,14 +513,23 @@ const KPI = (() => {
       asIs: '1,804 m/d (82명 × 22.0)', state: 'auto',
       note: "🔴 '가용 94명' 사용 금지 — 행정수치이며 실질 가용은 82명 (검증체크리스트 ⑤).",
       calc: D => {
-        const v = D.meta.capa;
+        const v = D.meta.capa, cm = D.capaMeta;
+        const detail = [
+          { label: '계수 구성', value: '22워크데이 × 80% × 1.25 = 22.0' },
+          { label: '소화율', value: `${f1(pct(D.meta.md?.converted, D.meta.md?.contract))}% (투입환산 ÷ 계약공수)` },
+        ];
+        if (cm) {
+          const diff = cm.available - D.meta.headcount;
+          detail.push(
+            { label: '구축인력풀 산출 (참고)', value: `가용 ${cm.available}명 × ${cm.capaCoef} = ${f0(cm.capa)} m/d` },
+            { label: '인력풀 기준일', value: `${cm.asOf} · 인력 ${cm.total}명 (가용비율 ${f1(pct(cm.available, cm.total))}%)` },
+            { label: '적용값과의 차이', value: diff === 0 ? '없음'
+              : `${diff > 0 ? '+' : ''}${diff}명 — 확정 실측값 재현을 위해 ${D.meta.headcount}명 적용 유지` });
+        }
         return {
           v, disp: f0(v) + ' m/d',
-          sub: `가용 ${D.meta.headcount}명 × 계수 ${D.meta.capaCoef}`,
-          detail: [
-            { label: '계수 구성', value: '22워크데이 × 80% × 1.25 = 22.0' },
-            { label: '소화율', value: `${f1(pct(D.meta.md?.converted, D.meta.md?.contract))}% (투입환산 ÷ 계약공수)` },
-          ]
+          sub: `가용 ${D.meta.headcount}명 × 계수 ${D.meta.capaCoef}` + (cm ? ` · 인력풀 ${cm.available}명 병기` : ''),
+          detail
         };
       }
     },

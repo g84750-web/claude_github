@@ -7,7 +7,7 @@ GCMS ETL — 원본 엑셀 → PKG-ICM 데이터셋
        (NSM 시스템 개발 시 그대로 구현될 정책)
 
 사용법
-  python etl_gcms.py <엑셀경로> [기준일 YYYY-MM-DD]
+  python etl_gcms.py <엑셀경로> [기준일 YYYY-MM-DD] [--assignee <담당자별.xlsx>] [--capa <CAPA.xlsx>]
   → data/gcms_full.json 생성
 """
 import openpyxl, datetime as dt, json, os, sys, re
@@ -274,15 +274,140 @@ def load_assignees(path):
     return out
 
 
+
+# ══════════════════════════════════════════════════════════════════
+#  구축인력풀 (CAPA 인력마스터) — 구축인력 CAPA 관리 v2
+#  시트 ①가용판정규칙 / ②인력마스터 / ④월별변동이력
+# ══════════════════════════════════════════════════════════════════
+P_SHEET = '②인력마스터'
+P_RULE = '①가용판정규칙'
+P_HIST = '④월별변동이력'
+P = dict(no=0, name=1, grade=2, kind=3, center=4, region=5, module=6, career=7,
+         joinDate=8, placeDate=9, isBuild=10, unavailReason=11, availFrom=12, evalDone=13)
+
+# 규칙 ⑲ 집계 제외 그룹 — 본부장·영업구축지원·옴니UC·인턴
+EXCLUDE_KINDS = ('인턴',)
+GRADES = ['유닛장', '부장', '차장', '과장', '대리', '사원', '인턴']
+
+
+def judge_person(r, asof, eval_months=1):
+    """①가용판정규칙 우선순위 판정 — 구축제외 > 비가용 > 평가중 > 가용"""
+    if s(r[P['isBuild']]).upper() != 'Y':
+        return '구축제외'                                   # ① 구축직무=N
+    if s(r[P['kind']]) in EXCLUDE_KINDS:
+        return '구축제외'                                   # ① 제외 그룹(인턴 등)
+    if s(r[P['unavailReason']]):
+        return '비가용'                                     # ② 비가용사유 보유
+    if s(r[P['kind']]) == '전환배치':
+        # ③ 전환배치 & 기준일 < 배치일 + 평가기간  → 1차평가 미완
+        if s(r[P['evalDone']]) == '평가중':
+            return '평가중'
+        pd = d(r[P['placeDate']])
+        if pd and asof < pd + dt.timedelta(days=int(eval_months * 30.44)):
+            return '평가중'
+    return '가용'                                           # ④ 그 외
+
+
+def load_capa(path, gcms_asof):
+    wb = openpyxl.load_workbook(path, data_only=True)
+    if P_SHEET not in wb.sheetnames:
+        raise SystemExit(f'시트 없음: {P_SHEET} (보유: {wb.sheetnames})')
+
+    # ── 기준일 · 평가기간 (①가용판정규칙) ──
+    asof, eval_months = None, 1.0
+    if P_RULE in wb.sheetnames:
+        for row in wb[P_RULE].iter_rows(values_only=True):
+            cells = [s(c) for c in row]
+            for i, c in enumerate(cells):
+                if '기준일' in c and i + 1 < len(row):
+                    asof = d(row[i + 1]) or asof
+                if '평가기간' in c and i + 1 < len(row):
+                    try: eval_months = float(row[i + 1])
+                    except (TypeError, ValueError): pass
+    asof = asof or gcms_asof
+
+    # ── ②인력마스터 ──
+    rows = list(wb[P_SHEET].iter_rows(values_only=True))
+    people = []
+    for r in rows[2:]:
+        if not r[P['name']] or not s(r[P['name']]):
+            continue
+        st = judge_person(r, asof, eval_months)
+        people.append(dict(
+            name=s(r[P['name']]), grade=s(r[P['grade']]), kind=s(r[P['kind']]),
+            center=s(r[P['center']]), region=s(r[P['region']]),
+            module=s(r[P['module']]).replace('-', ''), career=n(r[P['career']]),
+            joinDate=iso(d(r[P['joinDate']])), placeDate=iso(d(r[P['placeDate']])),
+            isBuild=s(r[P['isBuild']]).upper() == 'Y',
+            unavailReason=s(r[P['unavailReason']]),
+            availFrom=iso(d(r[P['availFrom']])),
+            evalDone=s(r[P['evalDone']]).replace('-', ''),
+            status=st,
+        ))
+
+    # ── ④월별변동이력 (전체 집계 블록) ──
+    hist = []
+    if P_HIST in wb.sheetnames:
+        hrows = list(wb[P_HIST].iter_rows(values_only=True))
+        months, base = [], None
+        for r in hrows[:4]:
+            cells = [s(c) for c in r]
+            if '변동유형' in cells:
+                i = cells.index('변동유형')
+                months = [s(x) for x in r[i + 1:] if s(x)]
+                base = i
+                break
+        if base is not None:
+            for r in hrows:
+                lab = s(r[base]) if base < len(r) else ''
+                if lab in ('입사', '퇴사', '휴직', '복직', '전환배치', '전보', '순증감(In-Out)'):
+                    vals = [n(x) for x in r[base + 1:base + 1 + len(months)]]
+                    if any(vals) and not any(h['type'] == lab for h in hist):
+                        hist.append(dict(type=lab, months=months, values=vals))
+    wb.close()
+
+    # ── 집계 ──
+    cnt = Counter(p['status'] for p in people)
+    centers = sorted({p['center'] for p in people if p['center']})
+    byCenter = []
+    for c in centers:
+        sub = [p for p in people if p['center'] == c]
+        sc = Counter(p['status'] for p in sub)
+        byCenter.append(dict(
+            center=c, region=(sub[0]['region'] if sub else ''), total=len(sub),
+            excluded=sc['구축제외'], unavailable=sc['비가용'], evaluating=sc['평가중'],
+            available=sc['가용'],
+            rate=round(sc['가용'] / len(sub) * 100, 1) if sub else 0))
+    byGrade = []
+    for g in GRADES:
+        sub = [p for p in people if p['grade'] == g]
+        if not sub: continue
+        byGrade.append(dict(grade=g, total=len(sub),
+                            available=sum(1 for p in sub if p['status'] == '가용'),
+                            byCenter={c: sum(1 for p in sub if p['center'] == c and p['status'] == '가용')
+                                      for c in centers}))
+    return dict(
+        asOf=asof.isoformat(), evalMonths=eval_months, capaCoef=CAPA_COEF,
+        total=len(people), status=dict(cnt), available=cnt['가용'],
+        capa=round(cnt['가용'] * CAPA_COEF),
+        byCenter=byCenter, byGrade=byGrade, centers=centers,
+        reasons=dict(Counter(p['unavailReason'] for p in people if p['unavailReason'])),
+        history=hist, people=people,
+    )
+
+
 def main():
     if len(sys.argv) < 2:
         raise SystemExit(__doc__)
     argv = [a for a in sys.argv[1:] if not a.startswith('--')]
-    apath = None
+    apath = cpath = None
     for i, a in enumerate(sys.argv):
         if a == '--assignee' and i + 1 < len(sys.argv):
             apath = sys.argv[i + 1]
             argv = [x for x in argv if x != apath]
+        if a == '--capa' and i + 1 < len(sys.argv):
+            cpath = sys.argv[i + 1]
+            argv = [x for x in argv if x != cpath]
     src = argv[0]
     today = dt.date.fromisoformat(argv[1]) if len(argv) > 1 else None
     if not today:                                   # 파일명 YYMMDD → 기준일
@@ -331,11 +456,26 @@ def main():
         if aDate and aDate != today.isoformat():
             print(f'  ※ 기준일 불일치 (GCMS {today} vs 담당자별 {aDate}) — 화면에 기준일 병기 필요')
 
+    capa = None
+    if cpath:
+        capa = load_capa(cpath, today)
+        st = capa['status']
+        print(f'\n[구축인력풀] 기준일 {capa["asOf"]} · 인력 {capa["total"]}명')
+        print(f'  가용 {st.get("가용",0)} · 평가중 {st.get("평가중",0)} · '
+              f'비가용 {st.get("비가용",0)} · 구축제외 {st.get("구축제외",0)}')
+        print(f'  산출 월가용 CAPA {capa["capa"]:,} m/d ({capa["available"]}명 × {CAPA_COEF})')
+        if capa['available'] != v['headcount']:
+            print(f'  ※ 현행 CAPA 스킬값 {v["headcount"]}명과 {capa["available"] - v["headcount"]:+d}명 차이 '
+                  f'— 확정 실측값 재현을 위해 KPI 산출에는 {v["headcount"]}명을 유지하고 인력풀 값은 참고로 병기')
+
     v['assigneeMeta'] = aMeta
+    v['capaMeta'] = ({k: val for k, val in capa.items() if k != 'people'} if capa else None)
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     payload = dict(meta=v, rows=rows)
     if assignees:
         payload['assignees'] = assignees
+    if capa:
+        payload['people'] = capa['people']
     with open(OUT, 'w', encoding='utf-8') as f:
         json.dump(payload, f, ensure_ascii=False, separators=(',', ':'))
     print(f'\n생성: {OUT}  ({os.path.getsize(OUT)/1024:,.0f} KB, 프로젝트 {len(rows):,}건'

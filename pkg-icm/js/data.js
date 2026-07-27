@@ -186,6 +186,9 @@ const DATA = (() => {
         };
       })(),
       assigneeMeta: meta.assigneeMeta || null,
+      // 구축인력풀 (CAPA 인력마스터)
+      people: payload.people || [],
+      capaMeta: meta.capaMeta || null,
       pms: buildPMs(rows),
       monthly: buildMonthly(rows, asOf),
       byMethod: groupBy(rows, p => p.method),

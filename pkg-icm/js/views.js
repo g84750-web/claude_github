@@ -1079,7 +1079,184 @@ KPI 연계: 2.4 매출 실현율 · 4.1 BU% · 3.3 방법론 준수율`),
     renderIngest(APP.D);
   }
 
-  return { renderExec, renderBook, renderProjectShell, renderStatus, renderCapa, renderAudit, renderBench,
+  /* ════════ 9. 구축인력풀 등록 (CAPA 인력마스터) ════════ */
+  const PL = { page: 1, size: 30, list: [] };
+
+  function renderPool(D) {
+    const cm = D.capaMeta;
+    if (!cm || !D.people.length) {
+      $('v-pool').innerHTML = `<div class="card"><div class="notimpl">
+        <b>구축인력풀 원본 미로드</b><br>「구축인력 CAPA 관리」 엑셀(②인력마스터 시트)이 필요합니다.
+        <div class="sch">python update.py &lt;GCMS.xlsx&gt; --assignee &lt;담당자별.xlsx&gt; --capa &lt;CAPA.xlsx&gt;</div></div></div>`;
+      return;
+    }
+    const st = cm.status || {};
+    const diff = cm.available - (D.meta.headcount || 0);
+
+    $('v-pool').innerHTML = `
+      <div class="sec-head"><h2>구축인력풀 등록</h2>
+        <span class="sub">구축인력 CAPA 관리 — ②인력마스터 ${cm.total}명 · 기준일 ${esc(cm.asOf)}</span></div>
+
+      ${cm.asOf !== D.asOf ? `<div class="card" style="margin-bottom:1rem;background:var(--warn-bg);border-color:#FDE68A">
+        <div style="font-size:.78rem;color:#92400E;line-height:1.7">
+          <b>⚠ 기준일 병기</b> — 인력풀 기준일 <b>${esc(cm.asOf)}</b> ≠ GCMS 기준일 <b>${esc(D.asOf)}</b>.
+          작업지침 §2-3에 따라 값을 맞추지 않고 기준일을 병기합니다.</div></div>` : ''}
+
+      <div class="g3">
+        <div class="card"><div class="sec-head"><h2 style="font-size:.9rem">가용 판정 결과</h2></div>
+          <div class="md-cards" style="grid-template-columns:1fr 1fr">
+            <div class="md-card c2"><div class="l">구축가용</div><div class="v">${cm.available}명</div></div>
+            <div class="md-card c4"><div class="l">평가중</div><div class="v">${st['평가중'] || 0}명</div></div>
+            <div class="md-card c3"><div class="l">비가용</div><div class="v">${st['비가용'] || 0}명</div></div>
+            <div class="md-card c5"><div class="l">구축제외</div><div class="v">${st['구축제외'] || 0}명</div></div>
+          </div>
+          <div style="font-size:.73rem;color:var(--tx-s);line-height:1.7">
+            인력 총계 <b>${cm.total}명</b> · 가용비율 <b>${f1(pct(cm.available, cm.total))}%</b></div>
+        </div>
+
+        <div class="card"><div class="sec-head"><h2 style="font-size:.9rem">월가용 CAPA 산출</h2></div>
+          <div class="md-cards" style="grid-template-columns:1fr 1fr">
+            <div class="md-card c1"><div class="l">인력풀 산출</div><div class="v">${f0(cm.capa)}</div></div>
+            <div class="md-card c2"><div class="l">KPI 적용값</div><div class="v">${f0(D.meta.capa)}</div></div>
+          </div>
+          <div style="font-size:.72rem;color:var(--tx-s);line-height:1.8;font-family:ui-monospace,monospace">
+            인력풀 ${cm.available}명 × ${cm.capaCoef} = ${f0(cm.capa)} m/d<br>
+            적용값 ${D.meta.headcount}명 × ${D.meta.capaCoef} = ${f0(D.meta.capa)} m/d</div>
+          ${diff !== 0 ? `<div style="margin-top:.6rem;padding:.55rem .7rem;background:var(--warn-bg);border-radius:6px;font-size:.72rem;color:#92400E;line-height:1.6">
+            <b>${diff > 0 ? '+' : ''}${diff}명 차이</b> — KPI 산출에는 확정 실측값(구축지연 2.20M) 재현을 위해
+            현행 <b>${D.meta.headcount}명</b>을 유지하고, 인력풀 산출값은 참고로 병기합니다.</div>` : ''}
+        </div>
+
+        <div class="card"><div class="sec-head"><h2 style="font-size:.9rem">가용 판정 규칙</h2>
+            <span class="sub">우선순위 순</span></div>
+          <div class="tbl-wrap"><table>
+            <thead><tr><th class="ctr">순위</th><th>상태</th><th>판정조건</th><th class="ctr">집계</th></tr></thead>
+            <tbody>
+              <tr><td class="ctr">1</td><td class="strong">구축제외</td><td style="font-size:.71rem">구축직무=N · 제외그룹(본부장·영업구축지원·옴니UC·인턴)</td><td class="ctr" style="color:var(--tx-m)">제외</td></tr>
+              <tr><td class="ctr">2</td><td class="strong">비가용</td><td style="font-size:.71rem">비가용사유 보유 (휴직·육아·출산·공통업무 등)</td><td class="ctr" style="color:var(--warn)">비가용</td></tr>
+              <tr><td class="ctr">3</td><td class="strong">평가중</td><td style="font-size:.71rem">전환배치 &amp; 기준일 &lt; 배치일 + ${cm.evalMonths}개월</td><td class="ctr" style="color:var(--warn)">비가용</td></tr>
+              <tr><td class="ctr">4</td><td class="strong">가용</td><td style="font-size:.71rem">위 조건 모두 아님 (평가완료 전환배치 포함)</td><td class="ctr" style="color:var(--ok)">가용</td></tr>
+            </tbody></table></div>
+          <div style="margin-top:.6rem;font-size:.72rem;color:var(--tx-s)">
+            전환배치 평가기간 <b>${cm.evalMonths}개월</b> · 기준일 <b>${esc(cm.asOf)}</b></div>
+        </div>
+      </div>
+
+      <div class="g2">
+        <div class="card"><div class="sec-head"><h2 style="font-size:.9rem">센터별 가용 집계</h2></div>
+          <div class="tbl-wrap"><table>
+            <thead><tr><th>센터</th><th>지역</th><th class="num">인원총계</th><th class="num">구축제외</th>
+              <th class="num">비가용</th><th class="num">평가중</th><th class="num">구축가용</th><th class="num">가용비율</th></tr></thead>
+            <tbody>${(cm.byCenter || []).map(c => `<tr>
+              <td class="strong">${esc(c.center)}</td><td style="color:var(--tx-s);font-size:.72rem">${esc(c.region)}</td>
+              <td class="num">${c.total}</td><td class="num" style="color:var(--tx-m)">${c.excluded}</td>
+              <td class="num" style="color:var(--warn)">${c.unavailable}</td>
+              <td class="num" style="color:var(--warn)">${c.evaluating}</td>
+              <td class="num strong" style="color:var(--ok)">${c.available}</td>
+              <td class="num strong">${f1(c.rate)}%</td></tr>`).join('')}
+            <tr style="background:#F7F9FC;font-weight:800">
+              <td>합계</td><td>—</td>
+              <td class="num">${cm.total}</td>
+              <td class="num">${st['구축제외'] || 0}</td><td class="num">${st['비가용'] || 0}</td>
+              <td class="num">${st['평가중'] || 0}</td><td class="num">${cm.available}</td>
+              <td class="num">${f1(pct(cm.available, cm.total))}%</td></tr>
+            </tbody></table></div></div>
+
+        <div class="card"><div class="sec-head"><h2 style="font-size:.9rem">직급별 구축가용 인원</h2></div>
+          <div class="tbl-wrap"><table>
+            <thead><tr><th>직급</th><th class="num">인원</th><th class="num">가용</th>
+              ${(cm.centers || []).map(c => `<th class="num">${esc(c)}</th>`).join('')}</tr></thead>
+            <tbody>${(cm.byGrade || []).map(g => `<tr>
+              <td class="strong">${esc(g.grade)}</td><td class="num">${g.total}</td>
+              <td class="num strong" style="color:var(--ok)">${g.available}</td>
+              ${(cm.centers || []).map(c => `<td class="num">${g.byCenter[c] || 0}</td>`).join('')}</tr>`).join('')}
+            <tr style="background:#F7F9FC;font-weight:800">
+              <td>계</td><td class="num">${cm.total}</td><td class="num">${cm.available}</td>
+              ${(cm.centers || []).map(c => `<td class="num">${(cm.byCenter || []).find(x => x.center === c)?.available || 0}</td>`).join('')}</tr>
+            </tbody></table></div>
+          ${Object.keys(cm.reasons || {}).length ? `<div style="margin-top:.7rem;font-size:.73rem;color:var(--tx-s);line-height:1.7">
+            <b>비가용 사유</b> — ${Object.entries(cm.reasons).map(([k, v]) => `${esc(k)} ${v}명`).join(' · ')}</div>` : ''}
+        </div>
+      </div>
+
+      ${(cm.history || []).length ? `<div class="card" style="margin-bottom:1rem">
+        <div class="sec-head"><h2 style="font-size:.9rem">월별 인력 변동이력</h2>
+          <span class="sub">입사·퇴사·휴직·복직·전환배치·전보</span></div>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>변동유형</th>${(cm.history[0].months || []).map(m => `<th class="num">${esc(m)}</th>`).join('')}</tr></thead>
+          <tbody>${cm.history.map(h => `<tr>
+            <td class="strong">${esc(h.type)}</td>
+            ${h.values.map(v => `<td class="num" style="color:${v > 0 ? (h.type === '퇴사' || h.type === '휴직' ? 'var(--risk)' : 'var(--info)') : 'var(--tx-m)'}">${v || '—'}</td>`).join('')}
+          </tr>`).join('')}</tbody></table></div></div>` : ''}
+
+      <div class="filters"><div class="f-grid">
+        <div class="fg"><label>성명 검색</label><input class="ctl" id="pl-q" placeholder="이름"></div>
+        <div class="fg"><label>센터</label><select class="ctl" id="pl-center"><option value="">전체</option>
+          ${(cm.centers || []).map(c => `<option>${esc(c)}</option>`).join('')}</select></div>
+        <div class="fg"><label>상태</label><select class="ctl" id="pl-st"><option value="">전체</option>
+          ${['가용', '평가중', '비가용', '구축제외'].map(x => `<option>${x}</option>`).join('')}</select></div>
+        <div class="fg"><label>직급</label><select class="ctl" id="pl-grade"><option value="">전체</option>
+          ${[...new Set(D.people.map(p => p.grade))].filter(Boolean).map(g => `<option>${esc(g)}</option>`).join('')}</select></div>
+        <div class="fg"><label>인력구분</label><select class="ctl" id="pl-kind"><option value="">전체</option>
+          ${[...new Set(D.people.map(p => p.kind))].filter(Boolean).map(k => `<option>${esc(k)}</option>`).join('')}</select></div>
+      </div><div class="f-info" id="pl-info"></div></div>
+
+      <div class="card" style="padding:0;overflow:hidden">
+        <div class="tbl-wrap" style="border:none"><table>
+          <thead><tr><th>성명</th><th>직급</th><th>인력구분</th><th>센터</th><th>담당지역</th>
+            <th>구축모듈</th><th class="ctr">구축직무</th><th>비가용사유</th><th>배치일</th><th class="ctr">상태</th></tr></thead>
+          <tbody id="pl-body"></tbody></table></div>
+        <div class="pager" id="pl-pager"></div></div>`;
+
+    ['pl-q', 'pl-center', 'pl-st', 'pl-grade', 'pl-kind'].forEach(id => {
+      $(id).addEventListener('input', () => { PL.page = 1; applyPL(D); });
+      $(id).addEventListener('change', () => { PL.page = 1; applyPL(D); });
+    });
+    applyPL(D);
+  }
+
+  function applyPL(D) {
+    const q = $('pl-q').value.trim().toLowerCase();
+    const c = $('pl-center').value, st = $('pl-st').value;
+    const g = $('pl-grade').value, k = $('pl-kind').value;
+    PL.list = D.people.filter(p =>
+      (!q || (p.name || '').toLowerCase().includes(q)) &&
+      (!c || p.center === c) && (!st || p.status === st) &&
+      (!g || p.grade === g) && (!k || p.kind === k));
+    drawPL();
+  }
+
+  const PL_COLOR = { '가용': 'var(--ok)', '평가중': 'var(--warn)', '비가용': 'var(--warn)', '구축제외': 'var(--tx-m)' };
+
+  function drawPL() {
+    const tot = PL.list.length, pages = Math.max(1, Math.ceil(tot / PL.size));
+    PL.page = Math.min(PL.page, pages);
+    const rows = PL.list.slice((PL.page - 1) * PL.size, PL.page * PL.size);
+    const cnt = k => PL.list.filter(p => p.status === k).length;
+    $('pl-info').innerHTML = `
+      <span>검색결과 <b style="color:var(--tx-h)">${tot}</b>명</span>
+      <span>가용 <b style="color:var(--ok)">${cnt('가용')}</b></span>
+      <span>평가중 <b style="color:var(--warn)">${cnt('평가중')}</b></span>
+      <span>비가용 <b style="color:var(--warn)">${cnt('비가용')}</b></span>
+      <span>구축제외 <b style="color:var(--tx-m)">${cnt('구축제외')}</b></span>
+      <span>${PL.page} / ${pages}</span>`;
+    $('pl-body').innerHTML = rows.map(p => `<tr>
+      <td class="strong">${esc(p.name)}</td>
+      <td>${esc(p.grade)}</td>
+      <td style="font-size:.72rem;color:${p.kind === '전환배치' ? 'var(--info)' : 'var(--tx-s)'}">${esc(p.kind)}</td>
+      <td style="font-size:.72rem">${esc(p.center)}</td>
+      <td style="font-size:.71rem;color:var(--tx-s)">${esc(p.region)}</td>
+      <td style="font-size:.72rem">${esc(p.module || '—')}</td>
+      <td class="ctr" style="color:${p.isBuild ? 'var(--ok)' : 'var(--risk)'};font-weight:700">${p.isBuild ? 'Y' : 'N'}</td>
+      <td style="font-size:.71rem;color:var(--warn)">${esc(p.unavailReason || '—')}</td>
+      <td class="mono" style="font-size:.68rem">${esc(p.placeDate || '—')}</td>
+      <td class="ctr"><span class="judge" style="background:transparent;color:${PL_COLOR[p.status]};font-weight:800">${esc(p.status)}</span></td>
+    </tr>`).join('') || `<tr><td colspan="10" style="text-align:center;padding:2rem;color:var(--tx-m)">검색 결과가 없습니다.</td></tr>`;
+    $('pl-pager').innerHTML = pager(pages, PL.page, 'VIEWS.goPL');
+  }
+  function goPL(p) { PL.page = p; drawPL(); }
+
+  return { renderExec, renderPool, goPL, renderBook, renderProjectShell, renderStatus, renderCapa, renderAudit, renderBench,
     renderIngest, selectPJ, goPJ, goTab, goCP,
     ingSrc, ingBlock, ingAsOf, ingHeader, ingMap, ingClear, ingRemove, ingTemplate,
     ingPaste, ingFile, ingFlip, ingApply, ingSave, ingSavePreset, ingDropPreset };
