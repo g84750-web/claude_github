@@ -1114,11 +1114,11 @@ KPI 연계: 2.4 매출 실현율 · 4.1 BU% · 3.3 방법론 준수율`),
   /* 비가용 인원 구성 — 사람에 대한 직무 비가용(휴직)과 업무 비가용을 분리한다
      (「인원CAPA」 비가용 상세 항목을 3개 군으로 묶음. 3군 합 = A10 비가용인원) */
   const UNAVAIL_GROUPS = [
-    { name: '인적 비가용 (휴직)', note: '사람 자체가 부재 — 직무 비가용',
+    { name: '인적 비가용 (휴직)', note: '사람 자체가 부재',
       items: ['육아휴직', '병가휴직'], color: 'var(--risk)' },
-    { name: '업무 비가용', note: '재직하나 구축 미투입 — 공수 차감 개념',
+    { name: '업무 비가용', note: '재직·구축 미투입 (공수 차감)',
       items: ['유닛장 업무(2명, 50%)', '인바운드유선 4명', 'FoEX교육시스템운영(총괄)'], color: 'var(--warn)' },
-    { name: '구축지원 등', note: '계약직·사업관리·직무전환교육',
+    { name: '구축지원 등', note: '계약직·사업관리·직무전환',
       items: ['계약직-구축지원', '구축지원-사업관리', '기타-직무전환교육'], color: 'var(--info)' },
   ];
 
@@ -1282,34 +1282,42 @@ KPI 연계: 2.4 매출 실현율 · 4.1 BU% · 3.3 방법론 준수율`),
           const gs = unavailGroups(D.capaMeta.trend);
           if (!gs.length) return '';
           const ms = D.capaMeta.trend.months, i0 = ms.indexOf(tr.series[0].ym);
-          const cut = i => i >= i0;
-          const hi = i => ms[i] === tr.nowYm ? 'background:#FFFBEB;' : '';
-          const cells = vals => ms.map((_, i) => cut(i)
-            ? `<td class="num" style="${hi(i)}">${vals[i] ? f0(vals[i]) : '—'}</td>` : '').join('');
+          const cols = ms.map((m, i) => ({ m, i })).filter(x => x.i >= i0);
+          const now = c => c.m === tr.nowYm ? ' now' : '';
+          const cells = vals => cols.map(c => {
+            const v = vals[c.i] || 0;
+            return `<td class="m${v ? '' : ' z'}${now(c)}">${v ? f0(v) : '·'}</td>`;
+          }).join('');
           const totals = ms.map((_, i) => gs.reduce((a, g) => a + g.sum[i], 0));
-          return `<div style="margin-top:1.1rem;padding-top:.9rem;border-top:1px dashed var(--bd-light)">
+          const at = g => g.sum[ms.indexOf(tr.nowYm)] || 0;
+          return `<div style="margin-top:1.2rem;padding-top:1rem;border-top:1px dashed var(--bd-light)">
             <div class="sec-head"><h2 style="font-size:.85rem">비가용 인원 구성</h2>
-              <span class="sub">사람에 대한 <b>직무 비가용</b>과 재직 중 구축 미투입인 <b>업무 비가용</b>을 분리 표기</span></div>
-            <div class="tbl-wrap"><table>
-              <thead><tr><th>구분</th><th>항목</th>${ms.map((m, i) => cut(i)
-                ? `<th class="num" style="${hi(i)}">${esc(m)}</th>` : '').join('')}</tr></thead>
+              <span class="sub">사람에 대한 <b>직무 비가용</b>과 재직 중 구축 미투입인 <b>업무 비가용</b>을 분리</span>
+              <span class="spacer"></span>
+              <span class="sub">단위 명 · <b>${esc(tr.nowYm)}</b> 기준 합계 <b style="color:var(--tx-h)">${f0(totals[ms.indexOf(tr.nowYm)])}명</b></span></div>
+
+            <div class="mtx"><table>
+              <thead><tr><th class="c-grp">구분</th><th class="c-item">항목</th>
+                ${cols.map(c => `<th class="m${now(c)}">${esc(c.m)}</th>`).join('')}</tr></thead>
               <tbody>${gs.map(g => `
-                ${g.rows.map((r, j) => `<tr>
-                  ${j === 0 ? `<td class="strong" rowspan="${g.rows.length + 1}" style="color:${g.color};vertical-align:top">
-                    ${esc(g.name)}<div style="font-weight:500;font-size:.66rem;color:var(--tx-m);line-height:1.4;margin-top:.2rem">${esc(g.note)}</div></td>` : ''}
-                  <td style="font-size:.71rem">${esc(r.label)}</td>${cells(r.values)}</tr>`).join('')}
-                <tr style="background:#F7F9FC;font-weight:800">
-                  <td style="font-size:.71rem">소계</td>${cells(g.sum)}</tr>`).join('')}
-                <tr style="background:#EEF2F7;font-weight:900">
-                  <td colspan="2">비가용 인원 합계</td>${cells(totals)}</tr>
+                ${g.rows.map((r, j) => `<tr${j === 0 ? ' class="g-top"' : ''}>
+                  ${j === 0
+                    ? `<td class="c-grp" rowspan="${g.rows.length + 1}" style="--gc:${g.color}">${esc(g.name)}
+                        <span class="n">${esc(g.note)}</span></td>`
+                    : ''}
+                  <td class="c-item">${esc(r.label)}</td>${cells(r.values)}</tr>`).join('')}
+                <tr class="sub"><td class="c-item">소계</td>${cells(g.sum)}</tr>`).join('')}
+                <tr class="tot"><td class="c-grp">합계</td><td class="c-item">비가용 인원</td>${cells(totals)}</tr>
               </tbody></table></div>
-            <div style="margin-top:.6rem;font-size:.71rem;color:var(--tx-s);line-height:1.7">
-              ${esc(tr.nowYm)} 기준 — 인적 비가용 <b style="color:var(--risk)">${f0(gs[0].sum[ms.indexOf(tr.nowYm)])}명</b>
-              · 업무 비가용 <b style="color:var(--warn)">${f0((gs[1] || { sum: [] }).sum[ms.indexOf(tr.nowYm)] || 0)}명</b>
-              · 구축지원 등 <b style="color:var(--info)">${f0((gs[2] || { sum: [] }).sum[ms.indexOf(tr.nowYm)] || 0)}명</b>
-              = 합계 <b>${f0(totals[ms.indexOf(tr.nowYm)])}명</b><br>
-              업무 비가용은 재직 인원이지만 구축에 투입되지 않으므로 <b>공수 차감 개념</b>으로 가용인원에서 제외합니다.
-              (인바운드 4명 × 22일 = 88 m/d 등)
+
+            <div class="mtx-legend">
+              ${gs.map(g => `<span class="k"><i style="background:${g.color}"></i>${esc(g.name)}
+                <b style="color:${g.color}">${f0(at(g))}명</b></span>`).join('')}
+              <span style="color:var(--tx-m)">· 값이 없는 달은 <b style="color:#CBD5E1">·</b> 로 표기</span>
+            </div>
+            <div style="margin-top:.55rem;font-size:.71rem;color:var(--tx-s);line-height:1.7">
+              <b>업무 비가용</b>은 재직 인원이지만 구축에 투입되지 않으므로 <b>공수 차감 개념</b>으로
+              가용인원에서 제외합니다 (인바운드 4명 × 22일 = 88 m/d 등).
             </div></div>`;
         })()}
       </div>` : ''}

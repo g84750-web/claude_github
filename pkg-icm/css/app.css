@@ -294,6 +294,55 @@ tbody tr.sel td{background:#EEF2FF}
   background:repeating-linear-gradient(135deg,#D1D5DB 0 5px,#9CA3AF 5px 10px);
 }
 
+/* ── 월 매트릭스 표 (비가용 인원 구성 등) ─────────────────────
+   좌측 라벨 2열은 고정, 우측 월 컬럼만 가로 스크롤. 군(群)은 좌측 색띠로 구분한다. */
+.mtx{overflow-x:auto;border-radius:10px;border:1px solid var(--bd-light);background:#fff}
+.mtx table{border-collapse:separate;border-spacing:0;font-size:.75rem}
+.mtx th,.mtx td{white-space:nowrap;border:none}
+
+.mtx thead th{
+  background:#F4F7FB;color:var(--tx-s);font-size:.68rem;font-weight:800;letter-spacing:.2px;
+  padding:.5rem .55rem;border-bottom:1.5px solid var(--bd-mid);
+}
+.mtx thead th.m{text-align:right;min-width:52px}
+.mtx tbody td{padding:.42rem .55rem;border-bottom:1px solid #F2F5F9;color:var(--tx-b)}
+
+/* 좌측 고정 2열 */
+.mtx .c-grp{position:sticky;left:0;z-index:3;background:#fff;width:122px;min-width:122px}
+.mtx .c-item{position:sticky;left:122px;z-index:3;background:#fff;width:150px;min-width:150px;
+  box-shadow:1px 0 0 var(--bd-light)}
+.mtx thead .c-grp,.mtx thead .c-item{z-index:5;background:#F4F7FB}
+
+/* 군 구분 — 좌측 색띠 + 군 첫 행 위 실선 */
+.mtx tr.g-top td{border-top:1.5px solid var(--bd-mid)}
+.mtx td.c-grp{font-weight:800;font-size:.72rem;vertical-align:top;padding-top:.55rem;
+  border-left:3px solid var(--gc,transparent);color:var(--gc,var(--tx-h))}
+.mtx td.c-grp .n{display:block;font-weight:500;font-size:.64rem;color:var(--tx-m);line-height:1.4;margin-top:.15rem;white-space:normal}
+
+/* 수치 */
+.mtx td.m{text-align:right;font-variant-numeric:tabular-nums;font-feature-settings:'tnum'}
+.mtx td.m.z{color:#CBD5E1}                       /* 0 은 눈에 띄지 않게 */
+
+/* 소계 / 합계 */
+.mtx tr.sub td{background:#FAFCFE;font-weight:800;color:var(--tx-h)}
+.mtx tr.sub td.c-grp,.mtx tr.sub td.c-item{background:#FAFCFE}
+.mtx tr.tot td{background:#EEF2F7;font-weight:900;color:var(--tx-h);border-bottom:none;
+  border-top:1.5px solid var(--bd-mid)}
+.mtx tr.tot td.c-grp,.mtx tr.tot td.c-item{background:#EEF2F7}
+
+/* 현재월 강조 */
+.mtx th.now,.mtx td.now{background:#FFFBEB;box-shadow:inset 1px 0 0 #FDE68A,inset -1px 0 0 #FDE68A}
+.mtx thead th.now{background:#FEF3C7;color:#92400E}
+.mtx tr.sub td.now,.mtx tr.tot td.now{background:#FEF6DE}
+.mtx tbody tr:hover td{background:#F7FAFF}
+.mtx tbody tr:hover td.now{background:#FEF6DE}
+
+/* 범례 */
+.mtx-legend{display:flex;flex-wrap:wrap;gap:.35rem .9rem;margin-top:.6rem;font-size:.71rem;color:var(--tx-s)}
+.mtx-legend b{font-weight:800}
+.mtx-legend .k{display:inline-flex;align-items:center;gap:.3rem;font-weight:700}
+.mtx-legend .k i{width:3px;height:12px;border-radius:2px;display:inline-block}
+
 /* ── 가로 막대 (총원 트랙 + 가용 오버레이) ───────────────────── */
 .hb{display:flex;flex-direction:column;gap:.34rem}
 .hb-row{display:grid;grid-template-columns:118px 1fr 62px;align-items:center;gap:.5rem}
