@@ -79,6 +79,9 @@ GCMS에 등록하는데, 영업에서 진행하는 계약정보 변경이력이 
          4 가용      그 외 (평가완료 전환배치 포함)
 ```
 
+인력 추가·수정·상태 직접 지정이 화면에서 가능하며(변경분은 localStorage 보관, 원본 불변),
+변경 시 가용 판정·센터/직급 집계·CAPA·KPI 4.5 참고값이 즉시 재계산됩니다.
+
 **KPI 산출에는 현행 스킬값 82명을 유지합니다.** 인력풀 판정 결과(가용 89명 / 1,958 m/d)는
 참고로 병기만 합니다. 인력풀 기준일(2026-07-04)이 GCMS(2026-07-24)보다 3주 이르고,
 82명을 바꾸면 확정 실측값 구축지연 2.20M 재현이 깨지기 때문입니다.
@@ -109,7 +112,7 @@ pkg-icm/
 ├── etl_gcms.py              원본 엑셀 → data/gcms_full.json + 항등식 검증
 ├── build_standalone.py      → index_standalone.html (더블클릭 실행본)
 ├── build_artifact.py        → artifact.html (웹 배포본, 외부요청 0건)
-├── js/{ingest,bulk,data,kpi,views,app}.js
+├── js/{ingest,bulk,pool,data,kpi,views,app}.js
 │   ※ bulk.js = etl_gcms.py 산식의 JS 포트. 두 곳을 항상 함께 수정할 것
 │   ※ etl_gcms.py 는 --assignee(담당자별) · --capa(인력풀) 옵션으로 원천 3종을 함께 로드
 └── data/gcms_full.json      프로젝트 2,360건 + 배정 7,456행
@@ -121,6 +124,8 @@ pkg-icm/
 
 ## 작업 규칙
 
+- 목록 필터에 `input` 과 `change` 를 함께 바인딩하지 마십시오. 텍스트 입력에서 blur 시 change 가
+  발생해 목록이 다시 그려지고 **직후의 클릭이 취소**됩니다. `bindFilters()` 를 사용하십시오. (실제 발생한 버그)
 - Python heredoc 안에서 JS/Python 문자열을 생성할 때 `re.sub` 치환문의 `\n` 은 개행으로 해석됩니다.
   치환문에는 raw string을 쓰거나 Edit 도구를 사용하십시오. (실제로 2회 발생한 사고)
 - 변경 후에는 `python update.py <원본>` 로 항등식 검증이 통과하는지 확인합니다.

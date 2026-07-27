@@ -104,12 +104,19 @@ const APP = (() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  /* ── KPI 재계산 (인력풀 편집 등으로 meta 가 바뀐 경우) ────────── */
+  function refreshKpi() {
+    S.K = KPI.computeAll(S.D);
+    S.drawn.delete('exec'); S.drawn.delete('book'); S.drawn.delete('audit'); S.drawn.delete('bench');
+    paintHeader();
+  }
+
   const escapeHtml = s => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 
   document.addEventListener('DOMContentLoaded', boot);
 
   return {
-    go, reload,
+    go, reload, refreshKpi,
     get D() { return S.D; },
     get K() { return S.K; },
   };

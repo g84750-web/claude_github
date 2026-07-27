@@ -194,6 +194,13 @@ thead th{
   position:sticky;top:0;z-index:2;
 }
 tbody td{padding:.52rem .7rem;border-bottom:1px solid #F1F4F8;vertical-align:middle}
+/* sticky thead 아래로 행이 숨지 않도록 스크롤 여백 확보 (버튼 클릭 가려짐 방지) */
+tbody tr{scroll-margin-top:46px;scroll-margin-bottom:12px}
+/* 표 안에서 바로 편집으로 들어가는 이름 버튼 */
+.namebtn{background:none;border:none;padding:0;font:inherit;font-weight:800;color:var(--tx-h);
+  cursor:pointer;text-decoration:underline;text-decoration-color:var(--bd-mid);text-underline-offset:3px}
+.namebtn:hover{color:#3B4FC8;text-decoration-color:#3B4FC8}
+.namebtn:focus-visible{outline:2px solid #3B4FC8;outline-offset:2px;border-radius:3px}
 tbody tr:hover td{background:#FAFBFD}
 tbody tr.sel td{background:#EEF2FF}
 .num{text-align:right;font-variant-numeric:tabular-nums}
