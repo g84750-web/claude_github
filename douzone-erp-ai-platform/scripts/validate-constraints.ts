@@ -33,14 +33,11 @@ const dateLiteralAllowed = (rel: string) => DATE_LITERAL_ALLOW.includes(rel) || 
  *  · example.*         : RFC 2606 예약 도메인 (테스트 픽스처·플레이스홀더, 실제 조회 불가)
  *  · localhost         : 개발 서버
  */
-const ALLOWED_HOSTS = [
-  'api.anthropic.com',
-  'example.com',
-  'www.example.com',
-  'example.org',
-  'example.net',
-  'localhost',
-];
+const ALLOWED_HOSTS = ['api.anthropic.com', 'localhost', '127.0.0.1'];
+/** 서브도메인까지 허용하는 예약 도메인 */
+const RESERVED_SUFFIX = /(^|\.)(example\.(com|org|net)|test|invalid|localhost)$/;
+const hostAllowed = (host: string) =>
+  ALLOWED_HOSTS.includes(host) || RESERVED_SUFFIX.test(host);
 
 /**
  * 한자 표기가 의도적으로 존재해야 하는 파일.
@@ -107,7 +104,7 @@ for (const abs of files) {
     // 1. 외부 CDN / 외부 호스트
     for (const m of code.matchAll(URL_RE)) {
       const host = (m[1] ?? '').toLowerCase();
-      if (ALLOWED_HOSTS.includes(host)) continue;
+      if (hostAllowed(host)) continue;
       add('외부 CDN/호스트 참조', rel, n, raw);
     }
 
