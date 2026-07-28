@@ -208,6 +208,22 @@ export default function Root() {
 
 스타일은 컴포넌트 내부 `<style>` 태그로 주입되므로 별도 CSS import가 필요 없습니다.
 
+### 단일 HTML로 빌드 (아티팩트·정적 배포용)
+
+React 없이 열 수 있는 자체 완결형 HTML을 만들려면:
+
+```bash
+npm install --no-save react@18 react-dom@18 @babel/core @babel/preset-react
+node webapp/ai-news-talk/build-artifact.cjs out.html
+```
+
+`build-artifact.cjs`는 원본 JSX를 건드리지 않고 기계적 변환만 합니다 — 모듈 구문 제거,
+외부 폰트 `@import` 제거(CSP 차단 환경 대비), 폰트 스택 확장, JSX 트랜스파일 후
+React 18 UMD와 함께 인라인. 산출물은 약 285KB이며 외부 요청이 하나도 없습니다.
+
+> 외부 네트워크가 차단된 환경(아티팩트 등)에서는 뉴스 API와 동기화 서버에 닿을 수 없어
+> 내장 데모 데이터로 동작하고 동기화는 비활성 상태가 됩니다. 그 외 기능은 모두 정상입니다.
+
 ---
 
 ## 8. 주의
