@@ -3,6 +3,7 @@
      ① import/export 제거 → 전역 React에서 훅 구조분해
      ② 구글 폰트 @import 제거 (아티팩트 CSP가 외부 호스트를 차단)
      ③ 폰트 스택 확장 (웹폰트 없이도 한글·모노가 제대로 잡히도록)
+     ④ NET 플래그 off → 외부 요청을 아예 보내지 않는다
 */
 const fs = require("fs");
 const path = require("path");
@@ -36,6 +37,12 @@ src = src.replace(krOld,
   `const KR   = "'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic','맑은 고딕',system-ui,sans-serif";`);
 src = src.replace(monoOld,
   `const MONO = "'JetBrains Mono','SFMono-Regular',Menlo,Consolas,'Courier New',monospace";`);
+
+// ④ 네트워크 차단 — CSP 거부 로그는 브라우저가 직접 찍어 try/catch로 못 막으므로
+//    요청 자체를 보내지 않는다. 뉴스는 데모, 동기화는 오프라인 경로로 떨어진다.
+const netOn = "const NET = true;";
+if (!src.includes(netOn)) throw new Error("NET 플래그를 찾지 못했습니다");
+src = src.replace(netOn, "const NET = false;");
 
 // JSX → JS (classic runtime: React.createElement 사용)
 const compiled = babel.transformSync(src, {

@@ -8,6 +8,13 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
    ③ 6개 코너 : 뉴스톡 / 핫AI / 경험하기 / 주요지식 / 체크시사 / 나노마음건강
 ══════════════════════════════════════════════════════════════ */
 
+/* 네트워크 사용 가능 여부.
+   아티팩트 빌드는 이 값을 false로 바꾼다 — 게시 환경의 CSP가 외부 호스트를
+   전부 차단하는데, 차단 로그는 브라우저가 직접 출력해 try/catch로 못 막는다.
+   요청을 아예 보내지 않아야 콘솔이 깨끗해진다. false면 뉴스는 내장 데모로,
+   동기화는 오프라인으로 즉시 떨어진다(두 경로 모두 기존 폴백을 그대로 탄다). */
+const NET = true;
+
 /* ══════════════════════════════════════════════════════════════
    글로벌 CSS
 ══════════════════════════════════════════════════════════════ */
@@ -559,6 +566,7 @@ function joinUrl(base, path) {
 
 /* 모든 실패를 정상 반환값으로 바꿔 호출부가 try/catch 없이 쓰게 한다 */
 async function syncFetch(url, opts) {
+  if (!NET) return {ok:false, status:0, body:null, netError:true};
   try {
     const res = await fetch(url, Object.assign({
       headers: {"Content-Type":"application/json"},
@@ -2225,6 +2233,7 @@ export default function App() {
     setLoad(true); setNews([]);
     const q = target!=="전체" ? ` (${target} 카테고리 위주로)` : "";
     try{
+      if(!NET) throw new Error("offline");   /* 아티팩트 빌드 — 데모 폴백으로 직행 */
       const res = await fetch("https://api.anthropic.com/v1/messages",{
         method:"POST", headers:{"Content-Type":"application/json"},
         body:JSON.stringify({
