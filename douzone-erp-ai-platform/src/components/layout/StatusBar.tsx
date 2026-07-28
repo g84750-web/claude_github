@@ -6,7 +6,7 @@ import s from './layout.module.css';
 
 export function StatusBar() {
   const product = useAppStore((st) => st.product);
-  const kpi = useExecStore((st) => st.kpi());
+  const kpi = useExecStore((st) => st.kpi);
   const live = useApiStore((st) => st.isLive());
 
   // [제약] 기준일은 렌더 시점 런타임 산출

@@ -9,7 +9,7 @@ const PRODUCTS: ProductId[] = ['A10', 'OE'];
 export function TopBar() {
   const product = useAppStore((st) => st.product);
   const setProduct = useAppStore((st) => st.setProduct);
-  const kpi = useExecStore((st) => st.kpi());
+  const kpi = useExecStore((st) => st.kpi);
 
   return (
     <header className={s.topbar}>

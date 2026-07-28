@@ -28,6 +28,8 @@ interface ProjectState {
   save: () => { ok: boolean; errors: string[] };
   reset: () => void;
   hydrate: () => void;
+  /** 현재 정보를 세션에 다시 기록 (세션 초기화 후 재보존용) */
+  persist: () => void;
 
   /** 필수 항목 충족 여부 — 비교검증 탭 활성화 조건 */
   isSaved: () => boolean;
@@ -88,6 +90,11 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   reset: () => {
     saveSession({ projectInfo: {} });
     set({ info: initialInfo(), view: 'edit', connStatus: 'idle', connMessage: '' });
+  },
+
+  persist: () => {
+    const info = get().info;
+    if (validateProject(info).length === 0) saveSession({ projectInfo: info });
   },
 
   hydrate: () => {

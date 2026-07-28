@@ -1,6 +1,7 @@
 import { calcFastTrack, calcSimulation } from '../../../lib/simulator';
 import { useApiStore } from '../../../store/useApiStore';
 import { useExecStore } from '../../../store/useExecStore';
+import { useProjectStore } from '../../../store/useProjectStore';
 import { useSimStore } from '../../../store/useSimStore';
 import { toast } from '../../../store/useToastStore';
 import { clearSession } from '../../../lib/session';
@@ -10,10 +11,11 @@ import s from '../panel.module.css';
 
 export function SimulatorTab() {
   const sim = useSimStore();
-  const kpi = useExecStore((st) => st.kpi());
-  const autoRatio = useExecStore((st) => st.autoRatio());
+  const kpi = useExecStore((st) => st.kpi);
+  const autoRatio = useExecStore((st) => st.autoRatio);
   const clearAll = useExecStore((st) => st.clearAll);
   const setApiKey = useApiStore((st) => st.setApiKey);
+  const persistProject = useProjectStore((st) => st.persist);
 
   const out = calcSimulation({
     dauRate: sim.dauRate,
@@ -32,10 +34,15 @@ export function SimulatorTab() {
     );
     if (!ok) return;
 
-    clearAll(); // 이력 · 카드 상태 · 결과 패널
-    clearSession(); // sessionStorage 삭제
+    clearSession(); // sessionStorage 전체 삭제 (API 키 포함)
     setApiKey(''); // API 키 입력값 비움
+    clearAll(); // 이력 · 카드 상태 · 결과 패널 (빈 이력을 다시 기록)
     sim.resetToDefault(); // 슬라이더 기본값 애니메이션 복귀
+
+    // 프로젝트 정보는 초기화 대상이 아니므로(설계서 4.9) 지워진 저장소에 다시 기록한다.
+    // 이 재저장이 없으면 화면에는 남아 있는데 새로고침 시 조용히 사라진다.
+    persistProject();
+
     toast('세션이 전체 초기화되었습니다');
   };
 

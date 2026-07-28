@@ -1,9 +1,9 @@
 import { COMPLIANCE_DEFS, buildLaws } from '../../../data/laws';
-import { badgeLevel } from '../../../lib/date';
+import { badgeLevel, fiscalYears } from '../../../lib/date';
 import { useExecStore } from '../../../store/useExecStore';
 import { useProjectStore } from '../../../store/useProjectStore';
 import { allItems } from '../../../data/automation';
-import type { ComplianceCheck, ComplianceStatus } from '../../../types/law';
+import type { ComplianceCheck, ComplianceStatus, LawDateContext } from '../../../types/law';
 import { COMPLIANCE_STATUS_LABEL } from '../../../types/law';
 import { Badge } from '../../ui/Badge';
 import { Icon, type IconName } from '../../ui/Icon';
@@ -32,9 +32,21 @@ export function ComparePane({ base }: { base: Date }) {
   // 태그 기준 매칭을 위해 전 항목 인덱스를 만든다
   const itemTags = new Map(allItems().map(({ item }) => [item.id, item.tags ?? []]));
 
+  // 연동 법령이 없는 검증 항목의 라벨용 — 연도만 필요하므로 날짜 컨텍스트를 직접 만든다
+  const { cy, py, ppy } = fiscalYears(base);
+  const yearOnlyCtx: LawDateContext = {
+    sincePublished: '',
+    sinceEffective: '',
+    daysToEffective: 0,
+    daysSinceEffective: 0,
+    currentYear: cy,
+    priorYear: py,
+    priorPriorYear: ppy,
+  };
+
   const checks: ComplianceCheck[] = COMPLIANCE_DEFS.map((def) => {
     const law = def.lawId ? laws.find((l) => l.id === def.lawId) : undefined;
-    const ctx = law ? buildLawContext(law, base) : undefined;
+    const ctx = law ? buildLawContext(law, base) : yearOnlyCtx;
 
     const tagHit = def.tags
       ? log.some((r) => (itemTags.get(r.itemId) ?? []).some((t) => def.tags!.includes(t)))
@@ -60,7 +72,7 @@ export function ComparePane({ base }: { base: Date }) {
 
     return {
       id: def.id,
-      label: ctx ? def.label(ctx) : def.label(buildLawContext(laws[0], base)),
+      label: def.label(ctx),
       status,
       detail,
     };

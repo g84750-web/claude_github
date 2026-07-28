@@ -33,10 +33,17 @@ interface ExecState {
   clearAll: () => void;
   hydrate: () => void;
 
-  /** 파생값 */
-  kpi: () => KpiSnapshot;
-  autoRatio: () => number;
-  totalItems: () => number;
+  /**
+   * 실행 이력이 바뀔 때만 갱신되는 KPI 스냅샷.
+   *
+   * 파생 함수(`kpi()`)로 두면 셀렉터가 호출마다 새 객체를 만들어,
+   * 스트리밍 중 5ms 마다 발생하는 `appendResultText` 에도
+   * 전 항목 순회 + 로그 6회 통과가 구독 컴포넌트 수만큼 반복된다.
+   * 상태로 보관해 이력 변경 시점에만 계산한다.
+   */
+  kpi: KpiSnapshot;
+  autoRatio: number;
+  totalItems: number;
 }
 
 /** 실행 이력만 세션에 동기화한다 (프로젝트·API Key 는 각자 스토어가 관리) */
@@ -44,16 +51,31 @@ function persist(log: ExecRecord[]) {
   saveSession({ execLog: log });
 }
 
-export const useExecStore = create<ExecState>((set, get) => ({
+/** 전 항목 수는 정적 데이터에서 나오므로 모듈 로드 시 한 번만 계산한다 */
+const TOTAL_ITEMS = totalItemCount();
+
+/** 이력 변경 시 함께 갱신할 파생값 묶음 */
+function derive(log: ExecRecord[]) {
+  return {
+    log,
+    kpi: calcKpi(log, TOTAL_ITEMS),
+    autoRatio: autoRatio(log),
+  };
+}
+
+export const useExecStore = create<ExecState>((set) => ({
   log: [],
   cardStates: {},
   currentResult: null,
+  kpi: calcKpi([], TOTAL_ITEMS),
+  autoRatio: 0,
+  totalItems: TOTAL_ITEMS,
 
   pushRecord: (r) =>
     set((s) => {
       const log = [...s.log, r];
       persist(log);
-      return { log };
+      return derive(log);
     }),
 
   setCardState: (itemId, st) =>
@@ -79,7 +101,7 @@ export const useExecStore = create<ExecState>((set, get) => ({
   /** 세션 전체 초기화 (설계서 4.9) */
   clearAll: () => {
     persist([]);
-    set({ log: [], cardStates: {}, currentResult: null });
+    set({ ...derive([]), cardStates: {}, currentResult: null });
   },
 
   /** sessionStorage → 스토어 복원 */
@@ -89,11 +111,7 @@ export const useExecStore = create<ExecState>((set, get) => ({
       // 복원된 이력의 항목은 완료 상태로 표시
       const cardStates: Record<string, CardState> = {};
       for (const r of execLog) cardStates[r.itemId] = 'done';
-      set({ log: execLog, cardStates });
+      set({ ...derive(execLog), cardStates });
     }
   },
-
-  kpi: () => calcKpi(get().log, totalItemCount()),
-  autoRatio: () => autoRatio(get().log),
-  totalItems: () => totalItemCount(),
 }));

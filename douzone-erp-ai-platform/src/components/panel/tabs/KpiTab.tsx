@@ -16,7 +16,7 @@ const TYPE_ICON: Record<AutomationType, IconName> = {
 };
 
 export function KpiTab() {
-  const kpi = useExecStore((st) => st.kpi());
+  const kpi = useExecStore((st) => st.kpi);
   const log = useExecStore((st) => st.log);
   const ctx = tokenContext();
 

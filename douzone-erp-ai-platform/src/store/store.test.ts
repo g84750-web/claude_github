@@ -59,7 +59,7 @@ describe('useExecStore', () => {
     s.pushRecord(rec(1, 'auto'));
     s.pushRecord(rec(2, 'semi'));
 
-    const kpi = useExecStore.getState().kpi();
+    const kpi = useExecStore.getState().kpi;
     expect(kpi.execCount).toBe(2);
     expect(kpi.totalHours).toBe(4);
     expect(kpi.autoCount).toBe(1);
@@ -113,7 +113,7 @@ describe('useExecStore', () => {
     expect(next.log).toEqual([]);
     expect(next.cardStates).toEqual({});
     expect(next.currentResult).toBeNull();
-    expect(next.kpi().execCount).toBe(0);
+    expect(next.kpi.execCount).toBe(0);
   });
 });
 

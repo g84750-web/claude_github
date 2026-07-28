@@ -39,8 +39,26 @@ export function useRunItem() {
   /** 진행 중인 스트림/타이핑 취소 핸들 */
   const cancelRef = useRef<(() => void) | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  /** 진행 중인 항목 ID — 중단 시 카드 상태를 되돌리기 위해 보관한다 */
+  const runningIdRef = useRef<string | null>(null);
 
-  // 언마운트 시 진행 중 작업 정리
+  /**
+   * 진행 중인 실행을 중단하고 해당 카드를 idle 로 되돌린다.
+   * 되돌리지 않으면 카드가 'running' 에 고착되어 버튼이 비활성 상태로 남는다.
+   */
+  const abortRunning = useCallback(() => {
+    cancelRef.current?.();
+    abortRef.current?.abort();
+    cancelRef.current = null;
+    abortRef.current = null;
+
+    const prevId = runningIdRef.current;
+    runningIdRef.current = null;
+    if (prevId) setCardState(prevId, 'idle');
+    return prevId;
+  }, [setCardState]);
+
+  // 언마운트 시 진행 중 작업 정리 (상태 갱신 없이 타이머만 해제)
   useEffect(
     () => () => {
       cancelRef.current?.();
@@ -64,6 +82,7 @@ export function useRunItem() {
         liveApi: live,
       };
 
+      runningIdRef.current = null;
       pushRecord(record);
       setCardState(item.id, 'done');
       finishResult('done');
@@ -77,12 +96,10 @@ export function useRunItem() {
 
   const run = useCallback(
     (item: AutomationItem) => {
-      // 이전 실행 정리
-      cancelRef.current?.();
-      abortRef.current?.abort();
-      cancelRef.current = null;
-      abortRef.current = null;
+      // 진행 중인 다른 실행을 중단하고 그 카드를 idle 로 복구한다
+      abortRunning();
 
+      runningIdRef.current = item.id;
       setCardState(item.id, 'running');
       startResult(item.id, item.task, live);
       setTab(0);
@@ -104,6 +121,7 @@ export function useRunItem() {
           onDelta: appendResultText,
           onDone: () => complete(item),
           onError: (err) => {
+            runningIdRef.current = null;
             setCardState(item.id, 'error');
             finishResult('error');
             appendResultText(`\n\n[오류] ${err.message}`);
@@ -125,6 +143,7 @@ export function useRunItem() {
       cancelRef.current = typeOut(text, appendResultText, () => complete(item));
     },
     [
+      abortRunning,
       apiKey,
       appendResultText,
       complete,
@@ -139,13 +158,10 @@ export function useRunItem() {
     ]
   );
 
-  /** 진행 중 실행 중단 */
+  /** 진행 중 실행 중단 — 해당 카드는 idle 로 복구된다 */
   const cancel = useCallback(() => {
-    cancelRef.current?.();
-    abortRef.current?.abort();
-    cancelRef.current = null;
-    abortRef.current = null;
-  }, []);
+    abortRunning();
+  }, [abortRunning]);
 
   return { run, cancel };
 }
