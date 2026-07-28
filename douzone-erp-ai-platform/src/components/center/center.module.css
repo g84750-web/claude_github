@@ -1,0 +1,190 @@
+.center {
+  background: var(--bg);
+  overflow-y: auto;
+  min-width: 0;
+}
+
+/* ── 헤더 ── */
+.head {
+  padding: 10px 14px;
+  border-bottom: 0.5px solid var(--b1);
+  background: var(--s1);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.prodBadge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 20px;
+  flex-shrink: 0;
+}
+.prodA10 {
+  color: var(--a10c);
+  background: var(--bbg);
+  border: 0.5px solid var(--blue-a30);
+}
+.prodOe {
+  color: var(--oec);
+  background: var(--gbg);
+  border: 0.5px solid var(--green-a30);
+}
+.title {
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.stagePill {
+  font-size: 10px;
+  color: var(--t2);
+  padding: 2px 7px;
+  background: var(--s2);
+  border-radius: 20px;
+  border: 0.5px solid var(--b1);
+  white-space: nowrap;
+}
+.legend {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+}
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  color: var(--t2);
+  white-space: nowrap;
+}
+.dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+}
+
+/* ── 항목 목록 ── */
+.items {
+  padding: 8px;
+}
+
+.card {
+  background: var(--s1);
+  border: 0.5px solid var(--b1);
+  border-radius: var(--r2);
+  padding: 9px 12px;
+  margin-bottom: 5px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  transition: var(--tr-mid);
+}
+.card:hover {
+  border-color: var(--b2);
+}
+.cardRunning {
+  border-color: var(--purple);
+}
+.cardDone {
+  border-color: var(--green-a30);
+}
+.cardError {
+  border-color: var(--red);
+}
+
+.typePill {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 7px;
+  border-radius: 20px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.body {
+  flex: 1;
+  min-width: 0;
+}
+.task {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--t1);
+  line-height: 1.5;
+  margin-bottom: 2px;
+}
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.tool {
+  font-size: 10px;
+  color: var(--t3);
+  font-family: var(--font-mono);
+}
+.hours {
+  font-size: 10px;
+  color: var(--t3);
+  font-family: var(--font-mono);
+}
+.tag {
+  font-size: 9px;
+  color: var(--t2);
+  border: 0.5px solid var(--b1);
+  border-radius: 20px;
+  padding: 0 5px;
+  background: var(--s2);
+}
+
+.runBtn {
+  flex-shrink: 0;
+  padding: 4px 9px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  border: 0.5px solid var(--b2);
+  background: transparent;
+  color: var(--t2);
+  transition: var(--tr-fast);
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 74px;
+  justify-content: center;
+}
+.runBtn:hover {
+  border-color: var(--purple);
+  color: var(--purple);
+}
+.runBtnRunning {
+  color: var(--t3);
+  pointer-events: none;
+}
+.runBtnDone {
+  color: var(--green);
+  border-color: var(--green-a35);
+}
+.runBtnError {
+  color: var(--red);
+  border-color: var(--red-a30);
+}
+
+.empty {
+  padding: 40px 14px;
+  text-align: center;
+  color: var(--t3);
+  font-size: 12px;
+  line-height: 1.9;
+}
+.empty svg {
+  margin: 0 auto 8px;
+  opacity: 0.4;
+}

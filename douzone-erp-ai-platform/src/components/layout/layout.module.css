@@ -1,0 +1,214 @@
+/* ── TopBar ── */
+.topbar {
+  height: var(--h-topbar);
+  background: var(--s1);
+  border-bottom: 0.5px solid var(--b1);
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+}
+.mark {
+  width: 24px;
+  height: 24px;
+  background: var(--purple);
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #000;
+  font-size: 10px;
+  font-weight: 700;
+}
+.brandName {
+  font-size: 13px;
+  font-weight: 500;
+}
+.brandSub {
+  font-size: 10px;
+  color: var(--t2);
+  padding: 2px 7px;
+  background: var(--s2);
+  border-radius: 20px;
+  border: 0.5px solid var(--b1);
+  white-space: nowrap;
+}
+.sep {
+  width: 0.5px;
+  height: 18px;
+  background: var(--b1);
+  flex-shrink: 0;
+}
+.title {
+  font-size: 12px;
+  color: var(--t2);
+  white-space: nowrap;
+}
+
+.prodSwitch {
+  display: flex;
+  background: var(--s2);
+  border: 0.5px solid var(--b1);
+  border-radius: 7px;
+  padding: 2px;
+  gap: 2px;
+}
+.prodBtn {
+  padding: 3px 12px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 500;
+  border: 0.5px solid transparent;
+  background: transparent;
+  color: var(--t2);
+  transition: var(--tr-fast);
+}
+.prodBtn:hover {
+  color: var(--t1);
+}
+.prodA10 {
+  background: var(--bbg);
+  color: var(--a10c);
+  border-color: var(--blue-a35);
+}
+.prodOe {
+  background: var(--gbg);
+  color: var(--oec);
+  border-color: var(--green-a35);
+}
+
+.chips {
+  margin-left: auto;
+  display: flex;
+  gap: 7px;
+}
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 20px;
+  border: 0.5px solid var(--b1);
+  background: var(--s2);
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+}
+
+/* ── ApiBar ── */
+.apibar {
+  height: var(--h-apibar);
+  background: var(--s1);
+  border-bottom: 0.5px solid var(--b1);
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.apiLabel {
+  font-size: 11px;
+  color: var(--t2);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.apiInput {
+  flex: 1;
+  max-width: 260px;
+  background: var(--s2);
+  border: 0.5px solid var(--b2);
+  border-radius: 6px;
+  padding: 4px 10px;
+  color: var(--t1);
+  font-size: 11px;
+  font-family: var(--font-mono);
+  outline: none;
+}
+.apiInput:focus {
+  border-color: var(--purple);
+}
+.apiBtn {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  border: 0.5px solid var(--b2);
+  background: transparent;
+  color: var(--t2);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: var(--tr-fast);
+}
+.apiBtn:hover {
+  border-color: var(--purple);
+  color: var(--purple);
+}
+.apiBtnSaved {
+  border-color: var(--green) !important;
+  color: var(--green) !important;
+  background: var(--gbg);
+}
+.hint {
+  font-size: 10px;
+  color: var(--t3);
+}
+
+/* ── Layout grid ── */
+.layout {
+  display: grid;
+  grid-template-columns: var(--w-sidebar) 1fr var(--w-rightpanel);
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* ── StatusBar ── */
+.statusbar {
+  height: var(--h-statusbar);
+  background: var(--s1);
+  border-top: 0.5px solid var(--b1);
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--t3);
+}
+.statusItem {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.statusValue {
+  color: var(--t2);
+}
+.statusSep {
+  width: 0.5px;
+  height: 9px;
+  background: var(--b1);
+}
+
+.shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+@media (max-width: 1280px) {
+  .layout {
+    grid-template-columns: 176px 1fr 340px;
+  }
+}
