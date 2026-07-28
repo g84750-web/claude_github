@@ -538,6 +538,57 @@ const vObj   = (v)=>!!v && typeof v === "object" && !Array.isArray(v);
 const vIn    = (arr)=>(v)=>arr.indexOf(v) !== -1;
 const vStr   = (v)=>typeof v === "string" && v.length < 40;
 
+/* ══════════════════════════════════════════════════════════════
+   ☁️ 서버 동기화
+   ─────────────────────────────────────────────────────────────
+   · 동기화 코드 1개 = 설정 한 벌. 코드를 아는 기기끼리 공유된다.
+   · 서버가 없거나 꺼져 있어도 앱은 localStorage만으로 정상 동작한다.
+   · 낙관적 동시성 — rev가 어긋나면(409) 서버 쪽을 받아온다.
+══════════════════════════════════════════════════════════════ */
+
+/* 서버에 올리는 키 목록 (동기화 설정 자체는 제외) */
+const SYNC_KEYS = ["daily","times","days","auto","interval","nav","cat","lastAuto",
+                   "expDone","knowRole","mind","quizStat"];
+
+const SYNC_POLL_MS = 8000;   /* 연결 중일 때 변경 감지 주기 */
+
+function joinUrl(base, path) {
+  const b = String(base || "").trim().replace(/\/+$/, "");
+  return b + path;
+}
+
+/* 모든 실패를 정상 반환값으로 바꿔 호출부가 try/catch 없이 쓰게 한다 */
+async function syncFetch(url, opts) {
+  try {
+    const res = await fetch(url, Object.assign({
+      headers: {"Content-Type":"application/json"},
+    }, opts || {}));
+    let body = null;
+    try { body = await res.json(); } catch(_) {}
+    return {ok:res.ok, status:res.status, body:body, netError:false};
+  } catch(_) {
+    return {ok:false, status:0, body:null, netError:true};
+  }
+}
+
+/* 코드 표기 정규화 — 대소문자·하이픈·공백을 흡수 (서버 규칙과 동일) */
+const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+function normalizeCode(raw) {
+  let s = String(raw || "").toUpperCase().replace(new RegExp("[^A-Z0-9]", "g"), "");
+  if (s.indexOf("DZAI") === 0) s = s.slice(4);
+  if (s.length !== 12) return null;
+  for (let i = 0; i < s.length; i++) if (CODE_CHARS.indexOf(s[i]) === -1) return null;
+  return "DZAI-" + s.slice(0,4) + "-" + s.slice(4,8) + "-" + s.slice(8,12);
+}
+
+const SYNC_STATE = {
+  off:     {t:"미연결",     c:"#475569", icon:"○"},
+  syncing: {t:"동기화 중",  c:"#fbbf24", icon:"◌"},
+  ok:      {t:"동기화됨",   c:"#4ade80", icon:"●"},
+  offline: {t:"서버 연결 안 됨", c:"#fb923c", icon:"⚠"},
+  error:   {t:"오류",       c:"#f87171", icon:"✕"},
+};
+
 /* 날짜 문자열 (offset일 전/후) */
 function dayStr(offset) {
   const d = new Date();
@@ -809,7 +860,7 @@ function LiveBtn({loading,stepIdx,onClick,label,ai}) {
 ══════════════════════════════════════════════════════════════ */
 function SchedulePanel({
   daily,setDaily, times,setTimes, days,setDays,
-  auto,setAuto, interval,setInterval_, nextRun, now, lastAuto, onReset, onClose,
+  auto,setAuto, interval,setInterval_, nextRun, now, lastAuto, onReset, onClose, children,
 }) {
   const [newT, setNewT] = useState("09:00");
   const [confirmReset, setConfirmReset] = useState(false);
@@ -1049,6 +1100,178 @@ function SchedulePanel({
           </div>
         </div>
       </div>
+
+      {/* 서버 동기화 */}
+      {children}
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ☁️ 동기화 패널
+══════════════════════════════════════════════════════════════ */
+function SyncPanel({
+  url, setUrl, code, status, lastSyncAt, rev, note,
+  onIssue, onConnect, onPushNow, onDisconnect, onDeleteRemote, busy,
+}) {
+  const [input, setInput]   = useState("");
+  const [copied, setCopied] = useState(false);
+  const [confirmDel, setConfirmDel] = useState(false);
+  const st = SYNC_STATE[status] || SYNC_STATE.off;
+
+  const doCopy = ()=>{
+    if (copyText(code)) { setCopied(true); setTimeout(()=>setCopied(false), 1600); }
+  };
+  const doConnect = ()=>{
+    const c = normalizeCode(input);
+    if (!c) return;
+    onConnect(c);
+    setInput("");
+  };
+  const inputValid = normalizeCode(input) !== null;
+
+  return (
+    <div style={{
+      marginTop:12,padding:"12px 13px",borderRadius:7,
+      background:"rgba(0,0,0,.24)",
+      border:`1px solid ${code?"rgba(167,139,250,.3)":"#071828"}`,
+    }}>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10,flexWrap:"wrap"}}>
+        <span style={{fontSize:11.5,fontWeight:800,color:code?"#a78bfa":"#5a7a94",fontFamily:KR}}>
+          ☁️ 서버 동기화
+        </span>
+        <span style={{
+          padding:"1px 8px",borderRadius:3,fontSize:9.5,fontWeight:800,fontFamily:MONO,
+          background:st.c+"14",border:`1px solid ${st.c}44`,color:st.c,
+        }}>
+          <span style={{animation:status==="syncing"?"blink .8s infinite":"none"}}>{st.icon}</span> {st.t}
+        </span>
+        {lastSyncAt && (
+          <span style={{fontSize:9.5,color:"#132436",fontFamily:MONO}}>
+            최근 {lastSyncAt}{rev?` · rev ${rev}`:""}
+          </span>
+        )}
+      </div>
+
+      {/* 서버 주소 */}
+      <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap",marginBottom:9}}>
+        <span style={{fontSize:9,color:"#1c3349",fontFamily:MONO,fontWeight:700,letterSpacing:".8px",width:56,flexShrink:0}}>
+          서버 주소
+        </span>
+        <input
+          className="time-input"
+          value={url}
+          onChange={e=>setUrl(e.target.value)}
+          placeholder="http://localhost:8000  또는  /api 로 시작하는 상대경로"
+          style={{flex:1,minWidth:190,fontFamily:MONO,fontSize:10.5,color:"#8fa8bd",fontWeight:400}}
+        />
+      </div>
+
+      {!code ? (
+        /* ── 미연결 ── */
+        <div>
+          <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap",marginBottom:8}}>
+            <button className="chip" onClick={onIssue} disabled={!url||busy} style={{
+              padding:"5px 13px",borderRadius:5,fontSize:11,fontWeight:700,fontFamily:KR,
+              border:"1px solid rgba(167,139,250,.4)",
+              background:url&&!busy?"rgba(167,139,250,.1)":"transparent",
+              color:url&&!busy?"#a78bfa":"#1c3349",
+              cursor:url&&!busy?"pointer":"not-allowed",
+            }}>＋ 동기화 코드 발급</button>
+
+            <span style={{fontSize:10,color:"#132436",fontFamily:MONO}}>또는</span>
+
+            <input
+              className="time-input"
+              value={input}
+              onChange={e=>setInput(e.target.value)}
+              onKeyDown={e=>{ if(e.key==="Enter"&&inputValid&&url&&!busy) doConnect(); }}
+              placeholder="DZAI-XXXX-XXXX-XXXX"
+              style={{width:184,fontFamily:MONO,fontSize:11,letterSpacing:".5px"}}
+            />
+            <button className="chip" onClick={doConnect} disabled={!inputValid||!url||busy} style={{
+              padding:"5px 12px",borderRadius:5,fontSize:11,fontWeight:700,fontFamily:KR,
+              border:`1px solid ${inputValid&&url&&!busy?"rgba(0,212,170,.4)":"#0d2035"}`,
+              background:inputValid&&url&&!busy?"rgba(0,212,170,.09)":"transparent",
+              color:inputValid&&url&&!busy?"#00d4aa":"#1c3349",
+              cursor:inputValid&&url&&!busy?"pointer":"not-allowed",
+            }}>코드로 연결</button>
+          </div>
+          <div style={{fontSize:10.5,color:"#1c3349",lineHeight:1.6,fontFamily:KR}}>
+            {url
+              ? <>코드를 발급하면 지금 이 기기의 설정이 서버에 올라갑니다. 다른 기기에서 같은 코드를 입력하면 설정·진행률이 따라옵니다.</>
+              : <>먼저 서버 주소를 입력하세요. 서버 없이도 앱은 이 브라우저 저장만으로 정상 동작합니다.</>}
+          </div>
+        </div>
+      ) : (
+        /* ── 연결됨 ── */
+        <div>
+          <div style={{
+            display:"flex",gap:8,alignItems:"center",flexWrap:"wrap",
+            padding:"9px 11px",borderRadius:6,marginBottom:8,
+            background:"rgba(167,139,250,.06)",border:"1px solid rgba(167,139,250,.2)",
+          }}>
+            <span style={{fontSize:9,color:"#1c3349",fontFamily:MONO,fontWeight:700,letterSpacing:".8px"}}>
+              내 동기화 코드
+            </span>
+            <span style={{fontSize:13.5,fontWeight:800,color:"#c4b5fd",fontFamily:MONO,letterSpacing:"1px"}}>
+              {code}
+            </span>
+            <button className="chip" onClick={doCopy} style={{
+              padding:"2px 9px",borderRadius:4,fontSize:9.5,fontWeight:700,fontFamily:MONO,
+              border:`1px solid ${copied?"rgba(34,197,94,.45)":"rgba(167,139,250,.3)"}`,
+              background:copied?"rgba(34,197,94,.1)":"transparent",
+              color:copied?"#22c55e":"#a78bfa",cursor:"pointer",
+            }}>{copied?"✓ 복사됨":"📋 복사"}</button>
+          </div>
+
+          <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
+            <button className="chip" onClick={onPushNow} disabled={busy} style={{
+              padding:"4px 12px",borderRadius:5,fontSize:10.5,fontWeight:700,fontFamily:KR,
+              border:"1px solid rgba(0,212,170,.32)",background:"rgba(0,212,170,.07)",
+              color:"#00d4aa",cursor:busy?"wait":"pointer",
+            }}>↻ 지금 동기화</button>
+            <button className="chip" onClick={onDisconnect} style={{
+              padding:"4px 12px",borderRadius:5,fontSize:10.5,fontWeight:700,fontFamily:KR,
+              border:"1px solid #0d2035",background:"transparent",color:"#1c3349",cursor:"pointer",
+            }}>연결 해제</button>
+
+            {confirmDel ? (
+              <span style={{display:"inline-flex",gap:4,alignItems:"center"}}>
+                <span style={{fontSize:10,color:"#fbbf24",fontFamily:KR}}>서버 데이터까지 삭제할까요?</span>
+                <button className="chip" onClick={()=>{onDeleteRemote();setConfirmDel(false);}} style={{
+                  padding:"3px 9px",borderRadius:4,fontSize:10,fontWeight:700,fontFamily:KR,
+                  border:"1px solid rgba(248,113,113,.4)",background:"rgba(248,113,113,.1)",
+                  color:"#f87171",cursor:"pointer",
+                }}>삭제</button>
+                <button className="chip" onClick={()=>setConfirmDel(false)} style={{
+                  padding:"3px 9px",borderRadius:4,fontSize:10,fontWeight:700,fontFamily:KR,
+                  border:"1px solid #0d2035",background:"transparent",color:"#1c3349",cursor:"pointer",
+                }}>취소</button>
+              </span>
+            ) : (
+              <button className="chip" onClick={()=>setConfirmDel(true)} style={{
+                padding:"4px 12px",borderRadius:5,fontSize:10.5,fontWeight:700,fontFamily:KR,
+                border:"1px solid #0d2035",background:"transparent",color:"#1c3349",cursor:"pointer",
+              }}>서버에서 삭제</button>
+            )}
+          </div>
+
+          <div style={{fontSize:10.5,color:"#1c3349",lineHeight:1.6,fontFamily:KR,marginTop:8}}>
+            설정이 바뀌면 자동으로 올라갑니다(최대 {Math.round(SYNC_POLL_MS/1000)}초 지연).
+            <b style={{color:"#a78bfa"}}> 연결 해제</b>는 이 기기에서 코드만 잊고 서버 데이터는 그대로 둡니다.
+          </div>
+        </div>
+      )}
+
+      {note && (
+        <div className="pop" style={{
+          marginTop:9,padding:"8px 11px",borderRadius:6,
+          background:note.bad?"rgba(248,113,113,.06)":"rgba(0,212,170,.05)",
+          border:`1px solid ${note.bad?"rgba(248,113,113,.2)":"rgba(0,212,170,.18)"}`,
+          fontSize:10.5,color:note.bad?"#c98080":"#5a9a88",lineHeight:1.6,fontFamily:KR,
+        }}>{note.msg}</div>
+      )}
     </div>
   );
 }
@@ -2033,12 +2256,192 @@ export default function App() {
   /* 최초 로드 — 저장된 카테고리로 시작 */
   useEffect(()=>{ doFetch(catRef.current); },[]);
 
+  /* ════════════════════════════════════════════════════════════
+     서버 동기화
+  ════════════════════════════════════════════════════════════ */
+  const [syncUrl,  setSyncUrl]  = usePersist("syncUrl", "", vStr);
+  const [syncCode, setSyncCode] = usePersist("syncCode", "", vStr);
+  const [syncRev,  setSyncRev]  = usePersist("syncRev", 0, (v)=>Number.isInteger(v) && v >= 0);
+  const [syncStatus, setSyncStatus] = useState("off");
+  const [syncAt,   setSyncAt]   = useState("");
+  const [syncNote, setSyncNote] = useState(null);
+  const [syncBusy, setSyncBusy] = useState(false);
+
+  const lastPushed = useRef(null);   /* 마지막으로 서버와 일치시킨 직렬화 값 */
+  const revRef     = useRef(syncRev);
+  const inFlight   = useRef(false);
+  useEffect(()=>{ revRef.current = syncRev; },[syncRev]);
+
+  const note = useCallback((msg, bad)=>{
+    setSyncNote({msg:msg, bad:!!bad});
+    setTimeout(()=>setSyncNote(null), 6000);
+  },[]);
+
+  /* 현재 설정 한 벌을 모은다 — 코너 값은 localStorage에서 읽는다 */
+  const collect = useCallback(()=>({
+    daily:daily, times:times, days:days, auto:auto, interval:interval_,
+    nav:nav, cat:cat, lastAuto:lastAuto,
+    expDone:  LS.get("expDone",  {}, vObj),
+    knowRole: LS.get("knowRole", "전체", vIn(ROLES)),
+    mind:     LS.get("mind",     null, vObj),
+    quizStat: LS.get("quizStat", null, vObj),
+  }),[daily,times,days,auto,interval_,nav,cat,lastAuto]);
+
+  /* 서버에서 받은 설정을 적용 — 항목마다 검증해 손상된 값은 무시한다 */
+  const apply = useCallback((p)=>{
+    if (!vObj(p)) return;
+    if (vBool(p.daily))     setDaily(p.daily);
+    if (vTimes(p.times))    setTimes(p.times);
+    if (vDays(p.days))      setDays(p.days);
+    if (vBool(p.auto))      setAuto(p.auto);
+    if (vIntv(p.interval))  setInterval_(p.interval);
+    if (vIn(NAVS.map(v=>v.k))(p.nav)) setNav(p.nav);
+    if (vIn(CATS)(p.cat))   setCat(p.cat);
+    if (vStr(p.lastAuto))   setLastAuto(p.lastAuto);
+    if (vObj(p.expDone))    LS.set("expDone", p.expDone);
+    if (vIn(ROLES)(p.knowRole)) LS.set("knowRole", p.knowRole);
+    if (vObj(p.mind))       LS.set("mind", p.mind);
+    if (vObj(p.quizStat))   LS.set("quizStat", p.quizStat);
+    setResetSeq(s=>s+1);    /* 코너를 리마운트해 저장값을 다시 읽게 한다 */
+  },[]);
+
+  const markSynced = useCallback((body)=>{
+    setSyncRev(body.rev); revRef.current = body.rev;
+    setSyncAt(new Date().toLocaleTimeString("ko-KR"));
+    setSyncStatus("ok");
+  },[]);
+
+  /* 서버 → 로컬 */
+  const pull = useCallback(async(code, url)=>{
+    const res = await syncFetch(joinUrl(url, "/api/sync/" + code));
+    if (res.netError) { setSyncStatus("offline"); return null; }
+    if (res.status === 404) { setSyncStatus("error"); return {missing:true}; }
+    if (!res.ok || !res.body) { setSyncStatus("error"); return null; }
+    apply(res.body.settings);
+    lastPushed.current = JSON.stringify(res.body.settings);
+    markSynced(res.body);
+    return res.body;
+  },[apply, markSynced]);
+
+  /* 로컬 → 서버 (rev 불일치면 서버 쪽을 받아온다) */
+  const push = useCallback(async(payload, serialized)=>{
+    if (!syncCode || !syncUrl || inFlight.current) return;
+    inFlight.current = true;
+    setSyncStatus("syncing");
+    const res = await syncFetch(joinUrl(syncUrl, "/api/sync/" + syncCode), {
+      method:"PUT",
+      body: JSON.stringify({settings:payload, baseRev:revRef.current || null}),
+    });
+    inFlight.current = false;
+
+    if (res.netError) { setSyncStatus("offline"); return; }
+
+    if (res.status === 409) {
+      const srv = res.body && res.body.detail && res.body.detail.server;
+      if (srv) {
+        apply(srv.settings);
+        lastPushed.current = JSON.stringify(srv.settings);
+        markSynced(srv);
+        note("다른 기기에서 더 최근에 저장한 설정을 받아왔습니다.");
+      } else { setSyncStatus("error"); }
+      return;
+    }
+    if (res.status === 404) {
+      setSyncStatus("error");
+      note("서버에 이 코드가 없습니다. 삭제됐거나 다른 서버일 수 있습니다.", true);
+      return;
+    }
+    if (res.status === 413) {
+      setSyncStatus("error");
+      note("설정 크기가 서버 한도를 넘었습니다.", true);
+      return;
+    }
+    if (!res.ok || !res.body) { setSyncStatus("error"); return; }
+
+    lastPushed.current = serialized;
+    markSynced(res.body);
+  },[syncCode, syncUrl, apply, markSynced, note]);
+
+  /* 코드 발급 */
+  const issueCode = useCallback(async()=>{
+    if (!syncUrl) return;
+    setSyncBusy(true); setSyncStatus("syncing");
+    const payload = collect();
+    const res = await syncFetch(joinUrl(syncUrl, "/api/sync"), {
+      method:"POST", body:JSON.stringify({settings:payload}),
+    });
+    setSyncBusy(false);
+
+    if (res.netError) { setSyncStatus("offline"); note("서버에 연결하지 못했습니다. 주소를 확인해 주세요.", true); return; }
+    if (!res.ok || !res.body || !res.body.code) { setSyncStatus("error"); note("코드 발급에 실패했습니다.", true); return; }
+
+    setSyncCode(res.body.code);
+    lastPushed.current = JSON.stringify(payload);
+    markSynced(res.body);
+    note("동기화 코드가 발급됐습니다. 다른 기기에서 이 코드를 입력하세요.");
+  },[syncUrl, collect, markSynced, note]);
+
+  /* 코드로 연결 */
+  const connectCode = useCallback(async(code)=>{
+    if (!syncUrl) return;
+    setSyncBusy(true); setSyncStatus("syncing");
+    const res = await pull(code, syncUrl);
+    setSyncBusy(false);
+
+    if (res && res.missing) { note("해당 코드를 찾을 수 없습니다. 다시 확인해 주세요.", true); return; }
+    if (!res) { note("서버에 연결하지 못했습니다.", true); return; }
+    setSyncCode(code);
+    note("연결됐습니다. 서버의 설정을 받아왔습니다.");
+  },[syncUrl, pull, note]);
+
+  const pushNow      = useCallback(()=>{ const p = collect(); push(p, JSON.stringify(p)); },[collect, push]);
+  const disconnect   = useCallback(()=>{
+    setSyncCode(""); setSyncRev(0); revRef.current = 0;
+    lastPushed.current = null; setSyncStatus("off"); setSyncAt("");
+    note("이 기기에서 연결을 해제했습니다. 서버 데이터는 그대로입니다.");
+  },[note]);
+
+  const deleteRemote = useCallback(async()=>{
+    if (!syncCode || !syncUrl) return;
+    setSyncBusy(true);
+    const res = await syncFetch(joinUrl(syncUrl, "/api/sync/" + syncCode), {method:"DELETE"});
+    setSyncBusy(false);
+    if (res.netError) { note("서버에 연결하지 못했습니다.", true); return; }
+    setSyncCode(""); setSyncRev(0); revRef.current = 0;
+    lastPushed.current = null; setSyncStatus("off"); setSyncAt("");
+    note(res.ok ? "서버에서 삭제했습니다." : "이미 삭제된 코드입니다.");
+  },[syncCode, syncUrl, note]);
+
+  /* 연결 중이면 주기적으로 변경을 감지해 올린다 */
+  useEffect(()=>{
+    if (!syncCode || !syncUrl) { setSyncStatus("off"); return; }
+    let alive = true;
+
+    /* 연결 직후 1회 내려받아 다른 기기의 변경을 먼저 반영 */
+    (async()=>{
+      if (lastPushed.current === null) await pull(syncCode, syncUrl);
+    })();
+
+    const id = setInterval(()=>{
+      if (!alive || inFlight.current) return;
+      const p = collect();
+      const s = JSON.stringify(p);
+      if (s !== lastPushed.current) push(p, s);
+    }, SYNC_POLL_MS);
+
+    return ()=>{ alive = false; clearInterval(id); };
+  },[syncCode, syncUrl, collect, push, pull]);
+
   /* 저장된 설정 전체 초기화 */
   const resetAll = useCallback(()=>{
     LS.clear();
     setDaily(false); setTimes(["08:30","13:00","18:00"]); setDays([1,2,3,4,5]);
     setAuto(false); setInterval_(60); setLastAuto("");
     setNav("news"); setCat("전체");
+    /* 동기화 연결도 이 기기에서 끊는다 (서버 데이터는 건드리지 않는다) */
+    setSyncUrl(""); setSyncCode(""); setSyncRev(0);
+    revRef.current = 0; lastPushed.current = null;
+    setSyncStatus("off"); setSyncAt("");
     setResetSeq(s=>s+1);   /* 코너 컴포넌트를 리마운트해 내부 저장값까지 비운다 */
   },[]);
 
@@ -2139,7 +2542,15 @@ export default function App() {
             nextRun={nextRun} now={now} lastAuto={lastAuto}
             onReset={resetAll}
             onClose={()=>setShowSched(false)}
-          />
+          >
+            <SyncPanel
+              url={syncUrl} setUrl={setSyncUrl}
+              code={syncCode} status={syncStatus} lastSyncAt={syncAt}
+              rev={syncRev} note={syncNote} busy={syncBusy}
+              onIssue={issueCode} onConnect={connectCode} onPushNow={pushNow}
+              onDisconnect={disconnect} onDeleteRemote={deleteRemote}
+            />
+          </SchedulePanel>
         )}
 
         {/* ── 코너 네비 ── */}
@@ -2189,6 +2600,11 @@ export default function App() {
             <span style={{fontSize:10,color:"#00d4aa",fontFamily:MONO}}>· 📅 {fmtWhen(nextRun)} 자동갱신</span>
           )}
           {auto&&!loading&&<span style={{fontSize:10,color:"#60a5fa",fontFamily:MONO}}>· ⏱ {cd}s 후 갱신</span>}
+          {syncCode&&(
+            <span style={{fontSize:10,color:(SYNC_STATE[syncStatus]||SYNC_STATE.off).c,fontFamily:MONO}}>
+              · ☁️ {(SYNC_STATE[syncStatus]||SYNC_STATE.off).t}
+            </span>
+          )}
           {!loading&&(
             <span style={{fontSize:10,color:"#1c3349",fontFamily:MONO,marginLeft:"auto"}}>
               💡 {navObj.desc}
