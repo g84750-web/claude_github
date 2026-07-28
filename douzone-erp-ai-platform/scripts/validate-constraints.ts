@@ -27,8 +27,20 @@ const DATE_LITERAL_ALLOW = ['src/data/laws.ts'];
 const isTestFile = (rel: string) => /\.(test|spec)\.tsx?$/.test(rel);
 const dateLiteralAllowed = (rel: string) => DATE_LITERAL_ALLOW.includes(rel) || isTestFile(rel);
 
-/** 허용 외부 호스트 — Anthropic Messages API 만 */
-const ALLOWED_HOSTS = ['api.anthropic.com'];
+/**
+ * 허용 외부 호스트
+ *  · api.anthropic.com : 유일한 실 호출 대상
+ *  · example.*         : RFC 2606 예약 도메인 (테스트 픽스처·플레이스홀더, 실제 조회 불가)
+ *  · localhost         : 개발 서버
+ */
+const ALLOWED_HOSTS = [
+  'api.anthropic.com',
+  'example.com',
+  'www.example.com',
+  'example.org',
+  'example.net',
+  'localhost',
+];
 
 /**
  * 한자 표기가 의도적으로 존재해야 하는 파일.
