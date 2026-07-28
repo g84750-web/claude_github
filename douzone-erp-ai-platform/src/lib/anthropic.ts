@@ -16,11 +16,11 @@ import { resolveTokens } from './tokens';
 const API_URL = 'https://api.anthropic.com/v1/messages';
 
 /**
- * 설계서 5.1 지정 모델.
- * 상위 모델(claude-opus-5 / claude-sonnet-5)로 교체하려면 이 상수만 바꾸면 되고,
+ * 사용 모델.
+ * 설계서 5.1 원안은 claude-sonnet-4-6 이었으나 현행 최신 모델로 교체했다.
  * streamMessage({ model }) 로 호출 단위 재정의도 가능하다.
  */
-export const MODEL = 'claude-sonnet-4-6';
+export const MODEL = 'claude-opus-5';
 const MAX_TOKENS = 1000;
 
 export interface StreamOptions {
