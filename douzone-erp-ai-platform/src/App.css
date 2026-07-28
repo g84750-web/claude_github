@@ -208,3 +208,48 @@
   color: var(--t3);
   flex-shrink: 0;
 }
+
+/* Phase 2 데이터 검증 표 */
+.p1-grid {
+  overflow-x: auto;
+  margin-bottom: 10px;
+}
+
+.p1-tbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.p1-tbl th,
+.p1-tbl td {
+  border-bottom: 0.5px solid var(--b1);
+  padding: 5px 8px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.p1-tbl th {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--t3);
+  background: var(--s2);
+}
+
+.p1-tbl td {
+  color: var(--t1);
+}
+
+.p1-tbl td b {
+  color: var(--purple);
+  font-weight: 600;
+}
+
+.p1-tbl .num {
+  text-align: right;
+  color: var(--t2);
+}
+
+.p1-tbl .tot {
+  color: var(--green);
+}

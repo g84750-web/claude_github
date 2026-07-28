@@ -59,6 +59,8 @@ const add = (rule: string, file: string, line: number, text: string) =>
 
 const URL_RE = /https?:\/\/([a-z0-9.-]+)/gi;
 const DATE_RE = /['"`]\d{4}-\d{2}-\d{2}/;
+/** '2026년', '2026.07' 같은 연도 리터럴 — 토큰({cy}/{py}/{ppy})으로 표기해야 한다 */
+const YEAR_RE = /\b(19|20)\d{2}\s*(년|[.]\d)/;
 const HANJA_RE = /[分析安定]/;
 const APIKEY_RE = /sk-ant-[A-Za-z0-9_-]{6,}/;
 const KEY_LOG_RE = /console\.(log|info|warn|error|debug)\s*\([^)]*\b(apiKey|api_key|bearerToken|x-api-key)\b/i;
@@ -86,6 +88,9 @@ for (const abs of files) {
     // 3. 날짜 하드코딩
     if (DATE_RE.test(raw) && !DATE_LITERAL_ALLOW.includes(rel)) {
       add('날짜 하드코딩', rel, n, raw);
+    }
+    if (YEAR_RE.test(raw) && !DATE_LITERAL_ALLOW.includes(rel)) {
+      add('연도 하드코딩', rel, n, raw);
     }
 
     // 4. 한자 혼용

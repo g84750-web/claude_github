@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "npm run validate:constraints && tsc --noEmit && vite build",
+    "build": "npm run validate && tsc --noEmit && vite build",
+    "validate": "npm run validate:constraints && npm run validate:data",
+    "validate:data": "tsx scripts/validate-data.ts",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",

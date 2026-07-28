@@ -1,5 +1,9 @@
 import { ICON_NAMES, Icon } from './components/ui/Icon';
-import { PRODUCT_LABEL, STAGES } from './types';
+import { PRODUCT_LABEL, STAGES, type ProductId } from './types';
+import { A10_MODULES, OE_MODULES } from './data/modules';
+import { DATA_BY_PRODUCT, itemsOf, moduleItemCount, totalItemCount } from './data/automation';
+import { buildLaws } from './data/laws';
+import { resolveTokens, tokenContext } from './lib/tokens';
 import './App.css';
 
 /**
@@ -26,13 +30,17 @@ const COLOR_TOKENS = [
   ['--oec', 'OmniEsol'],
 ] as const;
 
+const PRODUCTS: Array<{ id: ProductId; modules: typeof A10_MODULES }> = [
+  { id: 'A10', modules: A10_MODULES },
+  { id: 'OE', modules: OE_MODULES },
+];
+
 export default function App() {
   // [제약] 날짜 하드코딩 금지 — 전부 런타임 산출
-  const now = new Date();
-  const cy = now.getFullYear();
-  const todayISO = `${cy}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(
-    now.getDate()
-  ).padStart(2, '0')}`;
+  const ctx = tokenContext();
+  const { today: todayISO, cy } = ctx;
+  const laws = buildLaws();
+  const total = totalItemCount();
 
   return (
     <div className="p1">
@@ -41,7 +49,7 @@ export default function App() {
         <span className="p1-brand">더존비즈온</span>
         <span className="p1-pill">PKG 사업본부 AI혁신TF</span>
         <span className="p1-sep" />
-        <span className="p1-sub">ERP AI 자동화 플랫폼 — Phase 1 기반 구축 검증</span>
+        <span className="p1-sub">ERP AI 자동화 플랫폼 — Phase 1·2 검증</span>
         <span className="p1-chips">
           <span className="p1-chip mono">기준일 {todayISO}</span>
           <span className="p1-chip mono">
@@ -92,10 +100,77 @@ export default function App() {
             ))}
           </div>
         </section>
+
+        <section className="p1-sect">
+          <h2 className="p1-h">
+            2.1~2.4 자동화 항목 데이터 — 65슬롯 / 총 {total}건 (슬롯당 최소 2건)
+          </h2>
+          {PRODUCTS.map(({ id, modules }) => (
+            <div className="p1-grid" key={id}>
+              <table className="p1-tbl">
+                <thead>
+                  <tr>
+                    <th>{PRODUCT_LABEL[id]}</th>
+                    {STAGES.map((s) => (
+                      <th key={s}>{s}</th>
+                    ))}
+                    <th>합계</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {modules.map((m) => (
+                    <tr key={m.id}>
+                      <td>
+                        <b>{m.id}</b> {m.name}
+                      </td>
+                      {STAGES.map((s) => (
+                        <td className="mono num" key={s}>
+                          {DATA_BY_PRODUCT[id][m.id]?.[s]?.length ?? 0}
+                        </td>
+                      ))}
+                      <td className="mono num tot">{moduleItemCount(id, m.id)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ))}
+          <p className="p1-note">
+            날짜 토큰 치환 예시 (FI · 착수·분석 #1) —{' '}
+            <span className="mono">{resolveTokens(itemsOf('A10', 'FI', 0)[0]?.task ?? '', ctx)}</span>
+          </p>
+        </section>
+
+        <section className="p1-sect">
+          <h2 className="p1-h">2.5 법령·IFRS 정의 ({laws.length}건)</h2>
+          <table className="p1-tbl">
+            <thead>
+              <tr>
+                <th>구분</th>
+                <th>제목</th>
+                <th>발행일</th>
+                <th>시행일</th>
+              </tr>
+            </thead>
+            <tbody>
+              {laws.map((l) => (
+                <tr key={l.id}>
+                  <td>{l.tag}</td>
+                  <td>{l.title}</td>
+                  <td className="mono num">{l.publishedDate}</td>
+                  <td className="mono num">{l.effectiveDate}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="p1-note">
+            D-Day 배지·경과 기간 산출은 Phase 3 (lib/date.ts) 에서 구현합니다.
+          </p>
+        </section>
       </main>
 
       <footer className="p1-status mono">
-        <span>Phase 1 · 기반 구축</span>
+        <span>Phase 1 기반 구축 · Phase 2 데이터 레이어</span>
         <span>·</span>
         <span>Vite + React 18 + TypeScript 5</span>
         <span>·</span>
