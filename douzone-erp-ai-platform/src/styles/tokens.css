@@ -1,0 +1,72 @@
+/**
+ * 디자인 토큰 — 프로토타입(v3.html) :root 이관
+ * [제약] 외부 CDN(Google Fonts 등) 링크 금지 → 시스템 폰트 스택만 사용
+ */
+:root {
+  /* ── 배경 계층 ── */
+  --bg: #000000;
+  --s1: #0d0d0d;
+  --s2: #141414;
+  --b1: #242424;
+  --b2: #333333;
+
+  /* ── 텍스트 계층 ── */
+  --t1: #f0ede6;
+  --t2: #888580;
+  --t3: #444240;
+
+  /* ── 시맨틱 컬러 — 완전자동화 ── */
+  --green: #97c459;
+  --gbg: #173404;
+
+  /* ── 시맨틱 컬러 — 반자동 ── */
+  --amber: #ef9f27;
+  --abg: #412402;
+
+  /* ── 시맨틱 컬러 — 어시스턴트 ── */
+  --blue: #85b7eb;
+  --bbg: #042c53;
+
+  /* ── 액센트 ── */
+  --purple: #afa9ec;
+  --pbg: #26215c;
+
+  /* ── 경고 ── */
+  --red: #e05a5a;
+  --rbg: #3a1010;
+
+  /* ── 제품 식별색 ── */
+  --a10c: #85b7eb;
+  --oec: #97c459;
+
+  /* ── 반투명 테두리 (자주 쓰는 조합) ── */
+  --green-a35: rgba(151, 196, 89, 0.35);
+  --green-a30: rgba(151, 196, 89, 0.3);
+  --blue-a35: rgba(133, 183, 235, 0.35);
+  --blue-a30: rgba(133, 183, 235, 0.3);
+  --amber-a30: rgba(239, 159, 39, 0.3);
+  --purple-a40: rgba(175, 169, 236, 0.4);
+  --purple-a30: rgba(175, 169, 236, 0.3);
+  --red-a30: rgba(224, 90, 90, 0.3);
+
+  /* ── 반경 ── */
+  --r: 8px;
+  --r2: 12px;
+
+  /* ── 폰트 스택 — 외부 CDN 금지 ── */
+  --font-sans: 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', system-ui,
+    -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'SF Mono', 'Cascadia Mono', 'JetBrains Mono', Consolas, 'D2Coding',
+    ui-monospace, monospace;
+
+  /* ── 레이아웃 상수 ── */
+  --h-topbar: 46px;
+  --h-apibar: 34px;
+  --h-statusbar: 24px;
+  --w-sidebar: 196px;
+  --w-rightpanel: 378px;
+
+  /* ── 전이 ── */
+  --tr-fast: 0.12s;
+  --tr-mid: 0.15s;
+}
