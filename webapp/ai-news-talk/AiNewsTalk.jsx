@@ -471,6 +471,81 @@ function seedPick(arr, count, seed) {
 }
 
 /* ══════════════════════════════════════════════════════════════
+   💾 localStorage 저장소
+   ─────────────────────────────────────────────────────────────
+   · 사용 불가 환경(사생활 보호 모드, 스토리지 차단, SSR)에서도
+     앱이 죽지 않도록 모든 접근을 try/catch로 감싼다.
+   · 저장값이 손상·변조돼도 검증 함수를 통과하지 못하면
+     기본값으로 되돌린다.
+══════════════════════════════════════════════════════════════ */
+const LS_PREFIX = "dzAiTalk.v1.";
+
+const LS = (function(){
+  let ok = false;
+  try {
+    const probe = LS_PREFIX + "__probe__";
+    window.localStorage.setItem(probe, "1");
+    window.localStorage.removeItem(probe);
+    ok = true;
+  } catch(_) { ok = false; }
+
+  return {
+    ok: ok,
+    get(key, fallback, validate){
+      if(!ok) return fallback;
+      try{
+        const raw = window.localStorage.getItem(LS_PREFIX + key);
+        if(raw == null) return fallback;
+        const v = JSON.parse(raw);
+        if(validate && !validate(v)) return fallback;
+        return v;
+      }catch(_){ return fallback; }
+    },
+    set(key, val){
+      if(!ok) return false;
+      try{ window.localStorage.setItem(LS_PREFIX + key, JSON.stringify(val)); return true; }
+      catch(_){ return false; }
+    },
+    clear(){
+      if(!ok) return 0;
+      try{
+        const del = [];
+        for(let i = 0; i < window.localStorage.length; i++){
+          const k = window.localStorage.key(i);
+          if(k && k.indexOf(LS_PREFIX) === 0) del.push(k);
+        }
+        del.forEach(k=>window.localStorage.removeItem(k));
+        return del.length;
+      }catch(_){ return 0; }
+    },
+  };
+})();
+
+/* 저장되는 state 훅 — 값이 바뀔 때마다 자동 기록 */
+function usePersist(key, initial, validate) {
+  const [val, setVal] = useState(()=>LS.get(key, initial, validate));
+  useEffect(()=>{ LS.set(key, val); }, [key, val]);
+  return [val, setVal];
+}
+
+/* 검증 함수 */
+const TIME_RE = new RegExp("^([01][0-9]|2[0-3]):[0-5][0-9]$");
+const vBool  = (v)=>typeof v === "boolean";
+const vTimes = (v)=>Array.isArray(v) && v.length <= 8 && v.every(t=>typeof t === "string" && TIME_RE.test(t));
+const vDays  = (v)=>Array.isArray(v) && v.length <= 7 && v.every(d=>Number.isInteger(d) && d >= 0 && d <= 6);
+const vIntv  = (v)=>INTERVALS.some(i=>i.v === v);
+const vObj   = (v)=>!!v && typeof v === "object" && !Array.isArray(v);
+const vIn    = (arr)=>(v)=>arr.indexOf(v) !== -1;
+const vStr   = (v)=>typeof v === "string" && v.length < 40;
+
+/* 날짜 문자열 (offset일 전/후) */
+function dayStr(offset) {
+  const d = new Date();
+  if (offset) d.setDate(d.getDate() + offset);
+  return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+}
+
+/* ══════════════════════════════════════════════════════════════
    공통 소형 컴포넌트
 ══════════════════════════════════════════════════════════════ */
 function SolTag({s}) {
@@ -734,9 +809,10 @@ function LiveBtn({loading,stepIdx,onClick,label,ai}) {
 ══════════════════════════════════════════════════════════════ */
 function SchedulePanel({
   daily,setDaily, times,setTimes, days,setDays,
-  auto,setAuto, interval,setInterval_, nextRun, now, lastAuto, onClose,
+  auto,setAuto, interval,setInterval_, nextRun, now, lastAuto, onReset, onClose,
 }) {
   const [newT, setNewT] = useState("09:00");
+  const [confirmReset, setConfirmReset] = useState(false);
 
   const addTime = () => {
     if (!newT) return;
@@ -766,9 +842,39 @@ function SchedulePanel({
         <span style={{fontSize:9,fontWeight:900,letterSpacing:"1.4px",color:"#00d4aa",fontFamily:MONO}}>
           ⏰ 자동 새로고침 시간설정
         </span>
+
+        {/* 저장 상태 뱃지 */}
+        <span style={{
+          padding:"1px 7px",borderRadius:3,fontSize:9,fontWeight:800,fontFamily:MONO,
+          background:LS.ok?"rgba(74,222,128,.09)":"rgba(251,191,36,.09)",
+          border:`1px solid ${LS.ok?"rgba(74,222,128,.28)":"rgba(251,191,36,.3)"}`,
+          color:LS.ok?"#4ade80":"#fbbf24",
+        }}>{LS.ok?"💾 자동 저장됨":"⚠ 저장 불가"}</span>
+
+        {/* 초기화 — 2단 확인 */}
+        {LS.ok && (
+          confirmReset
+            ? <span style={{display:"inline-flex",gap:4,alignItems:"center",marginLeft:"auto"}}>
+                <span style={{fontSize:10,color:"#fbbf24",fontFamily:KR}}>저장된 설정·기록을 모두 지울까요?</span>
+                <button className="toggle-btn" onClick={()=>{onReset();setConfirmReset(false);}} style={{
+                  padding:"2px 9px",borderRadius:4,fontSize:10,fontWeight:700,fontFamily:KR,
+                  border:"1px solid rgba(248,113,113,.4)",background:"rgba(248,113,113,.1)",
+                  color:"#f87171",cursor:"pointer",
+                }}>초기화</button>
+                <button className="toggle-btn" onClick={()=>setConfirmReset(false)} style={{
+                  padding:"2px 9px",borderRadius:4,fontSize:10,fontWeight:700,fontFamily:KR,
+                  border:"1px solid #0d2035",background:"transparent",color:"#1c3349",cursor:"pointer",
+                }}>취소</button>
+              </span>
+            : <button className="toggle-btn" onClick={()=>setConfirmReset(true)} style={{
+                marginLeft:"auto",padding:"2px 9px",borderRadius:4,fontSize:10,fontWeight:700,fontFamily:KR,
+                border:"1px solid #0d2035",background:"transparent",color:"#1c3349",cursor:"pointer",
+              }}>저장값 초기화</button>
+        )}
+
         <button onClick={onClose} className="toggle-btn" style={{
-          marginLeft:"auto",padding:"2px 9px",borderRadius:4,fontSize:10,fontWeight:700,
-          border:"1px solid #0d2035",background:"transparent",color:"#1c3349",fontFamily:MONO,
+          marginLeft:LS.ok?0:"auto",padding:"2px 9px",borderRadius:4,fontSize:10,fontWeight:700,
+          border:"1px solid #0d2035",background:"transparent",color:"#1c3349",fontFamily:MONO,cursor:"pointer",
         }}>닫기 ▲</button>
       </div>
 
@@ -933,7 +1039,12 @@ function SchedulePanel({
             <div style={{fontSize:10.5,color:"#5a7a94",lineHeight:1.65,fontFamily:KR}}>
               두 방식은 동시에 켤 수 있습니다. <b style={{color:"#00d4aa"}}>매일 갱신</b>은 지정 요일·시각에
               정확히 한 번 실행되고, <b style={{color:"#60a5fa"}}>주기 갱신</b>은 설정한 간격마다 반복됩니다.
-              화면이 열려 있는 동안에만 동작하며, 설정은 새로고침 시 기본값으로 돌아갑니다.
+              갱신은 화면이 열려 있는 동안에만 동작하지만,
+              {LS.ok
+                ? <> 설정은 <b style={{color:"#4ade80"}}>이 브라우저에 저장되어</b> 다음 방문 시 그대로 복원됩니다.
+                    닫혀 있던 동안 지나간 예약은 실행되지 않고, 다음 슬롯부터 이어집니다.</>
+                : <> 이 브라우저에서는 저장소를 사용할 수 없어 설정이 유지되지 않습니다
+                    (사생활 보호 모드이거나 스토리지가 차단된 상태).</>}
             </div>
           </div>
         </div>
@@ -1196,7 +1307,7 @@ function ExpCard({x, delay, done, onDone}) {
 }
 
 function ExpCorner() {
-  const [done, setDone] = useState({});
+  const [done, setDone] = usePersist("expDone", {}, vObj);
   const toggle = (id) => setDone(prev => {
     const next = Object.assign({}, prev);
     if (next[id]) delete next[id]; else next[id] = 1;
@@ -1327,7 +1438,7 @@ function KnowCard({k, delay}) {
 }
 
 function KnowCorner() {
-  const [role, setRole] = useState("전체");
+  const [role, setRole] = usePersist("knowRole", "전체", vIn(ROLES));
   const list = role === "전체" ? KNOWS : KNOWS.filter(k=>k.role===role);
   const musts = list.filter(k=>k.must).length;
 
@@ -1392,7 +1503,11 @@ function QuizCorner({news, seed}) {
   const [picked, setPicked] = useState({});
   const [round, setRound]   = useState(0);
 
-  useEffect(()=>{ setPicked({}); }, [round, seed, news]);
+  /* 누적 기록 — 풀이 횟수 / 최고 정답률 / 연속 일수 */
+  const [stat, setStat] = usePersist("quizStat", {plays:0, best:0, lastDate:"", streak:0}, vObj);
+  const recorded = useRef(false);
+
+  useEffect(()=>{ setPicked({}); recorded.current = false; }, [round, seed, news]);
 
   const pick = (qi, oi) => {
     if (picked[qi] != null) return;
@@ -1403,6 +1518,25 @@ function QuizCorner({news, seed}) {
   const correct  = Object.keys(picked).filter(k=>picked[k] === questions[k].a).length;
   const allDone  = answered === questions.length && questions.length > 0;
   const rate     = answered ? Math.round(correct / answered * 100) : 0;
+
+  /* 한 회차를 모두 풀면 1회만 기록 */
+  useEffect(()=>{
+    if (!allDone || recorded.current) return;
+    recorded.current = true;
+    setStat(prev=>{
+      const t = dayStr(0);
+      const p = vObj(prev) ? prev : {plays:0, best:0, lastDate:"", streak:0};
+      const streak = p.lastDate === t        ? (p.streak || 1)
+                   : p.lastDate === dayStr(-1) ? (p.streak || 0) + 1
+                   : 1;
+      return {
+        plays: (p.plays || 0) + 1,
+        best: Math.max(p.best || 0, rate),
+        lastDate: t,
+        streak: streak,
+      };
+    });
+  }, [allDone, rate]);
 
   const grade = rate >= 90 ? {t:"AI 시사 최상위",c:"#4ade80",m:"경쟁사 동향 브리핑을 직접 맡아도 될 수준입니다."}
               : rate >= 70 ? {t:"실무 적용 가능",c:"#00d4aa",m:"핵심은 잡혀 있습니다. 틀린 문항의 해설만 다시 읽어보세요."}
@@ -1466,6 +1600,31 @@ function QuizCorner({news, seed}) {
             color:"#00d4aa",cursor:"pointer",
           }}>↻ 다시 풀기</button>
         </div>
+
+        {/* 누적 기록 (저장 가능한 환경에서만) */}
+        {LS.ok && stat.plays > 0 && (
+          <div style={{
+            marginTop:6,padding:"7px 13px",borderRadius:6,
+            display:"flex",alignItems:"center",gap:12,flexWrap:"wrap",
+            background:"rgba(0,0,0,.18)",border:"1px solid #071828",
+          }}>
+            <span style={{fontSize:9,color:"#1c3349",fontFamily:MONO,fontWeight:700,letterSpacing:".8px"}}>
+              💾 누적 기록
+            </span>
+            <span style={{fontSize:10.5,color:"#5a7a94",fontFamily:MONO}}>
+              풀이 <b style={{color:"#dde6f0"}}>{stat.plays}</b>회
+            </span>
+            <span style={{fontSize:10.5,color:"#5a7a94",fontFamily:MONO}}>
+              최고 정답률 <b style={{color:"#00d4aa"}}>{stat.best}%</b>
+            </span>
+            <span style={{fontSize:10.5,color:"#5a7a94",fontFamily:MONO}}>
+              연속 <b style={{color:"#fbbf24"}}>{stat.streak}</b>일
+            </span>
+            {stat.streak >= 3 && (
+              <span style={{fontSize:10,color:"#fbbf24",fontFamily:KR}}>🔥 좋은 흐름입니다</span>
+            )}
+          </div>
+        )}
       </div>
 
       <SectionTitle right="정답 선택 시 해설 표시">체크 문항 {questions.length}개</SectionTitle>
@@ -1549,9 +1708,18 @@ function QuizCorner({news, seed}) {
 function MindCorner({seed}) {
   const [running, setRunning] = useState(false);
   const [elapsed, setElapsed] = useState(0);
-  const [mood, setMood]       = useState(null);
-  const [checks, setChecks]   = useState({});
   const [lineIdx, setLineIdx] = useState(0);
+
+  /* 기분·루틴은 '오늘의 기록' — 날짜와 함께 저장하고 날이 바뀌면 자동 초기화 */
+  const [mind, setMind] = usePersist("mind", {date:dayStr(0), mood:null, checks:{}}, vObj);
+  useEffect(()=>{
+    if (mind.date !== dayStr(0)) setMind({date:dayStr(0), mood:null, checks:{}});
+  }, []);
+
+  const sameDay = mind.date === dayStr(0);
+  const mood    = sameDay && Number.isInteger(mind.mood) ? mind.mood : null;
+  const checks  = sameDay && vObj(mind.checks) ? mind.checks : {};
+  const setMood = (v)=>setMind({date:dayStr(0), mood:v, checks:checks});
 
   useEffect(()=>{ setLineIdx(seed % LINES.length); }, [seed]);
 
@@ -1571,11 +1739,11 @@ function MindCorner({seed}) {
   const reset = () => { setRunning(false); setElapsed(0); };
 
   const cur = BREATH[phase];
-  const togCheck = (t) => setChecks(prev=>{
-    const n = Object.assign({}, prev);
+  const togCheck = (t) => {
+    const n = Object.assign({}, checks);
     if (n[t]) delete n[t]; else n[t] = 1;
-    return n;
-  });
+    setMind({date:dayStr(0), mood:mood, checks:n});
+  };
   const chkCnt = Object.keys(checks).length;
   const moodObj = mood != null ? MOODS[mood] : null;
 
@@ -1726,6 +1894,7 @@ function MindCorner({seed}) {
           </div>
           <div style={{fontSize:10,color:"#1c3349",fontFamily:KR,lineHeight:1.55}}>
             기분 체크 60% + 루틴 실천 40%로 계산됩니다. 점수 자체보다 <b style={{color:"#00d4aa"}}>매일 재는 습관</b>이 중요합니다.
+            {LS.ok && <> 오늘({mind.date}) 기록은 저장되며 날짜가 바뀌면 자동으로 초기화됩니다.</>}
           </div>
         </div>
 
@@ -1793,26 +1962,27 @@ export default function App() {
   /* 뉴스 */
   const [news,   setNews]  = useState([]);
   const [loading,setLoad]  = useState(false);
-  const [cat,    setCat]   = useState("전체");
+  const [cat,    setCat]   = usePersist("cat", "전체", vIn(CATS));
   const [mode,   setMode]  = useState("");
   const [updAt,  setUpdAt] = useState("");
   const [n,      setN]     = useState(0);
   const [step,   setStep]  = useState(0);
 
-  /* 코너 */
-  const [nav, setNav] = useState("news");
+  /* 코너 — 마지막으로 본 코너 저장 */
+  const [nav, setNav] = usePersist("nav", "news", vIn(NAVS.map(v=>v.k)));
 
-  /* 스케줄 */
+  /* 스케줄 — 전부 localStorage에 저장 */
   const [showSched, setShowSched] = useState(false);
-  const [daily,  setDaily]  = useState(false);
-  const [times,  setTimes]  = useState(["08:30","13:00","18:00"]);
-  const [days,   setDays]   = useState([1,2,3,4,5]);
-  const [auto,   setAuto]   = useState(false);
-  const [interval_, setInterval_] = useState(60);
+  const [daily,  setDaily]  = usePersist("daily", false, vBool);
+  const [times,  setTimes]  = usePersist("times", ["08:30","13:00","18:00"], vTimes);
+  const [days,   setDays]   = usePersist("days", [1,2,3,4,5], vDays);
+  const [auto,   setAuto]   = usePersist("auto", false, vBool);
+  const [interval_, setInterval_] = usePersist("interval", 60, vIntv);
+  const [resetSeq, setResetSeq]   = useState(0);
   const [cd,     setCd]     = useState(60);
   const [nextRun,setNextRun]= useState(null);
   const [now,    setNow]    = useState(Date.now());
-  const [lastAuto,setLastAuto] = useState("");
+  const [lastAuto,setLastAuto] = usePersist("lastAuto", "", vStr);
 
   const catRef   = useRef(cat);
   const timerRef = useRef(null);
@@ -1860,7 +2030,17 @@ export default function App() {
     setLoad(false);
   },[]);
 
-  useEffect(()=>{ doFetch("전체"); },[]);
+  /* 최초 로드 — 저장된 카테고리로 시작 */
+  useEffect(()=>{ doFetch(catRef.current); },[]);
+
+  /* 저장된 설정 전체 초기화 */
+  const resetAll = useCallback(()=>{
+    LS.clear();
+    setDaily(false); setTimes(["08:30","13:00","18:00"]); setDays([1,2,3,4,5]);
+    setAuto(false); setInterval_(60); setLastAuto("");
+    setNav("news"); setCat("전체");
+    setResetSeq(s=>s+1);   /* 코너 컴포넌트를 리마운트해 내부 저장값까지 비운다 */
+  },[]);
 
   /* ── 주기 반복 갱신 ── */
   useEffect(()=>{
@@ -1957,6 +2137,7 @@ export default function App() {
             auto={auto} setAuto={setAuto}
             interval={interval_} setInterval_={setInterval_}
             nextRun={nextRun} now={now} lastAuto={lastAuto}
+            onReset={resetAll}
             onClose={()=>setShowSched(false)}
           />
         )}
@@ -2043,10 +2224,10 @@ export default function App() {
           )}
 
           {!loading && nav==="hot"  && <HotCorner news={news} onCatClick={filterCat}/>}
-          {!loading && nav==="exp"  && <ExpCorner/>}
-          {!loading && nav==="know" && <KnowCorner/>}
-          {!loading && nav==="quiz" && <QuizCorner news={news} seed={n}/>}
-          {!loading && nav==="mind" && <MindCorner seed={n}/>}
+          {!loading && nav==="exp"  && <ExpCorner key={resetSeq}/>}
+          {!loading && nav==="know" && <KnowCorner key={resetSeq}/>}
+          {!loading && nav==="quiz" && <QuizCorner key={resetSeq} news={news} seed={n}/>}
+          {!loading && nav==="mind" && <MindCorner key={resetSeq} seed={n}/>}
 
           {!loading && (
             <div style={{textAlign:"center",padding:"6px 18px 22px",fontSize:9.5,color:"#0d1e2d",letterSpacing:".4px",fontFamily:MONO}}>
