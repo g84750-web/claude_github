@@ -4,6 +4,7 @@
      ② 구글 폰트 @import 제거 (아티팩트 CSP가 외부 호스트를 차단)
      ③ 폰트 스택 확장 (웹폰트 없이도 한글·모노가 제대로 잡히도록)
      ④ NET 플래그 off → 외부 요청을 아예 보내지 않는다
+     ⑤ EMBED 플래그 on → 뷰포트 기준 높이 제거 (iframe 리사이즈 되먹임 방지)
 */
 const fs = require("fs");
 const path = require("path");
@@ -43,6 +44,12 @@ src = src.replace(monoOld,
 const netOn = "const NET = true;";
 if (!src.includes(netOn)) throw new Error("NET 플래그를 찾지 못했습니다");
 src = src.replace(netOn, "const NET = false;");
+
+// ⑤ 임베드 모드 — 호스트가 scrollHeight에 맞춰 iframe 높이를 조정하므로
+//    100vh 같은 뷰포트 기준 높이는 되먹임 루프가 된다 (높이가 수렴하지 않음).
+const embedOff = "const EMBED = false;";
+if (!src.includes(embedOff)) throw new Error("EMBED 플래그를 찾지 못했습니다");
+src = src.replace(embedOff, "const EMBED = true;");
 
 // JSX → JS (classic runtime: React.createElement 사용)
 const compiled = babel.transformSync(src, {

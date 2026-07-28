@@ -15,6 +15,14 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
    동기화는 오프라인으로 즉시 떨어진다(두 경로 모두 기존 폴백을 그대로 탄다). */
 const NET = true;
 
+/* iframe에 임베드되어 실행되는지 여부. 아티팩트 빌드는 이 값을 true로 바꾼다.
+   호스트는 자식이 보고한 scrollHeight에 맞춰 iframe 높이를 조정하는데, 이때
+   콘텐츠가 100vh처럼 뷰포트 높이에 의존하면 되먹임 루프가 된다 —
+   높이가 커지면 100vh도 커지고, 그래서 또 커진다. 수렴하지 않아 화면이
+   영원히 자라고 로딩이 끝나지 않는다. 임베드 시에는 뷰포트 기준 높이를 쓰지
+   않고 콘텐츠 높이에 맡긴다(배경은 호스트 CSS가 칠한다). */
+const EMBED = false;
+
 /* ══════════════════════════════════════════════════════════════
    글로벌 CSS
 ══════════════════════════════════════════════════════════════ */
@@ -2506,7 +2514,7 @@ export default function App() {
   return(
     <>
       <style>{CSS}</style>
-      <div style={{minHeight:"100vh",background:"#010b16",color:"#dde6f0",fontFamily:KR}}>
+      <div style={{minHeight:EMBED?undefined:"100vh",background:"#010b16",color:"#dde6f0",fontFamily:KR}}>
 
         {/* ── 헤더 ── */}
         <header style={{background:"#020e1c",borderBottom:"1px solid #071828",minHeight:52,padding:"7px 18px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,flexWrap:"wrap",position:"sticky",top:0,zIndex:100,boxShadow:"0 1px 0 rgba(0,212,170,.06),0 4px 16px rgba(0,0,0,.4)"}}>
