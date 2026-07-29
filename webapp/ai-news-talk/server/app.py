@@ -32,6 +32,7 @@ from pydantic import BaseModel, Field
 from ai import (  # type: ignore[import-not-found]
     AiRefused,
     AiUnavailable,
+    run_agent,
     summarize_table,
 )
 from ai import status as ai_status  # type: ignore[import-not-found]
@@ -214,6 +215,24 @@ def ai_summarize(body: SummarizeRequest, _: None = Depends(rate_limit)) -> Dict[
     except AiUnavailable as exc:
         # 503은 "서버는 살아 있는데 이 기능만 꺼져 있다"는 뜻 —
         # 클라이언트는 이걸 받고 로컬 계산으로 떨어진다.
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except AiRefused as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+class AgentRunRequest(BaseModel):
+    instruction: str = Field(..., description="사용자가 작성한 에이전트 지시문")
+    sample: str = Field(..., description="지시문을 시험할 샘플 입력")
+
+
+@app.post("/api/ai/agent-run")
+def ai_agent_run(body: AgentRunRequest, _: None = Depends(rate_limit)) -> Dict[str, Any]:
+    """지시문을 샘플 입력에 실제로 적용해 보고 결과와 개선점을 돌려준다."""
+    try:
+        return run_agent(body.instruction, body.sample)
+    except AiUnavailable as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc

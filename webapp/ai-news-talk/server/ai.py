@@ -124,13 +124,27 @@ def summarize_table(table: str, note: str = "") -> Dict[str, Any]:
         prompt += f"\n[추가 맥락] {note.strip()}\n"
     prompt += f"\n<표>\n{table}\n</표>"
 
+    result = _call(system=SYSTEM, prompt=prompt, schema=SCHEMA, max_tokens=MAX_TOKENS)
+    parsed = result["parsed"]
+    return {
+        "summary": _exactly(parsed.get("summary"), 3),
+        "biggestChange": parsed["biggest_change"],
+        "questions": _exactly(parsed.get("questions"), 3),
+        "model": result["model"],
+        "usage": result["usage"],
+    }
+
+
+def _call(system: str, prompt: str, schema: Dict[str, Any], max_tokens: int) -> Dict[str, Any]:
+    """구조화 출력 한 번. 거절·파라미터 미지원 처리를 여기 모아 둔다."""
+    client = _client()
     kwargs: Dict[str, Any] = {
         "model": MODEL,
-        "max_tokens": MAX_TOKENS,
-        "system": SYSTEM,
+        "max_tokens": max_tokens,
+        "system": system,
         "output_config": {
             "effort": EFFORT,
-            "format": {"type": "json_schema", "schema": SCHEMA},
+            "format": {"type": "json_schema", "schema": schema},
         },
         "messages": [{"role": "user", "content": prompt}],
     }
@@ -150,16 +164,85 @@ def summarize_table(table: str, note: str = "") -> Dict[str, Any]:
         detail = getattr(message, "stop_details", None)
         raise AiRefused(getattr(detail, "explanation", None) or "모델이 응답을 거절했습니다.")
 
-    parsed = json.loads(_text_of(message))
     return {
-        "summary": _exactly(parsed.get("summary"), 3),
-        "biggestChange": parsed["biggest_change"],
-        "questions": _exactly(parsed.get("questions"), 3),
+        "parsed": json.loads(_text_of(message)),
         "model": getattr(message, "model", MODEL),
         "usage": {
             "input": getattr(message.usage, "input_tokens", None),
             "output": getattr(message.usage, "output_tokens", None),
         },
+    }
+
+
+MAX_INSTRUCTION_CHARS = 20_000
+MAX_SAMPLE_CHARS = 40_000
+
+AGENT_SCHEMA: Dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "output": {
+            "type": "string",
+            "description": "지시문을 그대로 따랐을 때 나오는 결과물 전체.",
+        },
+        "issues": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "point": {"type": "string", "description": "지시문의 문제점"},
+                    "fix": {"type": "string", "description": "고쳐 쓸 문장"},
+                },
+                "required": ["point", "fix"],
+                "additionalProperties": False,
+            },
+            "description": "지시문을 실제로 따라 본 뒤 발견한 개선점. 최대 3개.",
+        },
+    },
+    "required": ["output", "issues"],
+    "additionalProperties": False,
+}
+
+AGENT_SYSTEM = (
+    "너는 사용자가 만든 '업무용 미니 에이전트' 지시문을 시험해 주는 역할이다. "
+    "두 가지를 한다. ① 그 지시문을 곧이곧대로 따라 샘플 입력을 처리한 결과를 낸다 — "
+    "지시문이 허술하면 허술한 대로 나오게 두어라. 사용자가 그 결함을 봐야 한다. "
+    "② 그렇게 직접 따라 본 경험을 근거로 지시문의 개선점을 짚는다. "
+    "특히 지시문에 없어서 네가 임의로 판단해야 했던 지점을 우선 지적하라. "
+    "일반론이 아니라 이번 실행에서 실제로 걸린 것만 쓴다. 한국어로 답하라."
+)
+
+
+def run_agent(instruction: str, sample: str) -> Dict[str, Any]:
+    """사용자가 쓴 지시문을 샘플 입력에 실제로 적용해 보고, 개선점까지 돌려준다."""
+    instruction = (instruction or "").strip()
+    sample = (sample or "").strip()
+    if not instruction:
+        raise ValueError("지시문이 비어 있습니다.")
+    if not sample:
+        raise ValueError("시험할 샘플 입력이 비어 있습니다.")
+    if len(instruction) > MAX_INSTRUCTION_CHARS:
+        raise ValueError(f"지시문이 너무 깁니다. {MAX_INSTRUCTION_CHARS:,}자 이하로 줄여 주세요.")
+    if len(sample) > MAX_SAMPLE_CHARS:
+        raise ValueError(f"샘플 입력이 너무 깁니다. {MAX_SAMPLE_CHARS:,}자 이하로 줄여 주세요.")
+
+    client = _client()
+    prompt = (
+        "아래 <지시문>을 그대로 따라 <샘플입력>을 처리하라. "
+        "그 결과를 output에, 따라 하면서 발견한 지시문의 개선점을 issues에 담아라.\n\n"
+        f"<지시문>\n{instruction}\n</지시문>\n\n"
+        f"<샘플입력>\n{sample}\n</샘플입력>"
+    )
+    result = _call(
+        system=AGENT_SYSTEM,
+        prompt=prompt,
+        schema=AGENT_SCHEMA,
+        max_tokens=max(MAX_TOKENS, 6000),
+    )
+    return {
+        "output": result["parsed"]["output"],
+        "issues": _exactly(result["parsed"].get("issues"), 3),
+        "model": result["model"],
+        "usage": result["usage"],
     }
 
 

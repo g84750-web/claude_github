@@ -183,3 +183,62 @@ def test_extra_items_are_trimmed(client, monkeypatch):
     body = client.post("/api/ai/summarize", json={"table": TABLE}).json()
     assert len(body["summary"]) == 3
     assert len(body["questions"]) == 3
+
+
+# ── 미니 에이전트 시험 실행 ──────────────────────────────────
+AGENT_GOOD = {
+    "output": "① 요약 3줄\n- 매출 증가\n② 표\n③ 확인 필요: 없음",
+    "issues": [
+        {"point": "출력 ②의 표 열이 정해져 있지 않다", "fix": "[출력]에 '열은 [항목/값/비고]' 를 추가"},
+        {"point": "단위가 지정되지 않았다", "fix": "'금액은 백만원 단위' 를 추가"},
+    ],
+}
+INSTR = "너는 주간 리포트 전담 어시스턴트다.\n[역할] 표를 요약한다.\n[출력] 3줄\n[금지] 추측 금지"
+SAMPLE = "1월 매출 100\n2월 매출 150"
+
+
+def test_agent_run_returns_output_and_issues(client, monkeypatch):
+    fake = FakeClient(_message(AGENT_GOOD))
+    _install(monkeypatch, fake)
+    r = client.post("/api/ai/agent-run", json={"instruction": INSTR, "sample": SAMPLE})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["output"] == AGENT_GOOD["output"]
+    assert len(body["issues"]) == 2
+    assert body["issues"][0]["fix"].startswith("[출력]")
+
+
+def test_agent_run_sends_both_parts(client, monkeypatch):
+    """지시문과 샘플이 둘 다 실려야 '실제로 따라 해 본' 결과가 나온다."""
+    fake = FakeClient(_message(AGENT_GOOD))
+    _install(monkeypatch, fake)
+    client.post("/api/ai/agent-run", json={"instruction": INSTR, "sample": SAMPLE})
+    _, kwargs = fake.calls[0]
+    sent = kwargs["messages"][0]["content"]
+    assert INSTR in sent and SAMPLE in sent
+    assert kwargs["output_config"]["format"]["schema"]["properties"]["output"]["type"] == "string"
+
+
+def test_agent_run_issues_trimmed_to_three(client, monkeypatch):
+    many = dict(AGENT_GOOD, issues=[{"point": f"p{i}", "fix": f"f{i}"} for i in range(6)])
+    _install(monkeypatch, FakeClient(_message(many)))
+    body = client.post("/api/ai/agent-run", json={"instruction": INSTR, "sample": SAMPLE}).json()
+    assert len(body["issues"]) == 3
+
+
+@pytest.mark.parametrize("payload", [
+    {"instruction": "  ", "sample": SAMPLE},
+    {"instruction": INSTR, "sample": "  "},
+    {"instruction": "x" * (ai.MAX_INSTRUCTION_CHARS + 1), "sample": SAMPLE},
+    {"instruction": INSTR, "sample": "x" * (ai.MAX_SAMPLE_CHARS + 1)},
+])
+def test_agent_run_input_validation(client, monkeypatch, payload):
+    _install(monkeypatch, FakeClient())
+    assert client.post("/api/ai/agent-run", json=payload).status_code == 422
+
+
+def test_agent_run_503_without_key(monkeypatch):
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    c = TestClient(app_module.app)
+    r = c.post("/api/ai/agent-run", json={"instruction": INSTR, "sample": SAMPLE})
+    assert r.status_code == 503

@@ -226,7 +226,7 @@ const EXPS = [
    steps:["회의 메모를 그대로 복사한다","프롬프트 실행 후 표 형태로 받는다","담당자 미지정 항목만 직접 채운다"],
    prompt:"다음 회의 메모에서 실행 과제만 뽑아 표로 만들어라. 열은 [과제 / 담당자 / 기한 / 선행조건 / 리스크]. 담당자나 기한이 메모에 없으면 '미지정'으로 두고 절대 임의로 만들지 마라. 마지막에 '이번 주 안에 안 하면 지연되는 것' 을 따로 정리하라.",
    tip:"'임의로 만들지 마라'를 빼면 AI가 담당자를 지어낸다."},
-  {id:"e3",icon:"🤖",title:"내 업무용 미니 에이전트 설계해보기",tool:"Claude Projects",
+  {id:"e3",icon:"🤖",title:"내 업무용 미니 에이전트 설계해보기",tool:"Claude Projects",run:"agent4",
    level:"중급",min:8,free:true,sol:["A10","OmniEsol"],
    goal:"반복 업무 1개를 골라 지시문·입력·출력이 고정된 나만의 도우미를 만든다.",
    steps:["주 3회 이상 반복하는 업무를 1개 고른다","역할/입력/출력/금지사항 4단 구조로 지시문을 쓴다","실제 사례 3건으로 테스트하고 지시문을 고친다"],
@@ -1542,6 +1542,266 @@ function analyzeTable(text) {
   };
 }
 
+/* ══════════════════════════════════════════════════════════════
+   🤖 미니 에이전트 지시문 — 조립과 점검은 로컬, 시험 실행은 서버
+
+   카드의 요지는 "지시문을 쓰고 실제 사례로 시험해 고친다"이다. 앞의 두 단계는
+   브라우저에서 온전히 할 수 있으므로 로컬로 처리한다. 마지막 '실제로 돌려보기'만
+   모델이 필요해서 서버를 탄다 — 이것만은 흉내낼 방법이 없으니 그렇다고 말한다.
+══════════════════════════════════════════════════════════════ */
+const AGENT_FIELDS = [
+  {k:"task",   label:"업무명",   ph:"주간 영업 리포트 정리",       rows:1},
+  {k:"role",   label:"역할",     ph:"내가 주는 원자료를 정해진 양식으로 변환한다", rows:2},
+  {k:"input",  label:"입력",     ph:"영업팀이 보내는 주간 실적 표와 특이사항 메모", rows:2},
+  {k:"output", label:"출력",     ph:"① 요약 3줄 ② 항목별 표 ③ 확인이 필요한 항목 목록", rows:3},
+  {k:"forbid", label:"금지사항", ph:"원자료에 없는 수치 생성\n추측을 사실처럼 쓰기", rows:3},
+];
+
+/* 지시문이 실패하는 전형적인 이유들 — 모호어는 모델이 알아서 메우고, 그 지점이
+   나중에 품질 문제로 돌아온다. 팁이 "[금지]가 품질의 80%"라고 말하는 이유다. */
+const VAGUE = ["적절히","적당히","알아서","잘 ","필요시","등등","기타 등","가능하면","적절한","적당한"];
+
+function buildInstruction(f) {
+  const lines = (s) => String(s||"").split("\n").map(t=>t.trim()).filter(Boolean);
+  const bullet = (s) => lines(s).map(t=>t.replace(/^[-·•]\s*/,"")).map(t=>"- "+t).join("\n");
+  return [
+    `너는 ${f.task.trim()} 전담 어시스턴트다.`,
+    ``,
+    `[역할]`,
+    f.role.trim(),
+    ``,
+    `[입력]`,
+    f.input.trim(),
+    ``,
+    `[출력]`,
+    bullet(f.output) || f.output.trim(),
+    ``,
+    `[금지]`,
+    bullet(f.forbid) || f.forbid.trim(),
+    ``,
+    `준비됐으면 "입력을 주세요"만 답하라.`,
+  ].join("\n");
+}
+
+function checkInstruction(f) {
+  const cnt = (s) => String(s||"").split("\n").map(t=>t.trim()).filter(Boolean).length;
+  const all = Object.keys(f).map(k=>f[k]).join("\n");
+  const found = VAGUE.filter(v=>all.indexOf(v) !== -1);
+  const nForbid = cnt(f.forbid), nOut = cnt(f.output);
+  const hasShape = new RegExp("[①1-9]\\s*[).．]|표|목록|줄|개조식|JSON").test(f.output);
+
+  const items = [
+    {ok: nForbid >= 2, w: nForbid === 1,
+     t: `금지사항 ${nForbid}개`,
+     m: nForbid >= 2 ? "지시문 품질을 가르는 항목입니다. 좋습니다."
+        : nForbid === 1 ? "1개는 부족합니다. 실패할 때마다 여기에 한 줄씩 늘리세요."
+        : "비어 있습니다. 여기가 비면 모델이 빈칸을 스스로 메웁니다."},
+    {ok: nOut >= 2, w: nOut === 1,
+     t: `출력 항목 ${nOut}개`,
+     m: nOut >= 2 ? "출력 구조가 고정돼 매번 같은 모양으로 나옵니다."
+        : "출력이 한 줄이면 결과 형식이 회차마다 흔들립니다."},
+    {ok: hasShape, w: false,
+     t: hasShape ? "출력 형식 지정됨" : "출력 형식 미지정",
+     m: hasShape ? "번호·표·줄 수 같은 형식 단서가 있습니다."
+        : "'표', '3줄', '① ②' 처럼 형태를 못박으면 결과가 안정됩니다."},
+    {ok: found.length === 0, w: found.length > 0 && found.length <= 2,
+     t: found.length ? `모호한 표현 ${found.length}개` : "모호한 표현 없음",
+     m: found.length ? `"${found.map(v=>v.trim()).join('", "')}" — 모델이 알아서 해석합니다. 기준을 숫자나 조건으로 바꾸세요.`
+        : "판단을 모델에 떠넘기는 표현이 없습니다."},
+  ];
+  const score = items.filter(i=>i.ok).length;
+  return {items, score, total: items.length};
+}
+
+function AgentBuilder({aiUrl}) {
+  const [f, setF] = usePersist("agentDraft",
+    {task:"",role:"",input:"",output:"",forbid:""}, vObj);
+  const [sample, setSample] = useState("");
+  const [built, setBuilt] = useState(null);
+  const [copied, setCopied] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [run, setRun] = useState(null);
+  const [err, setErr] = useState("");
+
+  const set = (k, v) => setF(prev => Object.assign({}, prev, {[k]: v}));
+  const filled = AGENT_FIELDS.every(fd => String(f[fd.k]||"").trim());
+
+  const doBuild = () => {
+    setErr(""); setRun(null);
+    setBuilt({text: buildInstruction(f), check: checkInstruction(f)});
+  };
+  const doCopy = () => {
+    if (!built) return;
+    if (copyText(built.text)) { setCopied(true); setTimeout(()=>setCopied(false), 1600); }
+  };
+
+  const doRun = useCallback(async () => {
+    if (!built) return;
+    setBusy(true); setErr(""); setRun(null);
+    const r = await syncFetch(joinUrl(aiUrl, "/api/ai/agent-run"), {
+      method:"POST",
+      body: JSON.stringify({instruction: built.text, sample: sample}),
+    });
+    if (r.ok && r.body && typeof r.body.output === "string") setRun(r.body);
+    else if (r.status === 503) setErr("서버에 AI가 연결돼 있지 않습니다. 서버에서 ANTHROPIC_API_KEY를 설정해 주세요.");
+    else if (r.status === 422 && r.body && r.body.detail) setErr(String(r.body.detail));
+    else if (r.netError) setErr("서버에 닿지 못했습니다. 주소와 서버 상태를 확인해 주세요.");
+    else setErr(`시험 실행에 실패했습니다 (HTTP ${r.status || "?"}).`);
+    setBusy(false);
+  }, [built, sample, aiUrl]);
+
+  const canRun = NET && aiUrl && built && sample.trim() && !busy;
+  const LBL = {fontSize:9,color:"#4a6379",fontFamily:MONO,fontWeight:700,letterSpacing:".8px",marginBottom:4};
+  const INPUT = {
+    width:"100%",boxSizing:"border-box",resize:"vertical",
+    padding:"7px 9px",borderRadius:5,border:"1px solid #c6d7e6",
+    fontSize:11,lineHeight:1.6,fontFamily:KR,color:"#0d2436",background:"#eef4fa",
+  };
+
+  return (
+    <div style={{
+      marginTop:9,padding:"11px 12px",borderRadius:6,
+      background:"#ffffff",border:"1px solid rgba(0,92,74,.28)",
+    }}>
+      <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8,flexWrap:"wrap"}}>
+        <span style={{fontSize:9,color:"#005c4a",fontFamily:MONO,fontWeight:700,letterSpacing:".8px"}}>
+          ▶ 여기서 바로 만들기
+        </span>
+        <span style={{fontSize:9.5,color:"#4a6379",fontFamily:KR}}>
+          4칸을 채우면 지시문이 만들어지고 바로 점검됩니다. 입력은 자동 저장됩니다.
+        </span>
+      </div>
+
+      {AGENT_FIELDS.map(fd=>(
+        <div key={fd.k} style={{marginBottom:7}}>
+          <div style={LBL}>{fd.label}</div>
+          {fd.rows === 1
+            ? <input value={f[fd.k]||""} onChange={e=>set(fd.k, e.target.value)}
+                     placeholder={fd.ph} style={INPUT}/>
+            : <textarea value={f[fd.k]||""} onChange={e=>set(fd.k, e.target.value)}
+                        rows={fd.rows} placeholder={fd.ph}
+                        style={Object.assign({}, INPUT, {fontFamily:KR})}/>}
+        </div>
+      ))}
+
+      <div style={{display:"flex",alignItems:"center",gap:7,marginTop:8,flexWrap:"wrap"}}>
+        <button className="toggle-btn" onClick={doBuild} disabled={!filled} style={{
+          padding:"4px 13px",borderRadius:4,fontSize:10.5,fontWeight:700,fontFamily:KR,
+          border:"1px solid rgba(0,92,74,.4)",
+          background: filled ? "rgba(0,92,74,.12)" : "rgba(0,92,74,.05)",
+          color: filled ? "#005c4a" : "#4a6379",
+          cursor: filled ? "pointer" : "not-allowed",
+        }}>지시문 만들기</button>
+        {built && (
+          <button className="toggle-btn" onClick={doCopy} style={{
+            padding:"4px 11px",borderRadius:4,fontSize:10,fontWeight:700,fontFamily:MONO,
+            border:`1px solid ${copied?"rgba(15,85,39,.45)":"rgba(0,92,74,.25)"}`,
+            background:copied?"rgba(15,85,39,.1)":"rgba(0,92,74,.05)",
+            color:copied?"#0f5527":"#005c4a",cursor:"pointer",
+          }}>{copied?"✓ 복사됨":"📋 복사"}</button>
+        )}
+        {!filled && <span style={{fontSize:9.5,color:"#566f87",fontFamily:KR}}>5칸을 모두 채워 주세요</span>}
+      </div>
+
+      {built && (
+        <div style={{marginTop:10}}>
+          <div style={LBL}>완성된 지시문</div>
+          <pre style={{
+            fontSize:10.5,color:"#0d2436",lineHeight:1.62,fontFamily:MONO,
+            whiteSpace:"pre-wrap",wordBreak:"break-word",margin:0,
+            padding:"9px 11px",borderRadius:5,background:"#eef4fa",border:"1px solid #c6d7e6",
+          }}>{built.text}</pre>
+
+          <div style={{display:"flex",alignItems:"center",gap:6,margin:"10px 0 5px",flexWrap:"wrap"}}>
+            <span style={{fontSize:9,color:"#4a6379",fontFamily:MONO,fontWeight:700,letterSpacing:".8px"}}>지시문 점검</span>
+            <span style={{
+              padding:"1px 7px",borderRadius:3,fontSize:8.5,fontWeight:800,fontFamily:MONO,
+              background:"rgba(23,75,133,.1)",border:"1px solid rgba(23,75,133,.32)",color:"#174b85",
+            }}>로컬 점검 {built.check.score}/{built.check.total}</span>
+          </div>
+          {built.check.items.map((it,i)=>{
+            const c = it.ok ? "#0f5527" : it.w ? "#7a4405" : "#9e2a1f";
+            return (
+              <div key={i} style={{display:"flex",gap:7,marginBottom:4,alignItems:"flex-start"}}>
+                <span style={{fontSize:10,flexShrink:0,color:c,fontFamily:MONO,fontWeight:800,marginTop:1}}>
+                  {it.ok ? "✓" : it.w ? "△" : "✗"}
+                </span>
+                <span style={{fontSize:11,lineHeight:1.58,fontFamily:KR}}>
+                  <b style={{color:c}}>{it.t}</b>
+                  <span style={{color:"#3d5a72"}}> — {it.m}</span>
+                </span>
+              </div>
+            );
+          })}
+
+          <div style={{marginTop:11,paddingTop:10,borderTop:"1px dashed #c6d7e6"}}>
+            <div style={LBL}>실제 사례로 시험하기</div>
+            <textarea value={sample} onChange={e=>setSample(e.target.value)} rows={4}
+              placeholder={"이 에이전트에 넣을 원자료를 붙여넣으세요.\n(위 [입력]에 적은 것과 같은 종류의 실제 데이터)"}
+              style={Object.assign({}, INPUT, {fontFamily:MONO,fontSize:10.5})}/>
+            <div style={{display:"flex",alignItems:"center",gap:7,marginTop:7,flexWrap:"wrap"}}>
+              <button className="toggle-btn" onClick={doRun} disabled={!canRun} style={{
+                padding:"4px 13px",borderRadius:4,fontSize:10.5,fontWeight:700,fontFamily:KR,
+                border:"1px solid rgba(0,92,74,.4)",
+                background: canRun ? "rgba(0,92,74,.12)" : "rgba(0,92,74,.05)",
+                color: canRun ? "#005c4a" : "#4a6379",
+                cursor: canRun ? "pointer" : "not-allowed",
+              }}>{busy ? "실행 중…" : "이 지시문으로 시험 실행"}</button>
+              <span style={{fontSize:9.5,color:"#4a6379",fontFamily:KR}}>
+                {!NET ? "이 화면에서는 시험 실행을 할 수 없습니다 — 지시문을 복사해 Claude·ChatGPT에 붙여넣어 보세요."
+                 : !aiUrl ? "시험 실행에는 서버가 필요합니다. ⏰ 시간설정 → ☁️ 서버 동기화에 주소를 넣어 주세요."
+                 : !sample.trim() ? "위에 시험할 원자료를 넣어 주세요." : ""}
+              </span>
+            </div>
+          </div>
+
+          {err && (
+            <div style={{
+              marginTop:8,padding:"7px 10px",borderRadius:5,fontSize:10.5,lineHeight:1.55,
+              background:"rgba(158,42,31,.06)",border:"1px solid rgba(158,42,31,.24)",
+              color:"#9e2a1f",fontFamily:KR,
+            }}>{err}</div>
+          )}
+
+          {run && (
+            <div style={{marginTop:10}}>
+              <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6,flexWrap:"wrap"}}>
+                <span style={{
+                  padding:"1px 7px",borderRadius:3,fontSize:8.5,fontWeight:800,fontFamily:MONO,
+                  background:"rgba(0,92,74,.12)",border:"1px solid rgba(0,92,74,.4)",color:"#005c4a",
+                }}>AI 실행 결과</span>
+                <span style={{fontSize:9.5,color:"#4a6379",fontFamily:KR}}>
+                  {run.model || "Claude"} · 위 지시문을 그대로 따른 결과입니다
+                </span>
+              </div>
+              <pre style={{
+                fontSize:11,color:"#0d2436",lineHeight:1.66,fontFamily:KR,
+                whiteSpace:"pre-wrap",wordBreak:"break-word",margin:0,
+                padding:"9px 11px",borderRadius:5,background:"#eef4fa",border:"1px solid #c6d7e6",
+              }}>{run.output}</pre>
+
+              {run.issues && run.issues.length > 0 && (
+                <div style={{marginTop:9}}>
+                  <div style={LBL}>직접 따라 해 보고 걸린 부분</div>
+                  {run.issues.map((it,i)=>(
+                    <div key={i} style={{marginBottom:6}}>
+                      <div style={{fontSize:11,color:"#0d2436",fontWeight:700,lineHeight:1.55,fontFamily:KR}}>· {it.point}</div>
+                      <div style={{fontSize:11,color:"#3d5a72",lineHeight:1.58,fontFamily:KR,paddingLeft:9}}>→ {it.fix}</div>
+                    </div>
+                  ))}
+                  <div style={{fontSize:10,color:"#645019",fontFamily:KR,lineHeight:1.55,marginTop:5}}>
+                    위 지적을 [금지] 칸에 한 줄씩 옮겨 적고 다시 실행해 보세요. 그게 이 카드의 3단계입니다.
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ExpCard({x, delay, done, onDone, aiUrl}) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -1673,6 +1933,8 @@ function ExpCard({x, delay, done, onDone, aiUrl}) {
               whiteSpace:"pre-wrap",wordBreak:"break-word",margin:0,
             }}>{x.prompt}</pre>
           </div>
+
+          {x.run === "agent4" && <AgentBuilder aiUrl={aiUrl}/>}
 
           {x.run === "excel3" && (
             <div style={{
