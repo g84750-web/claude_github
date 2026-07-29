@@ -242,3 +242,66 @@ def test_agent_run_503_without_key(monkeypatch):
     c = TestClient(app_module.app)
     r = c.post("/api/ai/agent-run", json={"instruction": INSTR, "sample": SAMPLE})
     assert r.status_code == 503
+
+
+# ── 회의록 → 실행 과제 ────────────────────────────────────────
+MEET_GOOD = {
+    "tasks": [
+        {"task": "원가 자료 취합", "owner": "김과장", "due": "다음 주 수요일",
+         "prereq": "없음", "risk": "없음"},
+        {"task": "견적서 초안 공유", "owner": "미지정", "due": "이번 주 금요일",
+         "prereq": "원가 자료 취합 완료", "risk": "지연 시 계약 일정 밀림"},
+    ],
+    "urgent": ["견적서 초안 공유"],
+}
+TRANSCRIPT = "김과장이 다음 주 수요일까지 원가 자료 취합하기로 했습니다. 견적서 초안은 이번 주 금요일까지 공유해 주세요."
+
+
+def test_meeting_tasks_returns_rows_and_urgent(client, monkeypatch):
+    _install(monkeypatch, FakeClient(_message(MEET_GOOD)))
+    r = client.post("/api/ai/meeting-tasks", json={"transcript": TRANSCRIPT})
+    assert r.status_code == 200
+    body = r.json()
+    assert len(body["tasks"]) == 2
+    assert body["tasks"][0]["owner"] == "김과장"
+    assert body["tasks"][1]["owner"] == "미지정"
+    assert body["urgent"] == ["견적서 초안 공유"]
+
+
+def test_meeting_prompt_forbids_inventing_owners(client, monkeypatch):
+    """담당자를 지어내지 말라는 지시가 실제로 실려야 한다 — 이게 이 카드의 핵심."""
+    fake = FakeClient(_message(MEET_GOOD))
+    _install(monkeypatch, fake)
+    client.post("/api/ai/meeting-tasks", json={"transcript": TRANSCRIPT})
+    _, kwargs = fake.calls[0]
+    assert "미지정" in kwargs["system"]
+    assert "만들지 마라" in kwargs["system"]
+    assert TRANSCRIPT in kwargs["messages"][0]["content"]
+    cols = kwargs["output_config"]["format"]["schema"]["properties"]["tasks"]["items"]["properties"]
+    assert set(cols) == {"task", "owner", "due", "prereq", "risk"}
+
+
+def test_meeting_empty_rejected(client, monkeypatch):
+    _install(monkeypatch, FakeClient())
+    assert client.post("/api/ai/meeting-tasks", json={"transcript": "  "}).status_code == 422
+
+
+def test_meeting_oversized_rejected(client, monkeypatch):
+    _install(monkeypatch, FakeClient())
+    r = client.post("/api/ai/meeting-tasks",
+                    json={"transcript": "x" * (ai.MAX_TRANSCRIPT_CHARS + 1)})
+    assert r.status_code == 422
+
+
+def test_meeting_503_without_key(monkeypatch):
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    c = TestClient(app_module.app)
+    r = c.post("/api/ai/meeting-tasks", json={"transcript": TRANSCRIPT})
+    assert r.status_code == 503
+
+
+def test_meeting_empty_task_list_is_allowed(client, monkeypatch):
+    """과제가 없는 회의도 있다 — 억지로 만들어 내지 않는 게 맞다."""
+    _install(monkeypatch, FakeClient(_message({"tasks": [], "urgent": []})))
+    body = client.post("/api/ai/meeting-tasks", json={"transcript": "잡담만 했습니다"}).json()
+    assert body["tasks"] == [] and body["urgent"] == []

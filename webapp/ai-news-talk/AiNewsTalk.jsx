@@ -220,10 +220,11 @@ const EXPS = [
    steps:["엑셀에서 표 영역을 그대로 복사한다","아래 프롬프트를 붙여넣고 그 아래에 표를 붙인다","숫자 근거가 포함됐는지 한 번 검증한다"],
    prompt:"아래는 우리 부서 월별 실적 표다. ① 핵심 3줄 요약 ② 전월 대비 가장 큰 변화 1건과 원인 가설 ③ 임원이 물어볼 질문 3개를 예상해서 답까지 달아라. 숫자는 반드시 표에서 인용하고, 표에 없는 값은 추정이라고 명시하라.",
    tip:"'표에 없는 값은 추정이라고 명시' 한 줄이 환각을 크게 줄인다."},
-  {id:"e2",icon:"🧾",title:"회의록 → 실행 과제 자동 추출",tool:"Claude / Copilot",
+  {id:"e2",icon:"🧾",title:"회의록 음성 녹음 → 실행 과제 자동 추출",tool:"브라우저 녹음 + Claude",
    level:"입문",min:2,free:true,sol:["NSM10","WEHAGO"],
-   goal:"흘러가는 회의 메모를 담당자·기한이 붙은 액션 아이템으로 바꾼다.",
-   steps:["회의 메모를 그대로 복사한다","프롬프트 실행 후 표 형태로 받는다","담당자 미지정 항목만 직접 채운다"],
+   run:"meeting",
+   goal:"회의를 음성으로 녹음하고, 받아쓰기에서 담당자·기한이 붙은 액션 아이템을 뽑는다.",
+   steps:["🎙 녹음 시작을 누르고 회의를 진행한다 (받아쓰기가 쌓인다)","정지 후 받아쓰기를 훑어보며 오탈자만 고친다","실행 과제 추출 → 담당자·기한 미지정 항목만 직접 채운다"],
    prompt:"다음 회의 메모에서 실행 과제만 뽑아 표로 만들어라. 열은 [과제 / 담당자 / 기한 / 선행조건 / 리스크]. 담당자나 기한이 메모에 없으면 '미지정'으로 두고 절대 임의로 만들지 마라. 마지막에 '이번 주 안에 안 하면 지연되는 것' 을 따로 정리하라.",
    tip:"'임의로 만들지 마라'를 빼면 AI가 담당자를 지어낸다."},
   {id:"e3",icon:"🤖",title:"내 업무용 미니 에이전트 설계해보기",tool:"Claude Projects",run:"agent4",
@@ -1613,6 +1614,441 @@ function checkInstruction(f) {
   return {items, score, total: items.length};
 }
 
+/* ══════════════════════════════════════════════════════════════
+   🧾 회의 메모 → 실행 과제 (규칙 기반 로컬 추출)
+
+   서버가 없을 때 쓰는 경로다. 규칙으로 확실히 잡히는 것만 잡는다 —
+   행동을 지시하는 문장, 직함이 붙은 담당자, 날짜 표현. 선행조건·리스크는
+   규칙으로 신뢰성 있게 못 뽑으므로 '미지정'으로 두고 화면에서 그렇다고 말한다.
+   지어내는 것보다 비워 두는 편이 낫다.
+══════════════════════════════════════════════════════════════ */
+const ACT_RE = new RegExp("(하기로|하겠|해\\s?주세|해\\s?주시|부탁드리|드리겠|드릴게|할게|합시다|하시죠|"
+  + "진행|검토|준비|확인|공유|정리|작성|전달|요청|확정|배포|수정|보완|반영|점검|취합|정산|발주|초안|"
+  + "잡아|올려|보내|넘겨|맞춰|받아)");
+const TITLE_RE = new RegExp("([가-힣]{2,4})\\s*(님|씨|책임|매니저|과장|차장|부장|팀장|대리|사원|이사|상무|전무|선임|수석)");
+const TEAM_RE = new RegExp("([가-힣A-Za-z]{2,10})\\s*팀");
+const PREREQ_RE = new RegExp("([^,]{2,30}?(?:끝나면|나오면|받으면|승인되면|확정되면|완료되면|이후에|끝난 뒤|나온 뒤))");
+const RISK_RE = new RegExp("(지연|리스크|우려|이슈|늦어질|늦어지|막히면|안 되면|안되면|차질)");
+
+const DUE_PATTERNS = [
+  new RegExp("(\\d{1,2}\\s*월\\s*\\d{1,2}\\s*일(?:\\s*까지)?)"),
+  new RegExp("(\\d{1,2}\\s*일\\s*까지)"),
+  new RegExp("((?:이번|금|다음|차|담)\\s*주(?:\\s*[월화수목금토일]요일)?(?:\\s*까지)?)"),
+  new RegExp("([월화수목금토일]요일(?:\\s*까지)?)"),
+  new RegExp("((?:오늘|내일|모레|글피|월말|월초|분기말|연말|주말)(?:\\s*까지)?)"),
+];
+/* '이번 주 안에 안 하면 지연되는 것' 판정 — 다음 주 이후는 뺀다 */
+const SOON_RE = new RegExp("(오늘|내일|모레|이번\\s*주|금주|[월화수목금토일]요일)");
+const LATER_RE = new RegExp("(다음\\s*주|차주|담주|월말|분기말|연말)");
+
+/* 받아쓰기 텍스트에는 문장부호가 거의 없다. 부호가 있으면 부호로,
+   없으면 한국어 종결어미로 나눈다. */
+function splitSentences(text) {
+  const out = [];
+  String(text || "").split(new RegExp("\\n+")).forEach(line => {
+    const t = line.trim();
+    if (!t) return;
+    const chunks = new RegExp("[.!?。…]").test(t)
+      ? t.split(new RegExp("(?<=[.!?。…])\\s*"))
+      : t.split(new RegExp("(?<=(?:습니다|합니다|입니다|하죠|하시죠|해요|예요|이에요|겠습니다|드립니다|드릴게요|할게요|하세요|합시다))\\s+"));
+    chunks.forEach(c => { const v = c.trim(); if (v) out.push(v); });
+  });
+  return out;
+}
+
+const FILLER = new RegExp("^(?:음+|어+|아+|자|그럼|그러면|그래서|네|예|일단)[\\s,]*", "");
+
+function extractTasksLocal(text) {
+  const sents = splitSentences(text);
+  if (!sents.length) throw new Error("회의 내용이 비어 있습니다. 녹음하거나 직접 입력해 주세요.");
+
+  const tasks = [];
+  sents.forEach((s, idx) => {
+    if (!ACT_RE.test(s)) return;
+    /* 말할 때 리스크는 과제 바로 다음 문장에 붙는 일이 잦다
+       ("...반영하겠습니다. 늦어지면 계약 일정에 차질이 있습니다").
+       다음 문장이 그 자체로 다른 과제가 아닐 때만 끌어온다. */
+    const next = sents[idx + 1];
+    const nextIsRisk = !!next && !ACT_RE.test(next) && RISK_RE.test(next);
+    const owner = (TITLE_RE.exec(s) || [])[0] || (TEAM_RE.exec(s) || [])[0] || "";
+    let due = "";
+    for (let i = 0; i < DUE_PATTERNS.length; i++) {
+      const m = DUE_PATTERNS[i].exec(s);
+      if (m) { due = m[1].replace(new RegExp("\\s+", "g"), " ").trim(); break; }
+    }
+    const pre = (PREREQ_RE.exec(s) || [])[1] || "";
+    const body = s.replace(FILLER, "").trim();
+    tasks.push({
+      task: body.length > 120 ? body.slice(0, 120) + "…" : body,
+      owner: owner.trim() || "미지정",
+      due: due || "미지정",
+      prereq: pre.trim() || "미지정",
+      risk: (RISK_RE.test(s) || nextIsRisk) ? "회의에서 지연·리스크가 언급됨" : "미지정",
+      soon: !!due && SOON_RE.test(due) && !LATER_RE.test(due),
+    });
+  });
+
+  if (!tasks.length) {
+    throw new Error("실행 과제로 볼 만한 문장을 찾지 못했습니다. "
+      + "'~하기로', '~해 주세요', '~까지' 같은 표현이 있는지 확인하거나, 서버 AI로 추출해 보세요.");
+  }
+  return {
+    tasks,
+    urgent: tasks.filter(t=>t.soon).map(t=>t.task),
+    source: "local",
+    stats: {sentences: sents.length, matched: tasks.length},
+  };
+}
+
+/* 브라우저 능력 감지 — 되는 것만 켜고, 안 되는 이유는 화면에 그대로 쓴다 */
+function meetCaps() {
+  if (typeof window === "undefined") return {rec:false, stt:false, secure:false, why:"SSR"};
+  const secure = !!window.isSecureContext;
+  const gum = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  return {
+    rec: !!(window.MediaRecorder && gum && secure),
+    stt: !!SR && secure,
+    secure,
+    why: !secure ? "https 또는 localhost에서만 마이크를 쓸 수 있습니다(브라우저 보안 정책)."
+      : !gum ? "이 브라우저에서 마이크를 열 수 없습니다."
+      : !SR ? "이 브라우저에는 받아쓰기 기능이 없습니다(Chrome·Edge에서 지원)."
+      : "",
+  };
+}
+
+const pickMime = () => {
+  const cands = ["audio/webm;codecs=opus","audio/webm","audio/mp4","audio/ogg;codecs=opus"];
+  for (let i = 0; i < cands.length; i++) {
+    if (window.MediaRecorder && MediaRecorder.isTypeSupported(cands[i])) return cands[i];
+  }
+  return "";
+};
+
+const mmss = (s) => `${String(Math.floor(s/60)).padStart(2,"0")}:${String(s%60).padStart(2,"0")}`;
+
+function MeetingRecorder({aiUrl}) {
+  const [caps] = useState(meetCaps);
+  const [phase, setPhase] = useState("idle");      /* idle | rec | done */
+  const [secs, setSecs] = useState(0);
+  const [audio, setAudio] = useState(null);        /* {url, size, mime} */
+  const [text, setText] = usePersist("meetText", "", vStr);
+  const [interim, setInterim] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [res, setRes] = useState(null);
+  const [err, setErr] = useState("");
+  const [note, setNote] = useState("");
+
+  const recRef = useRef(null);
+  const srRef = useRef(null);
+  const streamRef = useRef(null);
+  const chunksRef = useRef([]);
+  const urlRef = useRef(null);
+
+  /* 녹음 중 경과 시간 */
+  useEffect(()=>{
+    if (phase !== "rec") return;
+    const id = setInterval(()=>setSecs(s=>s+1), 1000);
+    return ()=>clearInterval(id);
+  }, [phase]);
+
+  /* 화면을 떠날 때 마이크와 objectURL을 반드시 놓아준다 */
+  const release = useCallback(()=>{
+    try { if (recRef.current && recRef.current.state !== "inactive") recRef.current.stop(); } catch(_){}
+    try { if (srRef.current) { srRef.current.onend = null; srRef.current.stop(); } } catch(_){}
+    try { if (streamRef.current) streamRef.current.getTracks().forEach(t=>t.stop()); } catch(_){}
+    recRef.current = null; srRef.current = null; streamRef.current = null;
+  }, []);
+  useEffect(()=>()=>{
+    release();
+    try { if (urlRef.current) URL.revokeObjectURL(urlRef.current); } catch(_){}
+  }, [release]);
+
+  const start = useCallback(async ()=>{
+    setErr(""); setNote(""); setRes(null); setInterim("");
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({audio:true});
+    } catch (e) {
+      setErr("마이크를 열지 못했습니다. 브라우저 주소창의 권한 설정을 확인해 주세요." +
+             (e && e.name ? ` (${e.name})` : ""));
+      return;
+    }
+    streamRef.current = stream;
+    chunksRef.current = [];
+    if (urlRef.current) { try { URL.revokeObjectURL(urlRef.current); } catch(_){} urlRef.current = null; }
+    setAudio(null); setSecs(0);
+
+    const mime = pickMime();
+    try {
+      const mr = mime ? new MediaRecorder(stream, {mimeType: mime}) : new MediaRecorder(stream);
+      mr.ondataavailable = (e)=>{ if (e.data && e.data.size) chunksRef.current.push(e.data); };
+      mr.onstop = ()=>{
+        const type = mr.mimeType || mime || "audio/webm";
+        const blob = new Blob(chunksRef.current, {type});
+        const url = URL.createObjectURL(blob);
+        urlRef.current = url;
+        setAudio({url, size: blob.size, mime: type});
+      };
+      mr.start(1000);
+      recRef.current = mr;
+    } catch (e) {
+      setErr("이 브라우저에서 녹음을 시작하지 못했습니다.");
+      release(); return;
+    }
+
+    /* 받아쓰기 — 되는 브라우저에서만. 안 돼도 녹음은 계속된다. */
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SR) {
+      try {
+        const sr = new SR();
+        sr.lang = "ko-KR"; sr.continuous = true; sr.interimResults = true;
+        sr.onresult = (ev)=>{
+          let fin = "", tmp = "";
+          for (let i = ev.resultIndex; i < ev.results.length; i++) {
+            const r = ev.results[i];
+            if (r.isFinal) fin += r[0].transcript + "\n"; else tmp += r[0].transcript;
+          }
+          if (fin) setText(prev => (prev ? prev.replace(new RegExp("\\s+$"), "") + "\n" : "") + fin.trim());
+          setInterim(tmp);
+        };
+        sr.onerror = (ev)=>{
+          if (ev && ev.error === "not-allowed") setNote("받아쓰기 권한이 거부됐습니다. 녹음은 계속됩니다.");
+          else if (ev && ev.error === "network") setNote("받아쓰기가 네트워크에 닿지 못했습니다. 녹음은 계속됩니다.");
+        };
+        sr.onend = ()=>{ if (recRef.current && recRef.current.state === "recording") { try{ sr.start(); }catch(_){} } };
+        sr.start();
+        srRef.current = sr;
+      } catch(_) { setNote("이 브라우저에서 받아쓰기를 켜지 못했습니다. 녹음은 정상 진행됩니다."); }
+    }
+    setPhase("rec");
+  }, [release, setText]);
+
+  const stop = useCallback(()=>{
+    try { if (srRef.current) { srRef.current.onend = null; srRef.current.stop(); } } catch(_){}
+    srRef.current = null;
+    try { if (recRef.current && recRef.current.state !== "inactive") recRef.current.stop(); } catch(_){}
+    try { if (streamRef.current) streamRef.current.getTracks().forEach(t=>t.stop()); } catch(_){}
+    streamRef.current = null;
+    setInterim(""); setPhase("done");
+  }, []);
+
+  const doExtract = useCallback(async ()=>{
+    setBusy(true); setErr(""); setNote(""); setRes(null);
+    let out = null;
+    if (NET && aiUrl) {
+      const r = await syncFetch(joinUrl(aiUrl, "/api/ai/meeting-tasks"), {
+        method:"POST", body: JSON.stringify({transcript: text}),
+      });
+      if (r.ok && r.body && Array.isArray(r.body.tasks)) out = Object.assign({}, r.body, {source:"ai"});
+      else if (r.status === 422 && r.body && r.body.detail) { setErr(String(r.body.detail)); setBusy(false); return; }
+      else if (r.status && r.status !== 503 && r.status !== 404) setNote("서버 AI 호출이 실패해 규칙 추출로 처리했습니다.");
+    }
+    if (!out) {
+      try { out = extractTasksLocal(text); }
+      catch (e) { setErr(e.message || "과제를 뽑지 못했습니다."); setBusy(false); return; }
+    }
+    setRes(out); setBusy(false);
+  }, [text, aiUrl]);
+
+  const fname = () => {
+    const d = new Date(), p = (n)=>String(n).padStart(2,"0");
+    const ext = audio && audio.mime.indexOf("mp4") !== -1 ? "m4a" : "webm";
+    return `회의록_${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}.${ext}`;
+  };
+
+  const LBL = {fontSize:9,color:"#4a6379",fontFamily:MONO,fontWeight:700,letterSpacing:".8px",marginBottom:5};
+  const BTN = (on)=>({
+    padding:"4px 13px",borderRadius:4,fontSize:10.5,fontWeight:700,fontFamily:KR,
+    border:`1px solid ${on?"rgba(158,42,31,.45)":"rgba(0,92,74,.4)"}`,
+    background: on?"rgba(158,42,31,.1)":"rgba(0,92,74,.12)",
+    color: on?"#9e2a1f":"#005c4a", cursor:"pointer",
+  });
+
+  return (
+    <div style={{
+      marginTop:9,padding:"11px 12px",borderRadius:6,
+      background:"#ffffff",border:"1px solid rgba(0,92,74,.28)",
+    }}>
+      <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8,flexWrap:"wrap"}}>
+        <span style={{fontSize:9,color:"#005c4a",fontFamily:MONO,fontWeight:700,letterSpacing:".8px"}}>
+          ▶ 여기서 바로 녹음
+        </span>
+        <span style={{fontSize:9.5,color:"#4a6379",fontFamily:KR}}>
+          {caps.rec ? "말하면 받아쓰기가 쌓이고, 음성은 파일로 내려받을 수 있습니다."
+                    : "녹음을 쓸 수 없는 환경입니다 — 아래에 회의 메모를 직접 붙여넣어도 됩니다."}
+        </span>
+      </div>
+
+      {/* 개인정보 고지 — 사내 회의 음성이 어디로 가는지 반드시 알려야 한다 */}
+      {caps.stt && (
+        <div style={{
+          padding:"7px 10px",borderRadius:5,marginBottom:8,
+          background:"rgba(122,68,5,.05)",border:"1px solid rgba(122,68,5,.2)",
+          fontSize:10,lineHeight:1.55,color:"#645019",fontFamily:KR,
+        }}>
+          <b>받아쓰기 고지</b> — 받아쓰기는 브라우저(Chrome·Edge) 기능이며, <b>음성이 브라우저 제조사 서버로 전송</b>되어
+          문자로 변환됩니다. 대외비 회의에는 사용하지 마시고, 필요하면 받아쓰기 없이 녹음만 하거나
+          메모를 직접 입력해 주세요. 녹음 파일 자체는 이 브라우저 안에만 있습니다.
+        </div>
+      )}
+      {!caps.rec && caps.why && (
+        <div style={{
+          padding:"7px 10px",borderRadius:5,marginBottom:8,
+          background:"rgba(23,75,133,.06)",border:"1px solid rgba(23,75,133,.22)",
+          fontSize:10,lineHeight:1.55,color:"#174b85",fontFamily:KR,
+        }}>{caps.why}</div>
+      )}
+
+      <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+        {phase !== "rec"
+          ? <button className="toggle-btn" onClick={start} disabled={!caps.rec} style={Object.assign({}, BTN(false), {
+              opacity: caps.rec ? 1 : .5, cursor: caps.rec ? "pointer" : "not-allowed",
+            })}>🎙 {audio ? "다시 녹음" : "녹음 시작"}</button>
+          : <button className="toggle-btn" onClick={stop} style={BTN(true)}>⏹ 녹음 정지</button>}
+
+        {phase === "rec" && (
+          <span style={{display:"flex",alignItems:"center",gap:6}}>
+            <span style={{
+              width:8,height:8,borderRadius:"50%",background:"#9e2a1f",
+              display:"inline-block",animation:"blink 1s infinite",
+            }}/>
+            <span style={{fontSize:12,fontWeight:800,color:"#9e2a1f",fontFamily:MONO}}>{mmss(secs)}</span>
+            <span style={{fontSize:9.5,color:"#4a6379",fontFamily:KR}}>녹음 중</span>
+          </span>
+        )}
+
+        {audio && phase !== "rec" && (
+          <>
+            <audio controls src={audio.url} style={{height:30,maxWidth:230}}/>
+            <a href={audio.url} download={fname()} style={{
+              padding:"4px 11px",borderRadius:4,fontSize:10,fontWeight:700,fontFamily:KR,
+              border:"1px solid rgba(0,92,74,.3)",background:"rgba(0,92,74,.05)",
+              color:"#005c4a",textDecoration:"none",
+            }}>⬇ 음성 저장</a>
+            <span style={{fontSize:9.5,color:"#566f87",fontFamily:MONO}}>
+              {mmss(secs)} · {Math.max(1, Math.round(audio.size/1024))}KB
+            </span>
+          </>
+        )}
+      </div>
+
+      {audio && phase !== "rec" && (
+        <div style={{fontSize:9.5,color:"#645019",fontFamily:KR,marginTop:6,lineHeight:1.5}}>
+          음성 파일은 이 화면을 닫으면 사라집니다. 남기려면 <b>⬇ 음성 저장</b>으로 내려받아 주세요.
+          (받아쓰기 텍스트는 브라우저에 자동 저장됩니다)
+        </div>
+      )}
+
+      <div style={{marginTop:10}}>
+        <div style={LBL}>받아쓰기 / 회의 메모 <span style={{fontWeight:400,letterSpacing:0}}>— 직접 고치거나 붙여넣어도 됩니다</span></div>
+        <textarea value={text + (interim ? (text ? "\n" : "") + interim : "")}
+          onChange={e=>{ setText(e.target.value); setInterim(""); }}
+          rows={6}
+          placeholder={"녹음을 시작하면 여기에 받아쓰기가 쌓입니다.\n또는 회의 메모를 그대로 붙여넣으세요.\n\n예)\n김과장이 다음 주 수요일까지 원가 자료 취합하기로 했습니다.\n영업팀은 이번 주 금요일까지 견적서 초안 공유해 주세요."}
+          style={{
+            width:"100%",boxSizing:"border-box",resize:"vertical",
+            padding:"8px 10px",borderRadius:5,border:"1px solid #c6d7e6",
+            fontSize:11,lineHeight:1.62,fontFamily:KR,color:"#0d2436",background:"#eef4fa",
+          }}/>
+        <div style={{display:"flex",alignItems:"center",gap:7,marginTop:7,flexWrap:"wrap"}}>
+          <button className="toggle-btn" onClick={doExtract} disabled={busy || !text.trim()} style={{
+            padding:"4px 13px",borderRadius:4,fontSize:10.5,fontWeight:700,fontFamily:KR,
+            border:"1px solid rgba(0,92,74,.4)",
+            background:(busy||!text.trim())?"rgba(0,92,74,.05)":"rgba(0,92,74,.12)",
+            color:(busy||!text.trim())?"#4a6379":"#005c4a",
+            cursor:(busy||!text.trim())?"not-allowed":"pointer",
+          }}>{busy ? "추출 중…" : "✅ 실행 과제 추출"}</button>
+          {(text || res) && (
+            <button className="toggle-btn" onClick={()=>{setText("");setRes(null);setErr("");setNote("");}} style={{
+              padding:"4px 11px",borderRadius:4,fontSize:10,fontWeight:700,fontFamily:KR,
+              border:"1px solid #c6d7e6",background:"transparent",color:"#4a6379",cursor:"pointer",
+            }}>지우기</button>
+          )}
+          <span style={{marginLeft:"auto",fontSize:9.5,color:"#566f87",fontFamily:KR}}>
+            {aiUrl && NET ? "서버 AI 연결됨 — 실패 시 규칙 추출" : "규칙 추출 (서버 없이 동작)"}
+          </span>
+        </div>
+      </div>
+
+      {err && (
+        <div style={{
+          marginTop:8,padding:"7px 10px",borderRadius:5,fontSize:10.5,lineHeight:1.55,
+          background:"rgba(158,42,31,.06)",border:"1px solid rgba(158,42,31,.24)",
+          color:"#9e2a1f",fontFamily:KR,
+        }}>{err}</div>
+      )}
+      {note && (
+        <div style={{
+          marginTop:8,padding:"6px 9px",borderRadius:5,fontSize:10,lineHeight:1.5,
+          background:"rgba(122,68,5,.05)",border:"1px solid rgba(122,68,5,.18)",
+          color:"#645019",fontFamily:KR,
+        }}>{note}</div>
+      )}
+
+      {res && (
+        <div style={{marginTop:10}}>
+          <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:7,flexWrap:"wrap"}}>
+            <span style={{
+              padding:"1px 7px",borderRadius:3,fontSize:8.5,fontWeight:800,fontFamily:MONO,
+              background: res.source==="ai" ? "rgba(0,92,74,.12)" : "rgba(23,75,133,.1)",
+              border: `1px solid ${res.source==="ai" ? "rgba(0,92,74,.4)" : "rgba(23,75,133,.32)"}`,
+              color: res.source==="ai" ? "#005c4a" : "#174b85",
+            }}>{res.source==="ai" ? "AI 추출" : "규칙 추출"}</span>
+            <span style={{fontSize:9.5,color:"#4a6379",fontFamily:KR}}>
+              {res.source==="ai"
+                ? `${res.model || "Claude"} · 과제 ${res.tasks.length}건`
+                : `과제 ${res.tasks.length}건 · 담당자·기한 중심입니다 (선행조건·리스크는 대부분 미지정)`}
+            </span>
+          </div>
+
+          {res.tasks.length === 0 && (
+            <div style={{fontSize:11,color:"#3d5a72",fontFamily:KR}}>뽑아낼 실행 과제가 없었습니다.</div>
+          )}
+
+          {res.tasks.map((t,i)=>(
+            <div key={i} style={{
+              padding:"8px 10px",borderRadius:5,marginBottom:6,
+              background:"#eef4fa",border:"1px solid #c6d7e6",
+            }}>
+              <div style={{fontSize:11.5,color:"#0d2436",fontWeight:700,lineHeight:1.55,fontFamily:KR,marginBottom:4}}>
+                {i+1}. {t.task}
+              </div>
+              <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
+                {[["담당",t.owner],["기한",t.due],["선행",t.prereq],["리스크",t.risk]].map(([k,v])=>{
+                  const un = !v || v === "미지정" || v === "없음";
+                  return (
+                    <span key={k} style={{
+                      padding:"1px 7px",borderRadius:3,fontSize:9,fontFamily:MONO,fontWeight:700,
+                      background: un ? "rgba(71,85,105,.07)" : "rgba(0,92,74,.09)",
+                      border: `1px solid ${un ? "rgba(71,85,105,.2)" : "rgba(0,92,74,.28)"}`,
+                      color: un ? "#4b5a6e" : "#005c4a",
+                    }}>{k} {v || "미지정"}</span>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+
+          {res.urgent && res.urgent.length > 0 && (
+            <div style={{
+              marginTop:8,padding:"8px 11px",borderRadius:5,
+              background:"rgba(158,42,31,.05)",border:"1px solid rgba(158,42,31,.22)",
+            }}>
+              <div style={{fontSize:9,color:"#9e2a1f",fontFamily:MONO,fontWeight:700,letterSpacing:".8px",marginBottom:5}}>
+                이번 주 안에 안 하면 지연되는 것
+              </div>
+              {res.urgent.map((u,i)=>(
+                <div key={i} style={{fontSize:11,color:"#0d2436",lineHeight:1.58,fontFamily:KR}}>· {u}</div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function AgentBuilder({aiUrl}) {
   const [f, setF] = usePersist("agentDraft",
     {task:"",role:"",input:"",output:"",forbid:""}, vObj);
@@ -1933,6 +2369,8 @@ function ExpCard({x, delay, done, onDone, aiUrl}) {
               whiteSpace:"pre-wrap",wordBreak:"break-word",margin:0,
             }}>{x.prompt}</pre>
           </div>
+
+          {x.run === "meeting" && <MeetingRecorder aiUrl={aiUrl}/>}
 
           {x.run === "agent4" && <AgentBuilder aiUrl={aiUrl}/>}
 

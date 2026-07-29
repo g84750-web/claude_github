@@ -32,6 +32,7 @@ from pydantic import BaseModel, Field
 from ai import (  # type: ignore[import-not-found]
     AiRefused,
     AiUnavailable,
+    extract_tasks,
     run_agent,
     summarize_table,
 )
@@ -232,6 +233,23 @@ def ai_agent_run(body: AgentRunRequest, _: None = Depends(rate_limit)) -> Dict[s
     """지시문을 샘플 입력에 실제로 적용해 보고 결과와 개선점을 돌려준다."""
     try:
         return run_agent(body.instruction, body.sample)
+    except AiUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except AiRefused as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+class MeetingRequest(BaseModel):
+    transcript: str = Field(..., description="회의 메모 또는 음성 받아쓰기 텍스트")
+
+
+@app.post("/api/ai/meeting-tasks")
+def ai_meeting_tasks(body: MeetingRequest, _: None = Depends(rate_limit)) -> Dict[str, Any]:
+    """회의 내용에서 담당자·기한이 붙은 실행 과제를 뽑는다."""
+    try:
+        return extract_tasks(body.transcript)
     except AiUnavailable as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except ValueError as exc:

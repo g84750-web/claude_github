@@ -246,6 +246,76 @@ def run_agent(instruction: str, sample: str) -> Dict[str, Any]:
     }
 
 
+MAX_TRANSCRIPT_CHARS = 80_000
+
+MEETING_SCHEMA: Dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "tasks": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "task": {"type": "string", "description": "실행 과제"},
+                    "owner": {"type": "string", "description": "담당자. 메모에 없으면 '미지정'"},
+                    "due": {"type": "string", "description": "기한. 메모에 없으면 '미지정'"},
+                    "prereq": {"type": "string", "description": "선행조건. 없으면 '없음'"},
+                    "risk": {"type": "string", "description": "리스크. 없으면 '없음'"},
+                },
+                "required": ["task", "owner", "due", "prereq", "risk"],
+                "additionalProperties": False,
+            },
+        },
+        "urgent": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "이번 주 안에 하지 않으면 지연되는 것.",
+        },
+    },
+    "required": ["tasks", "urgent"],
+    "additionalProperties": False,
+}
+
+MEETING_SYSTEM = (
+    "너는 회의 메모에서 실행 과제만 뽑아내는 역할이다. "
+    "담당자나 기한이 메모에 없으면 반드시 '미지정'으로 두고, 절대 임의로 만들지 마라. "
+    "메모에 없는 과제를 지어내지 마라 — 실제로 언급된 것만 뽑는다. "
+    "받아쓰기 텍스트라 오탈자나 끊긴 문장이 있을 수 있다. 문맥으로 알아볼 수 있으면 "
+    "정리해서 쓰되, 무슨 말인지 알 수 없는 부분을 추측으로 메우지는 마라. "
+    "한국어로 답하라."
+)
+
+
+def extract_tasks(transcript: str) -> Dict[str, Any]:
+    """회의 메모(또는 받아쓰기 텍스트)에서 실행 과제를 뽑는다."""
+    transcript = (transcript or "").strip()
+    if not transcript:
+        raise ValueError("회의 내용이 비어 있습니다.")
+    if len(transcript) > MAX_TRANSCRIPT_CHARS:
+        raise ValueError(f"회의 내용이 너무 깁니다. {MAX_TRANSCRIPT_CHARS:,}자 이하로 줄여 주세요.")
+
+    prompt = (
+        "다음 회의 메모에서 실행 과제만 뽑아 표로 만들어라. "
+        "열은 [과제 / 담당자 / 기한 / 선행조건 / 리스크]. "
+        "담당자나 기한이 메모에 없으면 '미지정'으로 두고 절대 임의로 만들지 마라. "
+        "마지막에 '이번 주 안에 안 하면 지연되는 것'을 urgent에 따로 정리하라.\n\n"
+        f"<회의메모>\n{transcript}\n</회의메모>"
+    )
+    result = _call(
+        system=MEETING_SYSTEM,
+        prompt=prompt,
+        schema=MEETING_SCHEMA,
+        max_tokens=max(MAX_TOKENS, 6000),
+    )
+    parsed = result["parsed"]
+    return {
+        "tasks": list(parsed.get("tasks") or []),
+        "urgent": list(parsed.get("urgent") or []),
+        "model": result["model"],
+        "usage": result["usage"],
+    }
+
+
 def _exactly(items: Any, n: int) -> List[Any]:
     """항목 수는 스키마로 강제할 수 없다(배열 제약 미지원). 여기서 맞춘다."""
     items = list(items or [])
