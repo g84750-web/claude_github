@@ -1,10 +1,17 @@
-/* AiNewsTalk.jsx → 자체 완결형 아티팩트 HTML 빌드
+/* AiNewsTalk.jsx → 자체 완결형 HTML 빌드
    변환은 전부 기계적이며 저장소의 JSX 원본은 건드리지 않는다.
      ① import/export 제거 → 전역 React에서 훅 구조분해
      ② 구글 폰트 @import 제거 (아티팩트 CSP가 외부 호스트를 차단)
      ③ 폰트 스택 확장 (웹폰트 없이도 한글·모노가 제대로 잡히도록)
-     ④ NET 플래그 off → 외부 요청을 아예 보내지 않는다
-     ⑤ EMBED 플래그 on → 뷰포트 기준 높이 제거 (iframe 리사이즈 되먹임 방지)
+     ④ NET 플래그 — 아티팩트는 off(외부 요청을 아예 보내지 않음)
+     ⑤ EMBED 플래그 — 아티팩트는 on(뷰포트 기준 높이 제거, iframe 되먹임 방지)
+
+   사용:
+     node build-artifact.cjs out.html            아티팩트용 (네트워크 차단)
+     node build-artifact.cjs out.html --local    로컬용 (동기화 서버 사용 가능)
+
+   --local 은 React 툴체인 없이 앱을 그대로 띄우기 위한 것이다. NET이 켜져 있어
+   동기화 서버에 붙을 수 있고, 최상위 문서로 열리므로 100vh도 그대로 쓴다.
 */
 const fs = require("fs");
 const path = require("path");
@@ -13,6 +20,12 @@ const babel = require("@babel/core");
 const ROOT = "/home/user/claude_github";
 const SRC = path.join(ROOT, "webapp/ai-news-talk/AiNewsTalk.jsx");
 const OUT = process.argv[2];
+const LOCAL = process.argv.includes("--local");
+
+if (!OUT) {
+  console.error("사용법: node build-artifact.cjs <출력파일.html> [--local]");
+  process.exit(1);
+}
 
 let src = fs.readFileSync(SRC, "utf8");
 const before = src.length;
@@ -39,17 +52,19 @@ src = src.replace(krOld,
 src = src.replace(monoOld,
   `const MONO = "'JetBrains Mono','SFMono-Regular',Menlo,Consolas,'Courier New',monospace";`);
 
-// ④ 네트워크 차단 — CSP 거부 로그는 브라우저가 직접 찍어 try/catch로 못 막으므로
-//    요청 자체를 보내지 않는다. 뉴스는 데모, 동기화는 오프라인 경로로 떨어진다.
+// ④ 네트워크 — 아티팩트 빌드에서만 끈다. CSP 거부 로그는 브라우저가 직접 찍어
+//    try/catch로 못 막으므로 요청 자체를 보내지 않는다. 뉴스는 데모, 동기화는
+//    오프라인 경로로 떨어진다. --local 은 켜둔 채로 두어 동기화 서버에 붙는다.
 const netOn = "const NET = true;";
 if (!src.includes(netOn)) throw new Error("NET 플래그를 찾지 못했습니다");
-src = src.replace(netOn, "const NET = false;");
+if (!LOCAL) src = src.replace(netOn, "const NET = false;");
 
 // ⑤ 임베드 모드 — 호스트가 scrollHeight에 맞춰 iframe 높이를 조정하므로
 //    100vh 같은 뷰포트 기준 높이는 되먹임 루프가 된다 (높이가 수렴하지 않음).
+//    --local 은 최상위 문서로 열리므로 되먹임이 없어 100vh를 그대로 둔다.
 const embedOff = "const EMBED = false;";
 if (!src.includes(embedOff)) throw new Error("EMBED 플래그를 찾지 못했습니다");
-src = src.replace(embedOff, "const EMBED = true;");
+if (!LOCAL) src = src.replace(embedOff, "const EMBED = true;");
 
 // JSX → JS (classic runtime: React.createElement 사용)
 const compiled = babel.transformSync(src, {
@@ -60,6 +75,15 @@ const compiled = babel.transformSync(src, {
 
 const react = fs.readFileSync(path.join(ROOT, "node_modules/react/umd/react.production.min.js"), "utf8");
 const reactDom = fs.readFileSync(path.join(ROOT, "node_modules/react-dom/umd/react-dom.production.min.js"), "utf8");
+
+/* 안내 배너 — 빌드 모드에 따라 사실관계가 다르므로 문구를 나눈다 */
+const envNoteText = LOCAL
+  ? `<b>로컬 실행</b> — 뉴스 API에는 브라우저에서 직접 닿을 수 없어 <b>내장 데모 데이터 8건</b>으로
+     표시됩니다(상태 바 <code>DEMO</code> 배지). <b>서버 동기화</b>는 사용할 수 있습니다 —
+     <code>⏰ 시간설정 → ☁️ 서버 동기화</code>에 서버 주소를 넣어 주세요.`
+  : `<b>미리보기 안내</b> — 이 페이지는 외부 네트워크가 차단된 환경에서 실행됩니다.
+     뉴스는 <b>내장 데모 데이터 8건</b>으로 표시되며(상태 바 <code>DEMO</code> 배지),
+     <b>서버 동기화</b>도 연결되지 않습니다. 그 외 시간설정·6개 코너·브라우저 저장은 모두 정상 동작합니다.`;
 
 const html = `<title>AI 글로벌 뉴스 톡 — DZ 전략 인텔리전스</title>
 <style>
@@ -102,11 +126,7 @@ const html = `<title>AI 글로벌 뉴스 톡 — DZ 전략 인텔리전스</titl
 </style>
 
 <div class="env-note" id="envNote">
-  <span>
-    <b>미리보기 안내</b> — 이 페이지는 외부 네트워크가 차단된 환경에서 실행됩니다.
-    뉴스는 <b>내장 데모 데이터 8건</b>으로 표시되며(상태 바 <code>DEMO</code> 배지),
-    <b>서버 동기화</b>도 연결되지 않습니다. 그 외 시간설정·6개 코너·브라우저 저장은 모두 정상 동작합니다.
-  </span>
+  <span>${envNoteText}</span>
   <button type="button" id="envClose">닫기</button>
 </div>
 
@@ -125,8 +145,25 @@ ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(
 </script>
 `;
 
-fs.writeFileSync(OUT, html);
+/* 아티팩트 호스트는 <!doctype>·<head>·<body> 를 씌워 주지만 로컬 파일은 아무도
+   씌워 주지 않으므로 직접 완전한 문서로 만든다. */
+const out = LOCAL
+  ? `<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+</head>
+<body>
+${html}</body>
+</html>
+`
+  : html;
+
+fs.writeFileSync(OUT, out);
+console.log("빌드 모드  : " + (LOCAL ? "로컬 (NET on, EMBED off, 완전한 HTML 문서)"
+                                     : "아티팩트 (NET off, EMBED on)"));
 console.log("원본 JSX  : " + Math.round(before / 1024) + "KB");
 console.log("변환 JS   : " + Math.round(compiled.length / 1024) + "KB");
 console.log("React UMD : " + Math.round((react.length + reactDom.length) / 1024) + "KB");
-console.log("산출 HTML : " + Math.round(html.length / 1024) + "KB → " + OUT);
+console.log("산출 HTML : " + Math.round(out.length / 1024) + "KB → " + OUT);

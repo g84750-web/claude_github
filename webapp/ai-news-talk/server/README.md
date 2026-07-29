@@ -3,17 +3,71 @@
 AI 글로벌 뉴스 톡의 설정·학습 진행률을 기기 간에 공유하기 위한 최소 API 서버입니다.
 FastAPI + SQLite로 되어 있어 별도 DB 설치 없이 파일 하나로 동작합니다.
 
-## 실행
+## 처음부터 끝까지 실행하기
+
+### 1. 서버 띄우기
 
 ```bash
-pip install -r ../../../requirements.txt
+pip install -r requirements.txt          # 저장소 루트에서 (fastapi/uvicorn/httpx)
 cd webapp/ai-news-talk/server
 uvicorn app:app --port 8000
 ```
 
-브라우저에서 앱을 열고 `⏰ 시간설정 → ☁️ 서버 동기화`의 서버 주소에
-`http://localhost:8000`을 입력한 뒤 **동기화 코드 발급**을 누르면 됩니다.
-다른 기기에서는 같은 주소를 넣고 발급받은 코드를 입력하면 설정이 따라옵니다.
+`Application startup complete.` 가 보이면 성공입니다. 확인:
+
+```bash
+curl http://localhost:8000/api/health
+# {"ok":true,"service":"dzai-sync","version":"1.0.0"}
+```
+
+`sync.db` 파일이 현재 디렉터리에 자동으로 만들어집니다. 별도 DB 설치는 없습니다.
+`http://localhost:8000/docs` 에서 대화형 API 문서도 볼 수 있습니다.
+
+### 2. 앱 띄우기 — 반드시 `--local` 빌드
+
+기본 빌드는 네트워크가 꺼져 있어 동기화가 동작하지 않습니다. 새 터미널에서:
+
+```bash
+npm install --no-save react@18 react-dom@18 @babel/core @babel/preset-react
+node webapp/ai-news-talk/build-artifact.cjs local.html --local
+python3 -m http.server 5500
+```
+
+브라우저에서 `http://localhost:5500/local.html` 을 엽니다.
+
+### 3. 연결하기
+
+`⏰ 시간설정 → ☁️ 서버 동기화`에서 **서버 주소**에 `http://localhost:8000` 을 넣고
+**＋ 동기화 코드 발급**을 누르면 `DZAI-XXXX-XXXX-XXXX` 가 나옵니다.
+
+다른 기기에서는 같은 화면에 **서버 주소와 그 코드**를 넣고 **코드로 연결**을 누릅니다.
+이후 설정이 바뀌면 최대 8초 안에 자동으로 올라갑니다.
+
+> 다른 기기에서 붙으려면 `localhost` 가 아니라 서버 PC의 실제 주소
+> (`http://192.168.0.10:8000` 등)를 써야 하고, 서버도
+> `uvicorn app:app --host 0.0.0.0 --port 8000` 으로 띄워야 합니다.
+
+### 명령줄만으로 확인하기
+
+앱 없이 API만 시험해 볼 수도 있습니다.
+
+```bash
+# 코드 발급
+curl -X POST http://localhost:8000/api/sync \
+     -H 'Content-Type: application/json' \
+     -d '{"settings":{"times":["08:30"]}}'
+
+# 조회 (대소문자·하이픈 없이 넣어도 됩니다)
+curl http://localhost:8000/api/sync/DZAI-XXXX-XXXX-XXXX
+
+# 저장
+curl -X PUT http://localhost:8000/api/sync/DZAI-XXXX-XXXX-XXXX \
+     -H 'Content-Type: application/json' \
+     -d '{"settings":{"times":["09:00"]},"baseRev":1}'
+
+# 삭제
+curl -X DELETE http://localhost:8000/api/sync/DZAI-XXXX-XXXX-XXXX
+```
 
 ### 환경변수
 | 이름 | 기본값 | 설명 |

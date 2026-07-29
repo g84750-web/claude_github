@@ -208,13 +208,29 @@ export default function Root() {
 
 스타일은 컴포넌트 내부 `<style>` 태그로 주입되므로 별도 CSS import가 필요 없습니다.
 
-### 단일 HTML로 빌드 (아티팩트·정적 배포용)
+### 단일 HTML로 빌드
 
-React 없이 열 수 있는 자체 완결형 HTML을 만들려면:
+React 툴체인 없이 브라우저에서 바로 열 수 있는 자체 완결형 HTML을 만듭니다.
+빌드 모드가 둘이며, **동기화 서버를 쓰려면 `--local` 로 빌드해야 합니다.**
 
 ```bash
 npm install --no-save react@18 react-dom@18 @babel/core @babel/preset-react
-node webapp/ai-news-talk/build-artifact.cjs out.html
+
+node webapp/ai-news-talk/build-artifact.cjs out.html            # 아티팩트용
+node webapp/ai-news-talk/build-artifact.cjs local.html --local  # 로컬용
+```
+
+| | 아티팩트 (기본) | 로컬 (`--local`) |
+|---|---|---|
+| `NET` | off — 외부 요청 없음 | **on — 동기화 서버 사용 가능** |
+| `EMBED` | on — `100vh` 제거 | off — `100vh` 유지 |
+| 문서 형태 | 본문만 (호스트가 감쌈) | 완전한 HTML 문서 |
+
+`--local` 산출물은 `file://` 로 직접 열어도 되지만, 동기화 서버에 붙일 때는
+CORS 때문에 **`http://` 로 서빙하는 편이 안전합니다.**
+
+```bash
+python3 -m http.server 5500        # 그 뒤 http://localhost:5500/local.html
 ```
 
 `build-artifact.cjs`는 원본 JSX를 건드리지 않고 기계적 변환만 합니다 — 모듈 구문 제거,
