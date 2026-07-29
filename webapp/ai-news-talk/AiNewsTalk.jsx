@@ -29,33 +29,33 @@ const EMBED = false;
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #010b16; }
+  body { background: #eef4fa; }
   ::-webkit-scrollbar { width: 4px; height: 4px; }
-  ::-webkit-scrollbar-track { background: #010b16; }
-  ::-webkit-scrollbar-thumb { background: #0d2035; border-radius: 2px; }
+  ::-webkit-scrollbar-track { background: #eef4fa; }
+  ::-webkit-scrollbar-thumb { background: #c6d7e6; border-radius: 2px; }
 
   @keyframes fadeUp    { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
   @keyframes slideDown { from{opacity:0;max-height:0;transform:translateY(-4px)} to{opacity:1;max-height:900px;transform:translateY(0)} }
   @keyframes spin      { to{transform:rotate(360deg)} }
   @keyframes blink     { 0%,100%{opacity:1} 50%{opacity:.3} }
   @keyframes bar       { from{width:0} to{width:100%} }
-  @keyframes glow      { 0%,100%{box-shadow:0 0 6px #00d4aa50} 50%{box-shadow:0 0 14px #00d4aa90} }
+  @keyframes glow      { 0%,100%{box-shadow:0 0 6px #005c4a40} 50%{box-shadow:0 0 14px #005c4a70} }
   @keyframes pulse     { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.06);opacity:.75} }
   @keyframes flame     { 0%,100%{transform:translateY(0) scale(1)} 50%{transform:translateY(-2px) scale(1.12)} }
   @keyframes pop       { from{opacity:0;transform:scale(.94)} to{opacity:1;transform:scale(1)} }
 
-  .item { animation:fadeUp .28s ease both; border-bottom:1px solid #071828; }
+  .item { animation:fadeUp .28s ease both; border-bottom:1px solid #dbe6f0; }
   .item:last-child { border-bottom:none; }
-  .item:hover { background:rgba(0,212,170,.016)!important; }
+  .item:hover { background:rgba(0,92,74,.016)!important; }
 
   .card { animation:fadeUp .28s ease both; }
-  .card:hover { border-color:rgba(0,212,170,.28)!important; }
+  .card:hover { border-color:rgba(0,92,74,.28)!important; }
 
   .cat-tab  { transition:color .15s,border-color .15s; cursor:pointer; }
-  .cat-tab:hover { color:#7bafd4!important; }
+  .cat-tab:hover { color:#19527a!important; }
 
   .nav-tab { transition:all .16s; cursor:pointer; }
-  .nav-tab:hover { color:#8fd9c7!important; }
+  .nav-tab:hover { color:#0b5a54!important; }
 
   .cat-badge { cursor:pointer; transition:filter .15s; }
   .cat-badge:hover { filter:brightness(1.25); }
@@ -70,10 +70,10 @@ const CSS = `
   .toggle-btn:hover { filter:brightness(1.2); }
 
   .src-link { transition:color .15s; }
-  .src-link:hover { color:#60a5fa!important; }
+  .src-link:hover { color:#174b85!important; }
 
   .title-link { text-decoration:none; color:inherit; }
-  .title-link:hover { color:#b8d4f0!important; }
+  .title-link:hover { color:#174b85!important; }
 
   .ext-btn { transition:all .18s; cursor:pointer; text-decoration:none; }
   .ext-btn:hover { filter:brightness(1.2); }
@@ -88,11 +88,11 @@ const CSS = `
              font-size:9.5px; font-weight:800; letter-spacing:.6px; }
 
   .time-input {
-    background:#020e1c; border:1px solid #0d2035; color:#00d4aa;
+    background:#ffffff; border:1px solid #c6d7e6; color:#005c4a;
     border-radius:4px; padding:3px 6px; font-size:11.5px; font-weight:700;
     color-scheme:dark; outline:none;
   }
-  .time-input:focus { border-color:rgba(0,212,170,.5); }
+  .time-input:focus { border-color:rgba(0,92,74,.5); }
 
   .breath-ring { transition: transform 3.6s cubic-bezier(.4,0,.2,1), background .8s, box-shadow .8s; }
 `;
@@ -106,29 +106,29 @@ const MONO = "'JetBrains Mono','Courier New',monospace";
 const CATS = ["전체","AI 모델","AI 에이전트","AI 인프라","AI 비즈니스","AI 규제"];
 
 const CAT = {
-  "AI 모델":    {c:"#60a5fa",bg:"rgba(96,165,250,.12)",  bd:"rgba(96,165,250,.3)"},
-  "AI 에이전트":{c:"#a78bfa",bg:"rgba(167,139,250,.12)", bd:"rgba(167,139,250,.3)"},
-  "AI 인프라":  {c:"#34d399",bg:"rgba(52,211,153,.12)",  bd:"rgba(52,211,153,.3)"},
-  "AI 비즈니스":{c:"#fbbf24",bg:"rgba(251,191,36,.12)",  bd:"rgba(251,191,36,.3)"},
-  "AI 규제":    {c:"#f87171",bg:"rgba(248,113,113,.12)", bd:"rgba(248,113,113,.3)"},
+  "AI 모델":    {c:"#174b85",bg:"rgba(23,75,133,.12)",  bd:"rgba(23,75,133,.3)"},
+  "AI 에이전트":{c:"#5a1fb4",bg:"rgba(90,31,180,.12)", bd:"rgba(90,31,180,.3)"},
+  "AI 인프라":  {c:"#0b5a54",bg:"rgba(11,90,84,.12)",  bd:"rgba(11,90,84,.3)"},
+  "AI 비즈니스":{c:"#7a4405",bg:"rgba(122,68,5,.12)",  bd:"rgba(122,68,5,.3)"},
+  "AI 규제":    {c:"#9e2a1f",bg:"rgba(158,42,31,.12)", bd:"rgba(158,42,31,.3)"},
 };
 const SOL = {
-  A10:      {bg:"rgba(96,165,250,.14)",  bd:"rgba(96,165,250,.42)",  c:"#93c5fd"},
-  WEHAGO:   {bg:"rgba(167,139,250,.14)", bd:"rgba(167,139,250,.42)", c:"#c4b5fd"},
-  OmniEsol: {bg:"rgba(52,211,153,.14)",  bd:"rgba(52,211,153,.42)",  c:"#6ee7b7"},
-  FoEX:     {bg:"rgba(251,191,36,.14)",  bd:"rgba(251,191,36,.42)",  c:"#fde68a"},
-  NSM10:    {bg:"rgba(74,222,128,.14)",  bd:"rgba(74,222,128,.42)",  c:"#86efac"},
-  iCUBE:    {bg:"rgba(249,168,212,.14)", bd:"rgba(249,168,212,.42)", c:"#fbcfe8"},
+  A10:      {bg:"rgba(23,75,133,.14)",  bd:"rgba(23,75,133,.42)",  c:"#174b85"},
+  WEHAGO:   {bg:"rgba(90,31,180,.14)", bd:"rgba(90,31,180,.42)", c:"#5a1fb4"},
+  OmniEsol: {bg:"rgba(11,90,84,.14)",  bd:"rgba(11,90,84,.42)",  c:"#0b5a54"},
+  FoEX:     {bg:"rgba(122,68,5,.14)",  bd:"rgba(122,68,5,.42)",  c:"#6d4d05"},
+  NSM10:    {bg:"rgba(15,85,39,.14)",  bd:"rgba(15,85,39,.42)",  c:"#0f5527"},
+  iCUBE:    {bg:"rgba(157,16,73,.14)", bd:"rgba(157,16,73,.42)", c:"#9d1049"},
 };
 const IMP = {
-  high:  {label:"높음",c:"#f87171",bg:"rgba(248,113,113,.1)",bd:"rgba(248,113,113,.32)",w:3},
-  medium:{label:"중간",c:"#fbbf24",bg:"rgba(251,191,36,.1)", bd:"rgba(251,191,36,.32)",w:2},
-  low:   {label:"낮음",c:"#4ade80",bg:"rgba(74,222,128,.1)", bd:"rgba(74,222,128,.32)",w:1},
+  high:  {label:"높음",c:"#9e2a1f",bg:"rgba(158,42,31,.1)",bd:"rgba(158,42,31,.32)",w:3},
+  medium:{label:"중간",c:"#7a4405",bg:"rgba(122,68,5,.1)", bd:"rgba(122,68,5,.32)",w:2},
+  low:   {label:"낮음",c:"#0f5527",bg:"rgba(15,85,39,.1)", bd:"rgba(15,85,39,.32)",w:1},
 };
 const PRI = {
-  "즉시검토":  {c:"#f87171",w:4},
-  "단기검토":  {c:"#fbbf24",w:3},
-  "중장기검토":{c:"#60a5fa",w:2},
+  "즉시검토":  {c:"#9e2a1f",w:4},
+  "단기검토":  {c:"#7a4405",w:3},
+  "중장기검토":{c:"#174b85",w:2},
   "모니터링":  {c:"#475569",w:1},
 };
 
@@ -200,14 +200,14 @@ const DEMO = [
    🔥 핫AI코너 — 급상승 키워드 (뉴스와 별개로 상시 노출)
 ══════════════════════════════════════════════════════════════ */
 const HOT_KEYWORDS = [
-  {k:"AI 에이전트",   d:"+312%", c:"#a78bfa"},
-  {k:"MCP 연동",      d:"+248%", c:"#00d4aa"},
-  {k:"온프레미스 LLM",d:"+186%", c:"#60a5fa"},
-  {k:"AI 컴플라이언스",d:"+154%",c:"#f87171"},
-  {k:"RAG 관리형",    d:"+131%", c:"#34d399"},
-  {k:"토큰 단가 인하", d:"+118%", c:"#fbbf24"},
-  {k:"업무 자동화",   d:"+97%",  c:"#f0abfc"},
-  {k:"멀티모달 ERP",  d:"+84%",  c:"#7dd3fc"},
+  {k:"AI 에이전트",   d:"+312%", c:"#5a1fb4"},
+  {k:"MCP 연동",      d:"+248%", c:"#005c4a"},
+  {k:"온프레미스 LLM",d:"+186%", c:"#174b85"},
+  {k:"AI 컴플라이언스",d:"+154%",c:"#9e2a1f"},
+  {k:"RAG 관리형",    d:"+131%", c:"#0b5a54"},
+  {k:"토큰 단가 인하", d:"+118%", c:"#7a4405"},
+  {k:"업무 자동화",   d:"+97%",  c:"#84168e"},
+  {k:"멀티모달 ERP",  d:"+84%",  c:"#025380"},
 ];
 
 /* ══════════════════════════════════════════════════════════════
@@ -263,7 +263,7 @@ const EXPS = [
    prompt:"다음 텍스트에서 외부 유출 시 문제가 될 수 있는 항목(개인정보, 거래처명, 금액, 내부 코드)을 모두 찾아 [MASK-분류] 형태로 치환한 버전을 만들어라. 원문은 바꾸지 말고 치환본만 출력하라.",
    tip:"고객사명은 A사·B사로, 금액은 자릿수만 남기는 것이 기본 규칙."},
 ];
-const LEVEL_C = {"입문":"#4ade80","중급":"#fbbf24","필수":"#f87171"};
+const LEVEL_C = {"입문":"#0f5527","중급":"#7a4405","필수":"#9e2a1f"};
 
 /* ══════════════════════════════════════════════════════════════
    🎓 나에게 꼭 필요한 주요지식 — 역할별 3단계 깊이
@@ -366,11 +366,11 @@ const QUIZ_POOL = [
    🌿 나노마음건강
 ══════════════════════════════════════════════════════════════ */
 const MOODS = [
-  {e:"😄",t:"아주 좋음",c:"#4ade80",msg:"좋은 상태예요. 오늘의 컨디션을 만든 요인을 한 줄만 기록해두면 다음에 재현하기 쉬워집니다."},
-  {e:"🙂",t:"괜찮음",  c:"#34d399",msg:"안정적이에요. 무리해서 끌어올리기보다 이 상태를 유지하는 리듬을 지키는 편이 좋습니다."},
-  {e:"😐",t:"보통",    c:"#fbbf24",msg:"평범한 날도 충분합니다. 60초 호흡 한 번이면 오후 집중력이 눈에 띄게 달라집니다."},
-  {e:"😟",t:"지침",    c:"#fb923c",msg:"지쳐 있네요. 지금 할 일을 하나만 남기고 나머지는 잠시 미뤄도 괜찮습니다."},
-  {e:"😞",t:"많이 힘듦",c:"#f87171",msg:"많이 힘든 날입니다. 혼자 버티지 말고 가까운 사람이나 사내 상담 창구에 한마디 건네보세요."},
+  {e:"😄",t:"아주 좋음",c:"#0f5527",msg:"좋은 상태예요. 오늘의 컨디션을 만든 요인을 한 줄만 기록해두면 다음에 재현하기 쉬워집니다."},
+  {e:"🙂",t:"괜찮음",  c:"#0b5a54",msg:"안정적이에요. 무리해서 끌어올리기보다 이 상태를 유지하는 리듬을 지키는 편이 좋습니다."},
+  {e:"😐",t:"보통",    c:"#7a4405",msg:"평범한 날도 충분합니다. 60초 호흡 한 번이면 오후 집중력이 눈에 띄게 달라집니다."},
+  {e:"😟",t:"지침",    c:"#8f4207",msg:"지쳐 있네요. 지금 할 일을 하나만 남기고 나머지는 잠시 미뤄도 괜찮습니다."},
+  {e:"😞",t:"많이 힘듦",c:"#9e2a1f",msg:"많이 힘든 날입니다. 혼자 버티지 말고 가까운 사람이나 사내 상담 창구에 한마디 건네보세요."},
 ];
 const LINES = [
   "오늘 다 못 끝내도 괜찮습니다. 내일의 나도 같은 팀입니다.",
@@ -392,9 +392,9 @@ const ROUTINE = [
   {icon:"📵",t:"알림 5분 끄기", d:"딥워크 직전 알림 차단 — 전환 비용 최대 23분 절감"},
 ];
 const BREATH = [
-  {t:"들이쉬기",s:4,scale:1.32,c:"#00d4aa"},
-  {t:"멈추기",  s:4,scale:1.32,c:"#60a5fa"},
-  {t:"내쉬기",  s:4,scale:0.78,c:"#a78bfa"},
+  {t:"들이쉬기",s:4,scale:1.32,c:"#005c4a"},
+  {t:"멈추기",  s:4,scale:1.32,c:"#174b85"},
+  {t:"내쉬기",  s:4,scale:0.78,c:"#5a1fb4"},
   {t:"멈추기",  s:4,scale:0.78,c:"#475569"},
 ];
 
@@ -599,10 +599,10 @@ function normalizeCode(raw) {
 
 const SYNC_STATE = {
   off:     {t:"미연결",     c:"#475569", icon:"○"},
-  syncing: {t:"동기화 중",  c:"#fbbf24", icon:"◌"},
-  ok:      {t:"동기화됨",   c:"#4ade80", icon:"●"},
-  offline: {t:"서버 연결 안 됨", c:"#fb923c", icon:"⚠"},
-  error:   {t:"오류",       c:"#f87171", icon:"✕"},
+  syncing: {t:"동기화 중",  c:"#7a4405", icon:"◌"},
+  ok:      {t:"동기화됨",   c:"#0f5527", icon:"●"},
+  offline: {t:"서버 연결 안 됨", c:"#8f4207", icon:"⚠"},
+  error:   {t:"오류",       c:"#9e2a1f", icon:"✕"},
 };
 
 /* 날짜 문자열 (offset일 전/후) */
@@ -616,7 +616,7 @@ function dayStr(offset) {
    공통 소형 컴포넌트
 ══════════════════════════════════════════════════════════════ */
 function SolTag({s}) {
-  const p = SOL[s]||{bg:"rgba(100,116,139,.14)",bd:"rgba(100,116,139,.4)",c:"#94a3b8"};
+  const p = SOL[s]||{bg:"rgba(71,85,105,.14)",bd:"rgba(71,85,105,.4)",c:"#43596d"};
   return <span className="sol-tag" style={{background:p.bg,border:`1px solid ${p.bd}`,color:p.c,fontFamily:MONO}}>{s}</span>;
 }
 
@@ -626,21 +626,21 @@ function TalkBubble({icon, title, children}) {
     <div style={{display:"flex",gap:9,padding:"14px 18px 4px",alignItems:"flex-start"}}>
       <div style={{
         width:30,height:30,borderRadius:9,flexShrink:0,fontSize:15,
-        background:"linear-gradient(135deg,#00d4aa,#0891b2)",
+        background:"linear-gradient(135deg,#005c4a,#0b566a)",
         display:"flex",alignItems:"center",justifyContent:"center",
       }}>{icon}</div>
       <div style={{flex:1,minWidth:0}}>
-        <div style={{fontSize:9,color:"#132436",fontFamily:MONO,fontWeight:700,letterSpacing:".8px",marginBottom:4}}>
+        <div style={{fontSize:9,color:"#43596d",fontFamily:MONO,fontWeight:700,letterSpacing:".8px",marginBottom:4}}>
           DZ AI 톡
         </div>
         <div style={{
           display:"inline-block",padding:"9px 13px",
-          background:"rgba(0,212,170,.055)",
-          border:"1px solid rgba(0,212,170,.16)",
+          background:"rgba(0,92,74,.055)",
+          border:"1px solid rgba(0,92,74,.16)",
           borderRadius:"2px 10px 10px 10px",
         }}>
-          <div style={{fontSize:12.5,fontWeight:700,color:"#cfe3f2",marginBottom:3,fontFamily:KR}}>{title}</div>
-          <div style={{fontSize:11.5,color:"#5a7a94",lineHeight:1.62,fontFamily:KR}}>{children}</div>
+          <div style={{fontSize:12.5,fontWeight:700,color:"#12293c",marginBottom:3,fontFamily:KR}}>{title}</div>
+          <div style={{fontSize:11.5,color:"#3d5a72",lineHeight:1.62,fontFamily:KR}}>{children}</div>
         </div>
       </div>
     </div>
@@ -650,9 +650,9 @@ function TalkBubble({icon, title, children}) {
 function SectionTitle({children, right}) {
   return (
     <div style={{display:"flex",alignItems:"center",gap:7,padding:"14px 18px 8px"}}>
-      <span style={{fontSize:9,fontWeight:900,letterSpacing:"1.4px",color:"#00d4aa",fontFamily:MONO,textTransform:"uppercase"}}>▸</span>
-      <span style={{fontSize:12,fontWeight:800,color:"#cfe3f2",fontFamily:KR}}>{children}</span>
-      {right && <span style={{marginLeft:"auto",fontSize:10,color:"#1c3349",fontFamily:MONO}}>{right}</span>}
+      <span style={{fontSize:9,fontWeight:900,letterSpacing:"1.4px",color:"#005c4a",fontFamily:MONO,textTransform:"uppercase"}}>▸</span>
+      <span style={{fontSize:12,fontWeight:800,color:"#12293c",fontFamily:KR}}>{children}</span>
+      {right && <span style={{marginLeft:"auto",fontSize:10,color:"#4a6379",fontFamily:MONO}}>{right}</span>}
     </div>
   );
 }
@@ -670,22 +670,22 @@ function AnalysisPanel({a, source, title}) {
   return (
     <div className="panel" style={{
       marginTop:10,
-      background:"rgba(0,212,170,.04)",
-      border:"1px solid rgba(0,212,170,.18)",
-      borderLeft:"3px solid rgba(0,212,170,.65)",
+      background:"rgba(0,92,74,.04)",
+      border:"1px solid rgba(0,92,74,.18)",
+      borderLeft:"3px solid rgba(0,92,74,.65)",
       borderRadius:"0 6px 6px 6px",
       overflow:"hidden",
     }}>
       <div style={{
         padding:"9px 14px 8px",
-        borderBottom:"1px solid rgba(0,212,170,.1)",
+        borderBottom:"1px solid rgba(0,92,74,.1)",
         display:"flex", alignItems:"center", gap:6,
-        background:"rgba(0,212,170,.05)",
+        background:"rgba(0,92,74,.05)",
       }}>
-        <span style={{fontSize:8.5,fontWeight:900,letterSpacing:"1.5px",color:"#00d4aa",textTransform:"uppercase",fontFamily:MONO}}>
+        <span style={{fontSize:8.5,fontWeight:900,letterSpacing:"1.5px",color:"#005c4a",textTransform:"uppercase",fontFamily:MONO}}>
           ▸ DZ 전략분석 리포트
         </span>
-        <span style={{fontSize:9,color:"#132436",fontFamily:MONO,marginLeft:"auto"}}>
+        <span style={{fontSize:9,color:"#43596d",fontFamily:MONO,marginLeft:"auto"}}>
           더존비즈온 솔루션 기획전략 기준
         </span>
       </div>
@@ -693,7 +693,7 @@ function AnalysisPanel({a, source, title}) {
       <div style={{padding:"12px 14px 14px"}}>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:12}}>
           <div>
-            <div style={{fontSize:9,color:"#1c3349",fontFamily:MONO,fontWeight:700,letterSpacing:".8px",marginBottom:5,textTransform:"uppercase"}}>
+            <div style={{fontSize:9,color:"#4a6379",fontFamily:MONO,fontWeight:700,letterSpacing:".8px",marginBottom:5,textTransform:"uppercase"}}>
               연관 솔루션
             </div>
             <div style={{display:"flex",gap:3,flexWrap:"wrap"}}>
@@ -701,7 +701,7 @@ function AnalysisPanel({a, source, title}) {
             </div>
           </div>
           <div>
-            <div style={{fontSize:9,color:"#1c3349",fontFamily:MONO,fontWeight:700,letterSpacing:".8px",marginBottom:5,textTransform:"uppercase"}}>
+            <div style={{fontSize:9,color:"#4a6379",fontFamily:MONO,fontWeight:700,letterSpacing:".8px",marginBottom:5,textTransform:"uppercase"}}>
               전략 중요도
             </div>
             <span style={{
@@ -711,7 +711,7 @@ function AnalysisPanel({a, source, title}) {
             }}>⬤ {imp.label}</span>
           </div>
           <div>
-            <div style={{fontSize:9,color:"#1c3349",fontFamily:MONO,fontWeight:700,letterSpacing:".8px",marginBottom:5,textTransform:"uppercase"}}>
+            <div style={{fontSize:9,color:"#4a6379",fontFamily:MONO,fontWeight:700,letterSpacing:".8px",marginBottom:5,textTransform:"uppercase"}}>
               대응 우선순위
             </div>
             <span style={{
@@ -722,27 +722,27 @@ function AnalysisPanel({a, source, title}) {
           </div>
         </div>
 
-        <div style={{borderTop:"1px dashed rgba(0,212,170,.12)",marginBottom:10}}/>
+        <div style={{borderTop:"1px dashed rgba(0,92,74,.12)",marginBottom:10}}/>
 
         <div style={{marginBottom:12}}>
-          <div style={{fontSize:9,color:"#1c3349",fontFamily:MONO,fontWeight:700,letterSpacing:".8px",marginBottom:5,textTransform:"uppercase"}}>
+          <div style={{fontSize:9,color:"#4a6379",fontFamily:MONO,fontWeight:700,letterSpacing:".8px",marginBottom:5,textTransform:"uppercase"}}>
             더존 활용 방향
           </div>
-          <p style={{fontSize:12.5,color:"#6a8fa8",lineHeight:1.68,fontFamily:KR}}>{a.direction}</p>
+          <p style={{fontSize:12.5,color:"#3d5a72",lineHeight:1.68,fontFamily:KR}}>{a.direction}</p>
         </div>
 
-        <div style={{borderTop:"1px dashed rgba(0,212,170,.12)",marginBottom:10}}/>
+        <div style={{borderTop:"1px dashed rgba(0,92,74,.12)",marginBottom:10}}/>
 
         <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
           <a className="ext-btn" href={srcUrl} target="_blank" rel="noreferrer" style={{
             display:"inline-flex",alignItems:"center",gap:5,padding:"5px 12px",borderRadius:5,
-            fontSize:11,fontWeight:700,background:"rgba(96,165,250,.09)",
-            border:"1px solid rgba(96,165,250,.28)",color:"#60a5fa",textDecoration:"none",fontFamily:KR,
+            fontSize:11,fontWeight:700,background:"rgba(23,75,133,.09)",
+            border:"1px solid rgba(23,75,133,.28)",color:"#174b85",textDecoration:"none",fontFamily:KR,
           }}>🔗 원소스 {source} ↗</a>
           <a className="ext-btn" href={searchUrl} target="_blank" rel="noreferrer" style={{
             display:"inline-flex",alignItems:"center",gap:5,padding:"5px 12px",borderRadius:5,
-            fontSize:11,fontWeight:700,background:"rgba(0,212,170,.07)",
-            border:"1px solid rgba(0,212,170,.22)",color:"#00d4aa",textDecoration:"none",fontFamily:KR,
+            fontSize:11,fontWeight:700,background:"rgba(0,92,74,.07)",
+            border:"1px solid rgba(0,92,74,.22)",color:"#005c4a",textDecoration:"none",fontFamily:KR,
           }}>🔍 Google 뉴스 검색 ↗</a>
         </div>
       </div>
@@ -755,7 +755,7 @@ function AnalysisPanel({a, source, title}) {
 ══════════════════════════════════════════════════════════════ */
 function Item({item, rank, delay, onCatClick}) {
   const [open, setOpen] = useState(false);
-  const cat     = CAT[item.category]||{c:"#64748b",bg:"rgba(100,116,139,.1)",bd:"rgba(100,116,139,.25)"};
+  const cat     = CAT[item.category]||{c:"#3d4a5c",bg:"rgba(71,85,105,.1)",bd:"rgba(71,85,105,.25)"};
   const imp     = IMP[item.analysis?.importance]||IMP.medium;
   const priC    = (PRI[item.analysis?.priority]||PRI["모니터링"]).c;
   const srcUrl  = `https://${item.source}`;
@@ -767,18 +767,18 @@ function Item({item, rank, delay, onCatClick}) {
         <div style={{
           width:52,flexShrink:0,padding:"14px 0 14px 16px",
           display:"flex",flexDirection:"column",alignItems:"center",gap:4,
-          borderRight:"1px solid #071828",
+          borderRight:"1px solid #dbe6f0",
         }}>
-          <span style={{fontFamily:MONO,fontSize:15,fontWeight:700,color:"#132436",lineHeight:1}}>
+          <span style={{fontFamily:MONO,fontSize:15,fontWeight:700,color:"#43596d",lineHeight:1}}>
             {String(rank).padStart(2,"0")}
           </span>
-          <span style={{fontSize:10,color:"#22c55e",fontWeight:700}}>▲{item.points}</span>
+          <span style={{fontSize:10,color:"#0f5527",fontWeight:700}}>▲{item.points}</span>
         </div>
 
         <div style={{flex:1,minWidth:0,padding:"12px 16px 13px 14px"}}>
           <div style={{display:"flex",alignItems:"flex-start",gap:7,marginBottom:3}}>
             <a className="title-link" href={newsUrl} target="_blank" rel="noreferrer"
-               style={{flex:1,fontSize:14,fontWeight:700,color:"#dde6f0",lineHeight:1.42}}>
+               style={{flex:1,fontSize:14,fontWeight:700,color:"#0d2436",lineHeight:1.42}}>
               {item.title}
             </a>
             <span className="cat-badge" onClick={()=>onCatClick(item.category)}
@@ -792,22 +792,22 @@ function Item({item, rank, delay, onCatClick}) {
           </div>
 
           <a className="src-link" href={srcUrl} target="_blank" rel="noreferrer" style={{
-            fontSize:10.5,color:"#1c3349",fontFamily:MONO,textDecoration:"none",
+            fontSize:10.5,color:"#4a6379",fontFamily:MONO,textDecoration:"none",
             display:"inline-block",marginBottom:6,
           }}>({item.source}) ↗</a>
 
-          <p style={{fontSize:12.5,color:"#5a7a94",lineHeight:1.65,marginBottom:8,fontFamily:KR}}>
+          <p style={{fontSize:12.5,color:"#3d5a72",lineHeight:1.65,marginBottom:8,fontFamily:KR}}>
             {item.summary}
           </p>
 
           <div style={{display:"flex",alignItems:"center",flexWrap:"wrap",gap:8}}>
-            <span style={{fontSize:10.5,color:"#1e6050",fontWeight:700,fontFamily:MONO}}>{item.points}pt</span>
-            <span style={{fontSize:9,color:"#0d2035",fontFamily:MONO}}>·</span>
-            <span style={{fontSize:10.5,color:"#1c3349",fontFamily:MONO}}>{item.time}</span>
+            <span style={{fontSize:10.5,color:"#255547",fontWeight:700,fontFamily:MONO}}>{item.points}pt</span>
+            <span style={{fontSize:9,color:"#c6d7e6",fontFamily:MONO}}>·</span>
+            <span style={{fontSize:10.5,color:"#4a6379",fontFamily:MONO}}>{item.time}</span>
 
             {!open && item.analysis && (
               <span style={{display:"flex",alignItems:"center",gap:4}}>
-                <span style={{fontSize:9,color:"#0d2035",fontFamily:MONO}}>|</span>
+                <span style={{fontSize:9,color:"#c6d7e6",fontFamily:MONO}}>|</span>
                 <span style={{
                   padding:"1px 6px",borderRadius:3,fontSize:8.5,fontWeight:800,
                   background:imp.bg,border:`1px solid ${imp.bd}`,color:imp.c,fontFamily:MONO,
@@ -821,9 +821,9 @@ function Item({item, rank, delay, onCatClick}) {
 
             <button className="toggle-btn" onClick={()=>setOpen(v=>!v)} style={{
                 marginLeft:"auto",padding:"3px 10px",borderRadius:4,fontSize:10,fontWeight:700,
-                border:`1px solid ${open?"rgba(0,212,170,.45)":"rgba(0,212,170,.2)"}`,
-                background:open?"rgba(0,212,170,.1)":"rgba(0,212,170,.04)",
-                color:open?"#00d4aa":"#004d3a",fontFamily:KR,cursor:"pointer",
+                border:`1px solid ${open?"rgba(0,92,74,.45)":"rgba(0,92,74,.2)"}`,
+                background:open?"rgba(0,92,74,.1)":"rgba(0,92,74,.04)",
+                color:open?"#005c4a":"#2b5b4f",fontFamily:KR,cursor:"pointer",
                 display:"flex",alignItems:"center",gap:4,
               }}>
               <span style={{fontSize:10}}>{open?"📊":"🔍"}</span>
@@ -843,8 +843,8 @@ function Item({item, rank, delay, onCatClick}) {
 ══════════════════════════════════════════════════════════════ */
 function LiveBtn({loading,stepIdx,onClick,label,ai}) {
   const step = STEPS[stepIdx%STEPS.length];
-  const clr  = ai?"#00d4aa":"#fbbf24";
-  const bdr  = ai?"rgba(0,212,170,":"rgba(251,191,36,";
+  const clr  = ai?"#005c4a":"#7a4405";
+  const bdr  = ai?"rgba(0,92,74,":"rgba(122,68,5,";
   return (
     <div style={{position:"relative"}}>
       <button className="live-btn" disabled={loading} onClick={onClick} style={{
@@ -864,7 +864,7 @@ function LiveBtn({loading,stepIdx,onClick,label,ai}) {
       </button>
       {loading&&(
         <div style={{position:"absolute",bottom:0,left:0,right:0,height:2,background:bdr+".12)",borderRadius:"0 0 5px 5px",overflow:"hidden"}}>
-          <div style={{height:"100%",background:`linear-gradient(90deg,${clr},${ai?"#0891b2":"#f59e0b"})`,animation:"bar 2s ease-in-out infinite"}}/>
+          <div style={{height:"100%",background:`linear-gradient(90deg,${clr},${ai?"#0b566a":"#7a4405"})`,animation:"bar 2s ease-in-out infinite"}}/>
         </div>
       )}
     </div>
@@ -901,47 +901,47 @@ function SchedulePanel({
 
   return (
     <div className="panel" style={{
-      borderBottom:"1px solid #071828",
-      background:"linear-gradient(180deg,rgba(0,212,170,.045),rgba(0,212,170,.012))",
+      borderBottom:"1px solid #dbe6f0",
+      background:"linear-gradient(180deg,rgba(0,92,74,.045),rgba(0,92,74,.012))",
       padding:"14px 18px 16px",
     }}>
       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
-        <span style={{fontSize:9,fontWeight:900,letterSpacing:"1.4px",color:"#00d4aa",fontFamily:MONO}}>
+        <span style={{fontSize:9,fontWeight:900,letterSpacing:"1.4px",color:"#005c4a",fontFamily:MONO}}>
           ⏰ 자동 새로고침 시간설정
         </span>
 
         {/* 저장 상태 뱃지 */}
         <span style={{
           padding:"1px 7px",borderRadius:3,fontSize:9,fontWeight:800,fontFamily:MONO,
-          background:LS.ok?"rgba(74,222,128,.09)":"rgba(251,191,36,.09)",
-          border:`1px solid ${LS.ok?"rgba(74,222,128,.28)":"rgba(251,191,36,.3)"}`,
-          color:LS.ok?"#4ade80":"#fbbf24",
+          background:LS.ok?"rgba(15,85,39,.09)":"rgba(122,68,5,.09)",
+          border:`1px solid ${LS.ok?"rgba(15,85,39,.28)":"rgba(122,68,5,.3)"}`,
+          color:LS.ok?"#0f5527":"#7a4405",
         }}>{LS.ok?"💾 자동 저장됨":"⚠ 저장 불가"}</span>
 
         {/* 초기화 — 2단 확인 */}
         {LS.ok && (
           confirmReset
             ? <span style={{display:"inline-flex",gap:4,alignItems:"center",marginLeft:"auto"}}>
-                <span style={{fontSize:10,color:"#fbbf24",fontFamily:KR}}>저장된 설정·기록을 모두 지울까요?</span>
+                <span style={{fontSize:10,color:"#7a4405",fontFamily:KR}}>저장된 설정·기록을 모두 지울까요?</span>
                 <button className="toggle-btn" onClick={()=>{onReset();setConfirmReset(false);}} style={{
                   padding:"2px 9px",borderRadius:4,fontSize:10,fontWeight:700,fontFamily:KR,
-                  border:"1px solid rgba(248,113,113,.4)",background:"rgba(248,113,113,.1)",
-                  color:"#f87171",cursor:"pointer",
+                  border:"1px solid rgba(158,42,31,.4)",background:"rgba(158,42,31,.1)",
+                  color:"#9e2a1f",cursor:"pointer",
                 }}>초기화</button>
                 <button className="toggle-btn" onClick={()=>setConfirmReset(false)} style={{
                   padding:"2px 9px",borderRadius:4,fontSize:10,fontWeight:700,fontFamily:KR,
-                  border:"1px solid #0d2035",background:"transparent",color:"#1c3349",cursor:"pointer",
+                  border:"1px solid #c6d7e6",background:"transparent",color:"#4a6379",cursor:"pointer",
                 }}>취소</button>
               </span>
             : <button className="toggle-btn" onClick={()=>setConfirmReset(true)} style={{
                 marginLeft:"auto",padding:"2px 9px",borderRadius:4,fontSize:10,fontWeight:700,fontFamily:KR,
-                border:"1px solid #0d2035",background:"transparent",color:"#1c3349",cursor:"pointer",
+                border:"1px solid #c6d7e6",background:"transparent",color:"#4a6379",cursor:"pointer",
               }}>저장값 초기화</button>
         )}
 
         <button onClick={onClose} className="toggle-btn" style={{
           marginLeft:LS.ok?0:"auto",padding:"2px 9px",borderRadius:4,fontSize:10,fontWeight:700,
-          border:"1px solid #0d2035",background:"transparent",color:"#1c3349",fontFamily:MONO,cursor:"pointer",
+          border:"1px solid #c6d7e6",background:"transparent",color:"#4a6379",fontFamily:MONO,cursor:"pointer",
         }}>닫기 ▲</button>
       </div>
 
@@ -950,69 +950,69 @@ function SchedulePanel({
         {/* ── 좌: 매일 정해진 시각 ── */}
         <div style={{
           padding:"12px 13px",borderRadius:7,
-          background:"rgba(0,0,0,.24)",
-          border:`1px solid ${daily?"rgba(0,212,170,.3)":"#071828"}`,
+          background:"rgba(15,35,55,.10)",
+          border:`1px solid ${daily?"rgba(0,92,74,.3)":"#dbe6f0"}`,
         }}>
           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
-            <span style={{fontSize:11.5,fontWeight:800,color:daily?"#00d4aa":"#5a7a94",fontFamily:KR}}>
+            <span style={{fontSize:11.5,fontWeight:800,color:daily?"#005c4a":"#3d5a72",fontFamily:KR}}>
               📅 매일 정해진 시각에 자동 갱신
             </span>
             <button onClick={()=>setDaily(!daily)} className="toggle-btn" style={{
               marginLeft:"auto",width:42,height:20,borderRadius:10,position:"relative",
-              border:`1px solid ${daily?"rgba(0,212,170,.5)":"#0d2035"}`,
-              background:daily?"rgba(0,212,170,.15)":"#020e1c",cursor:"pointer",padding:0,
+              border:`1px solid ${daily?"rgba(0,92,74,.5)":"#c6d7e6"}`,
+              background:daily?"rgba(0,92,74,.15)":"#ffffff",cursor:"pointer",padding:0,
             }}>
               <span style={{
                 position:"absolute",top:2,left:daily?22:2,width:14,height:14,borderRadius:"50%",
-                background:daily?"#00d4aa":"#1c3349",transition:"left .18s",
+                background:daily?"#005c4a":"#4a6379",transition:"left .18s",
               }}/>
             </button>
           </div>
 
           {/* 요일 */}
-          <div style={{fontSize:9,color:"#1c3349",fontFamily:MONO,fontWeight:700,letterSpacing:".8px",marginBottom:5}}>
+          <div style={{fontSize:9,color:"#4a6379",fontFamily:MONO,fontWeight:700,letterSpacing:".8px",marginBottom:5}}>
             실행 요일
           </div>
           <div style={{display:"flex",gap:4,marginBottom:9,flexWrap:"wrap"}}>
             {DAYS.map((d,i)=>{
               const on = days.indexOf(i) !== -1;
-              const wc = i===0?"#f87171":i===6?"#60a5fa":"#00d4aa";
+              const wc = i===0?"#9e2a1f":i===6?"#174b85":"#005c4a";
               return (
                 <button key={d} className="chip" onClick={()=>togDay(i)} style={{
                   width:27,height:24,borderRadius:4,fontSize:11,fontWeight:800,fontFamily:KR,
-                  border:`1px solid ${on?wc+"66":"#0d2035"}`,
+                  border:`1px solid ${on?wc+"66":"#c6d7e6"}`,
                   background:on?wc+"18":"transparent",
-                  color:on?wc:"#1c3349",cursor:"pointer",padding:0,
+                  color:on?wc:"#4a6379",cursor:"pointer",padding:0,
                 }}>{d}</button>
               );
             })}
             <button className="chip" onClick={()=>preset("weekday")} style={{
               padding:"0 8px",height:24,borderRadius:4,fontSize:9.5,fontWeight:700,fontFamily:MONO,
-              border:"1px solid #0d2035",background:"transparent",color:"#1c3349",cursor:"pointer",
+              border:"1px solid #c6d7e6",background:"transparent",color:"#4a6379",cursor:"pointer",
             }}>평일</button>
             <button className="chip" onClick={()=>preset("all")} style={{
               padding:"0 8px",height:24,borderRadius:4,fontSize:9.5,fontWeight:700,fontFamily:MONO,
-              border:"1px solid #0d2035",background:"transparent",color:"#1c3349",cursor:"pointer",
+              border:"1px solid #c6d7e6",background:"transparent",color:"#4a6379",cursor:"pointer",
             }}>매일</button>
           </div>
 
           {/* 시각 */}
-          <div style={{fontSize:9,color:"#1c3349",fontFamily:MONO,fontWeight:700,letterSpacing:".8px",marginBottom:5}}>
-            실행 시각 <span style={{color:"#0d2035"}}>(최대 8개)</span>
+          <div style={{fontSize:9,color:"#4a6379",fontFamily:MONO,fontWeight:700,letterSpacing:".8px",marginBottom:5}}>
+            실행 시각 <span style={{color:"#c6d7e6"}}>(최대 8개)</span>
           </div>
           <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:8}}>
             {times.length === 0 && (
-              <span style={{fontSize:10.5,color:"#1c3349",fontFamily:KR}}>시각을 1개 이상 추가하세요.</span>
+              <span style={{fontSize:10.5,color:"#4a6379",fontFamily:KR}}>시각을 1개 이상 추가하세요.</span>
             )}
             {times.map(t=>(
               <span key={t} style={{
                 display:"inline-flex",alignItems:"center",gap:5,padding:"3px 6px 3px 9px",
-                borderRadius:4,background:"rgba(0,212,170,.08)",
-                border:"1px solid rgba(0,212,170,.26)",
+                borderRadius:4,background:"rgba(0,92,74,.08)",
+                border:"1px solid rgba(0,92,74,.26)",
               }}>
-                <span style={{fontSize:11.5,fontWeight:800,color:"#00d4aa",fontFamily:MONO}}>{t}</span>
+                <span style={{fontSize:11.5,fontWeight:800,color:"#005c4a",fontFamily:MONO}}>{t}</span>
                 <button onClick={()=>delTime(t)} className="chip" style={{
-                  border:"none",background:"transparent",color:"#1e6050",
+                  border:"none",background:"transparent",color:"#255547",
                   fontSize:12,cursor:"pointer",lineHeight:1,padding:"0 1px",
                 }}>×</button>
               </span>
@@ -1023,36 +1023,36 @@ function SchedulePanel({
                    onChange={e=>setNewT(e.target.value)} style={{fontFamily:MONO}}/>
             <button onClick={addTime} className="chip" style={{
               padding:"4px 11px",borderRadius:4,fontSize:10.5,fontWeight:700,fontFamily:KR,
-              border:"1px solid rgba(0,212,170,.3)",background:"rgba(0,212,170,.07)",
-              color:"#00d4aa",cursor:"pointer",
+              border:"1px solid rgba(0,92,74,.3)",background:"rgba(0,92,74,.07)",
+              color:"#005c4a",cursor:"pointer",
             }}>+ 시각 추가</button>
             <button onClick={()=>preset("three")} className="chip" style={{
               padding:"4px 9px",borderRadius:4,fontSize:9.5,fontWeight:700,fontFamily:MONO,
-              border:"1px solid #0d2035",background:"transparent",color:"#1c3349",cursor:"pointer",
+              border:"1px solid #c6d7e6",background:"transparent",color:"#4a6379",cursor:"pointer",
             }}>08:30·13:00·18:00</button>
             <button onClick={()=>preset("morning")} className="chip" style={{
               padding:"4px 9px",borderRadius:4,fontSize:9.5,fontWeight:700,fontFamily:MONO,
-              border:"1px solid #0d2035",background:"transparent",color:"#1c3349",cursor:"pointer",
+              border:"1px solid #c6d7e6",background:"transparent",color:"#4a6379",cursor:"pointer",
             }}>아침만</button>
           </div>
 
           {/* 다음 실행 */}
           <div style={{
-            marginTop:10,paddingTop:9,borderTop:"1px dashed rgba(0,212,170,.14)",
+            marginTop:10,paddingTop:9,borderTop:"1px dashed rgba(0,92,74,.14)",
             display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",
           }}>
-            <span style={{fontSize:9.5,color:"#1c3349",fontFamily:MONO,fontWeight:700}}>다음 실행</span>
-            <span style={{fontSize:11.5,fontWeight:800,color:daily&&nextRun?"#00d4aa":"#1c3349",fontFamily:MONO}}>
+            <span style={{fontSize:9.5,color:"#4a6379",fontFamily:MONO,fontWeight:700}}>다음 실행</span>
+            <span style={{fontSize:11.5,fontWeight:800,color:daily&&nextRun?"#005c4a":"#4a6379",fontFamily:MONO}}>
               {daily ? fmtWhen(nextRun) : "OFF"}
             </span>
             {daily && nextRun != null && (
               <span style={{
                 padding:"2px 8px",borderRadius:4,fontSize:11,fontWeight:800,fontFamily:MONO,
-                background:"rgba(0,212,170,.09)",border:"1px solid rgba(0,212,170,.24)",color:"#00d4aa",
+                background:"rgba(0,92,74,.09)",border:"1px solid rgba(0,92,74,.24)",color:"#005c4a",
               }}>⏳ {fmtLeft(left)}</span>
             )}
             {lastAuto && (
-              <span style={{fontSize:9.5,color:"#132436",fontFamily:MONO,marginLeft:"auto"}}>
+              <span style={{fontSize:9.5,color:"#43596d",fontFamily:MONO,marginLeft:"auto"}}>
                 최근 자동실행 {lastAuto}
               </span>
             )}
@@ -1062,26 +1062,26 @@ function SchedulePanel({
         {/* ── 우: 주기 반복 ── */}
         <div style={{
           padding:"12px 13px",borderRadius:7,
-          background:"rgba(0,0,0,.24)",
-          border:`1px solid ${auto?"rgba(96,165,250,.3)":"#071828"}`,
+          background:"rgba(15,35,55,.10)",
+          border:`1px solid ${auto?"rgba(23,75,133,.3)":"#dbe6f0"}`,
         }}>
           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
-            <span style={{fontSize:11.5,fontWeight:800,color:auto?"#60a5fa":"#5a7a94",fontFamily:KR}}>
+            <span style={{fontSize:11.5,fontWeight:800,color:auto?"#174b85":"#3d5a72",fontFamily:KR}}>
               ⏱ 주기 반복 갱신
             </span>
             <button onClick={()=>setAuto(!auto)} className="toggle-btn" style={{
               marginLeft:"auto",width:42,height:20,borderRadius:10,position:"relative",
-              border:`1px solid ${auto?"rgba(96,165,250,.5)":"#0d2035"}`,
-              background:auto?"rgba(96,165,250,.15)":"#020e1c",cursor:"pointer",padding:0,
+              border:`1px solid ${auto?"rgba(23,75,133,.5)":"#c6d7e6"}`,
+              background:auto?"rgba(23,75,133,.15)":"#ffffff",cursor:"pointer",padding:0,
             }}>
               <span style={{
                 position:"absolute",top:2,left:auto?22:2,width:14,height:14,borderRadius:"50%",
-                background:auto?"#60a5fa":"#1c3349",transition:"left .18s",
+                background:auto?"#174b85":"#4a6379",transition:"left .18s",
               }}/>
             </button>
           </div>
 
-          <div style={{fontSize:9,color:"#1c3349",fontFamily:MONO,fontWeight:700,letterSpacing:".8px",marginBottom:5}}>
+          <div style={{fontSize:9,color:"#4a6379",fontFamily:MONO,fontWeight:700,letterSpacing:".8px",marginBottom:5}}>
             갱신 간격
           </div>
           <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:10}}>
@@ -1090,9 +1090,9 @@ function SchedulePanel({
               return (
                 <button key={iv.v} className="chip" onClick={()=>setInterval_(iv.v)} style={{
                   padding:"4px 10px",borderRadius:4,fontSize:10.5,fontWeight:800,fontFamily:MONO,
-                  border:`1px solid ${on?"rgba(96,165,250,.5)":"#0d2035"}`,
-                  background:on?"rgba(96,165,250,.12)":"transparent",
-                  color:on?"#60a5fa":"#1c3349",cursor:"pointer",
+                  border:`1px solid ${on?"rgba(23,75,133,.5)":"#c6d7e6"}`,
+                  background:on?"rgba(23,75,133,.12)":"transparent",
+                  color:on?"#174b85":"#4a6379",cursor:"pointer",
                 }}>{iv.t}</button>
               );
             })}
@@ -1100,15 +1100,15 @@ function SchedulePanel({
 
           <div style={{
             padding:"9px 11px",borderRadius:6,
-            background:"rgba(251,191,36,.04)",border:"1px solid rgba(251,191,36,.14)",
+            background:"rgba(122,68,5,.04)",border:"1px solid rgba(122,68,5,.14)",
           }}>
-            <div style={{fontSize:9.5,fontWeight:800,color:"#fbbf24",fontFamily:MONO,marginBottom:4}}>ⓘ 동작 방식</div>
-            <div style={{fontSize:10.5,color:"#5a7a94",lineHeight:1.65,fontFamily:KR}}>
-              두 방식은 동시에 켤 수 있습니다. <b style={{color:"#00d4aa"}}>매일 갱신</b>은 지정 요일·시각에
-              정확히 한 번 실행되고, <b style={{color:"#60a5fa"}}>주기 갱신</b>은 설정한 간격마다 반복됩니다.
+            <div style={{fontSize:9.5,fontWeight:800,color:"#7a4405",fontFamily:MONO,marginBottom:4}}>ⓘ 동작 방식</div>
+            <div style={{fontSize:10.5,color:"#3d5a72",lineHeight:1.65,fontFamily:KR}}>
+              두 방식은 동시에 켤 수 있습니다. <b style={{color:"#005c4a"}}>매일 갱신</b>은 지정 요일·시각에
+              정확히 한 번 실행되고, <b style={{color:"#174b85"}}>주기 갱신</b>은 설정한 간격마다 반복됩니다.
               갱신은 화면이 열려 있는 동안에만 동작하지만,
               {LS.ok
-                ? <> 설정은 <b style={{color:"#4ade80"}}>이 브라우저에 저장되어</b> 다음 방문 시 그대로 복원됩니다.
+                ? <> 설정은 <b style={{color:"#0f5527"}}>이 브라우저에 저장되어</b> 다음 방문 시 그대로 복원됩니다.
                     닫혀 있던 동안 지나간 예약은 실행되지 않고, 다음 슬롯부터 이어집니다.</>
                 : <> 이 브라우저에서는 저장소를 사용할 수 없어 설정이 유지되지 않습니다
                     (사생활 보호 모드이거나 스토리지가 차단된 상태).</>}
@@ -1149,11 +1149,11 @@ function SyncPanel({
   return (
     <div style={{
       marginTop:12,padding:"12px 13px",borderRadius:7,
-      background:"rgba(0,0,0,.24)",
-      border:`1px solid ${code?"rgba(167,139,250,.3)":"#071828"}`,
+      background:"rgba(15,35,55,.10)",
+      border:`1px solid ${code?"rgba(90,31,180,.3)":"#dbe6f0"}`,
     }}>
       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10,flexWrap:"wrap"}}>
-        <span style={{fontSize:11.5,fontWeight:800,color:code?"#a78bfa":"#5a7a94",fontFamily:KR}}>
+        <span style={{fontSize:11.5,fontWeight:800,color:code?"#5a1fb4":"#3d5a72",fontFamily:KR}}>
           ☁️ 서버 동기화
         </span>
         <span style={{
@@ -1163,7 +1163,7 @@ function SyncPanel({
           <span style={{animation:status==="syncing"?"blink .8s infinite":"none"}}>{st.icon}</span> {st.t}
         </span>
         {lastSyncAt && (
-          <span style={{fontSize:9.5,color:"#132436",fontFamily:MONO}}>
+          <span style={{fontSize:9.5,color:"#43596d",fontFamily:MONO}}>
             최근 {lastSyncAt}{rev?` · rev ${rev}`:""}
           </span>
         )}
@@ -1171,7 +1171,7 @@ function SyncPanel({
 
       {/* 서버 주소 */}
       <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap",marginBottom:9}}>
-        <span style={{fontSize:9,color:"#1c3349",fontFamily:MONO,fontWeight:700,letterSpacing:".8px",width:56,flexShrink:0}}>
+        <span style={{fontSize:9,color:"#4a6379",fontFamily:MONO,fontWeight:700,letterSpacing:".8px",width:56,flexShrink:0}}>
           서버 주소
         </span>
         <input
@@ -1179,7 +1179,7 @@ function SyncPanel({
           value={url}
           onChange={e=>setUrl(e.target.value)}
           placeholder="http://localhost:8000  또는  /api 로 시작하는 상대경로"
-          style={{flex:1,minWidth:190,fontFamily:MONO,fontSize:10.5,color:"#8fa8bd",fontWeight:400}}
+          style={{flex:1,minWidth:190,fontFamily:MONO,fontSize:10.5,color:"#2f4a61",fontWeight:400}}
         />
       </div>
 
@@ -1189,13 +1189,13 @@ function SyncPanel({
           <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap",marginBottom:8}}>
             <button className="chip" onClick={onIssue} disabled={!url||busy} style={{
               padding:"5px 13px",borderRadius:5,fontSize:11,fontWeight:700,fontFamily:KR,
-              border:"1px solid rgba(167,139,250,.4)",
-              background:url&&!busy?"rgba(167,139,250,.1)":"transparent",
-              color:url&&!busy?"#a78bfa":"#1c3349",
+              border:"1px solid rgba(90,31,180,.4)",
+              background:url&&!busy?"rgba(90,31,180,.1)":"transparent",
+              color:url&&!busy?"#5a1fb4":"#4a6379",
               cursor:url&&!busy?"pointer":"not-allowed",
             }}>＋ 동기화 코드 발급</button>
 
-            <span style={{fontSize:10,color:"#132436",fontFamily:MONO}}>또는</span>
+            <span style={{fontSize:10,color:"#43596d",fontFamily:MONO}}>또는</span>
 
             <input
               className="time-input"
@@ -1207,13 +1207,13 @@ function SyncPanel({
             />
             <button className="chip" onClick={doConnect} disabled={!inputValid||!url||busy} style={{
               padding:"5px 12px",borderRadius:5,fontSize:11,fontWeight:700,fontFamily:KR,
-              border:`1px solid ${inputValid&&url&&!busy?"rgba(0,212,170,.4)":"#0d2035"}`,
-              background:inputValid&&url&&!busy?"rgba(0,212,170,.09)":"transparent",
-              color:inputValid&&url&&!busy?"#00d4aa":"#1c3349",
+              border:`1px solid ${inputValid&&url&&!busy?"rgba(0,92,74,.4)":"#c6d7e6"}`,
+              background:inputValid&&url&&!busy?"rgba(0,92,74,.09)":"transparent",
+              color:inputValid&&url&&!busy?"#005c4a":"#4a6379",
               cursor:inputValid&&url&&!busy?"pointer":"not-allowed",
             }}>코드로 연결</button>
           </div>
-          <div style={{fontSize:10.5,color:"#1c3349",lineHeight:1.6,fontFamily:KR}}>
+          <div style={{fontSize:10.5,color:"#4a6379",lineHeight:1.6,fontFamily:KR}}>
             {url
               ? <>코드를 발급하면 지금 이 기기의 설정이 서버에 올라갑니다. 다른 기기에서 같은 코드를 입력하면 설정·진행률이 따라옵니다.</>
               : <>먼저 서버 주소를 입력하세요. 서버 없이도 앱은 이 브라우저 저장만으로 정상 동작합니다.</>}
@@ -1225,57 +1225,57 @@ function SyncPanel({
           <div style={{
             display:"flex",gap:8,alignItems:"center",flexWrap:"wrap",
             padding:"9px 11px",borderRadius:6,marginBottom:8,
-            background:"rgba(167,139,250,.06)",border:"1px solid rgba(167,139,250,.2)",
+            background:"rgba(90,31,180,.06)",border:"1px solid rgba(90,31,180,.2)",
           }}>
-            <span style={{fontSize:9,color:"#1c3349",fontFamily:MONO,fontWeight:700,letterSpacing:".8px"}}>
+            <span style={{fontSize:9,color:"#4a6379",fontFamily:MONO,fontWeight:700,letterSpacing:".8px"}}>
               내 동기화 코드
             </span>
-            <span style={{fontSize:13.5,fontWeight:800,color:"#c4b5fd",fontFamily:MONO,letterSpacing:"1px"}}>
+            <span style={{fontSize:13.5,fontWeight:800,color:"#5a1fb4",fontFamily:MONO,letterSpacing:"1px"}}>
               {code}
             </span>
             <button className="chip" onClick={doCopy} style={{
               padding:"2px 9px",borderRadius:4,fontSize:9.5,fontWeight:700,fontFamily:MONO,
-              border:`1px solid ${copied?"rgba(34,197,94,.45)":"rgba(167,139,250,.3)"}`,
-              background:copied?"rgba(34,197,94,.1)":"transparent",
-              color:copied?"#22c55e":"#a78bfa",cursor:"pointer",
+              border:`1px solid ${copied?"rgba(15,85,39,.45)":"rgba(90,31,180,.3)"}`,
+              background:copied?"rgba(15,85,39,.1)":"transparent",
+              color:copied?"#0f5527":"#5a1fb4",cursor:"pointer",
             }}>{copied?"✓ 복사됨":"📋 복사"}</button>
           </div>
 
           <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
             <button className="chip" onClick={onPushNow} disabled={busy} style={{
               padding:"4px 12px",borderRadius:5,fontSize:10.5,fontWeight:700,fontFamily:KR,
-              border:"1px solid rgba(0,212,170,.32)",background:"rgba(0,212,170,.07)",
-              color:"#00d4aa",cursor:busy?"wait":"pointer",
+              border:"1px solid rgba(0,92,74,.32)",background:"rgba(0,92,74,.07)",
+              color:"#005c4a",cursor:busy?"wait":"pointer",
             }}>↻ 지금 동기화</button>
             <button className="chip" onClick={onDisconnect} style={{
               padding:"4px 12px",borderRadius:5,fontSize:10.5,fontWeight:700,fontFamily:KR,
-              border:"1px solid #0d2035",background:"transparent",color:"#1c3349",cursor:"pointer",
+              border:"1px solid #c6d7e6",background:"transparent",color:"#4a6379",cursor:"pointer",
             }}>연결 해제</button>
 
             {confirmDel ? (
               <span style={{display:"inline-flex",gap:4,alignItems:"center"}}>
-                <span style={{fontSize:10,color:"#fbbf24",fontFamily:KR}}>서버 데이터까지 삭제할까요?</span>
+                <span style={{fontSize:10,color:"#7a4405",fontFamily:KR}}>서버 데이터까지 삭제할까요?</span>
                 <button className="chip" onClick={()=>{onDeleteRemote();setConfirmDel(false);}} style={{
                   padding:"3px 9px",borderRadius:4,fontSize:10,fontWeight:700,fontFamily:KR,
-                  border:"1px solid rgba(248,113,113,.4)",background:"rgba(248,113,113,.1)",
-                  color:"#f87171",cursor:"pointer",
+                  border:"1px solid rgba(158,42,31,.4)",background:"rgba(158,42,31,.1)",
+                  color:"#9e2a1f",cursor:"pointer",
                 }}>삭제</button>
                 <button className="chip" onClick={()=>setConfirmDel(false)} style={{
                   padding:"3px 9px",borderRadius:4,fontSize:10,fontWeight:700,fontFamily:KR,
-                  border:"1px solid #0d2035",background:"transparent",color:"#1c3349",cursor:"pointer",
+                  border:"1px solid #c6d7e6",background:"transparent",color:"#4a6379",cursor:"pointer",
                 }}>취소</button>
               </span>
             ) : (
               <button className="chip" onClick={()=>setConfirmDel(true)} style={{
                 padding:"4px 12px",borderRadius:5,fontSize:10.5,fontWeight:700,fontFamily:KR,
-                border:"1px solid #0d2035",background:"transparent",color:"#1c3349",cursor:"pointer",
+                border:"1px solid #c6d7e6",background:"transparent",color:"#4a6379",cursor:"pointer",
               }}>서버에서 삭제</button>
             )}
           </div>
 
-          <div style={{fontSize:10.5,color:"#1c3349",lineHeight:1.6,fontFamily:KR,marginTop:8}}>
+          <div style={{fontSize:10.5,color:"#4a6379",lineHeight:1.6,fontFamily:KR,marginTop:8}}>
             설정이 바뀌면 자동으로 올라갑니다(최대 {Math.round(SYNC_POLL_MS/1000)}초 지연).
-            <b style={{color:"#a78bfa"}}> 연결 해제</b>는 이 기기에서 코드만 잊고 서버 데이터는 그대로 둡니다.
+            <b style={{color:"#5a1fb4"}}> 연결 해제</b>는 이 기기에서 코드만 잊고 서버 데이터는 그대로 둡니다.
           </div>
         </div>
       )}
@@ -1283,9 +1283,9 @@ function SyncPanel({
       {note && (
         <div className="pop" style={{
           marginTop:9,padding:"8px 11px",borderRadius:6,
-          background:note.bad?"rgba(248,113,113,.06)":"rgba(0,212,170,.05)",
-          border:`1px solid ${note.bad?"rgba(248,113,113,.2)":"rgba(0,212,170,.18)"}`,
-          fontSize:10.5,color:note.bad?"#c98080":"#5a9a88",lineHeight:1.6,fontFamily:KR,
+          background:note.bad?"rgba(158,42,31,.06)":"rgba(0,92,74,.05)",
+          border:`1px solid ${note.bad?"rgba(158,42,31,.2)":"rgba(0,92,74,.18)"}`,
+          fontSize:10.5,color:note.bad?"#87362e":"#255547",lineHeight:1.6,fontFamily:KR,
         }}>{note.msg}</div>
       )}
     </div>
@@ -1316,7 +1316,7 @@ function HotCorner({news, onCatClick}) {
   return (
     <div>
       <TalkBubble icon="🔥" title="지금 가장 뜨거운 AI 이슈만 모았어요">
-        기사 포인트 · 전략 중요도 · 대응 우선순위를 합산한 <b style={{color:"#00d4aa"}}>열기지수</b> 순으로 정렬했습니다.
+        기사 포인트 · 전략 중요도 · 대응 우선순위를 합산한 <b style={{color:"#005c4a"}}>열기지수</b> 순으로 정렬했습니다.
         상위 3건은 오늘 안에 한 번은 읽어두는 걸 권합니다.
       </TalkBubble>
 
@@ -1330,9 +1330,9 @@ function HotCorner({news, onCatClick}) {
             padding:"5px 11px",borderRadius:20,
             background:h.c+"12",border:`1px solid ${h.c}33`,
           }}>
-            <span style={{fontSize:9,fontWeight:900,color:"#132436",fontFamily:MONO}}>{i+1}</span>
+            <span style={{fontSize:9,fontWeight:900,color:"#43596d",fontFamily:MONO}}>{i+1}</span>
             <span style={{fontSize:11.5,fontWeight:700,color:h.c,fontFamily:KR}}>{h.k}</span>
-            <span style={{fontSize:9.5,fontWeight:800,color:"#22c55e",fontFamily:MONO}}>{h.d}</span>
+            <span style={{fontSize:9.5,fontWeight:800,color:"#0f5527",fontFamily:MONO}}>{h.d}</span>
           </span>
         ))}
       </div>
@@ -1342,7 +1342,7 @@ function HotCorner({news, onCatClick}) {
       <div style={{padding:"0 18px"}}>
         {ranked.map((r,i)=>{
           const n = r.n;
-          const cat = CAT[n.category]||{c:"#64748b",bg:"rgba(100,116,139,.1)",bd:"rgba(100,116,139,.25)"};
+          const cat = CAT[n.category]||{c:"#3d4a5c",bg:"rgba(71,85,105,.1)",bd:"rgba(71,85,105,.25)"};
           const pct = Math.max(6, Math.round(r.heat / maxHeat * 100));
           const top = i < 3;
           return (
@@ -1350,20 +1350,20 @@ function HotCorner({news, onCatClick}) {
               animationDelay:`${i*45}ms`,
               display:"flex",alignItems:"center",gap:11,
               padding:"10px 12px",marginBottom:6,borderRadius:7,
-              background:top?"rgba(248,113,113,.045)":"rgba(0,0,0,.2)",
-              border:`1px solid ${top?"rgba(248,113,113,.2)":"#071828"}`,
+              background:top?"rgba(158,42,31,.045)":"rgba(15,35,55,.09)",
+              border:`1px solid ${top?"rgba(158,42,31,.2)":"#dbe6f0"}`,
               transition:"border-color .16s",
             }}>
               <div style={{width:26,flexShrink:0,textAlign:"center"}}>
                 {top
                   ? <span style={{fontSize:16,display:"inline-block",animation:"flame 1.6s ease-in-out infinite"}}>🔥</span>
-                  : <span style={{fontSize:13,fontWeight:800,color:"#132436",fontFamily:MONO}}>{i+1}</span>}
+                  : <span style={{fontSize:13,fontWeight:800,color:"#43596d",fontFamily:MONO}}>{i+1}</span>}
               </div>
               <div style={{flex:1,minWidth:0}}>
                 <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:5}}>
                   <a className="title-link" href={`https://news.google.com/search?q=${encodeURIComponent(n.title)}&hl=ko`}
                      target="_blank" rel="noreferrer"
-                     style={{flex:1,fontSize:12.5,fontWeight:700,color:"#dde6f0",lineHeight:1.4,
+                     style={{flex:1,fontSize:12.5,fontWeight:700,color:"#0d2436",lineHeight:1.4,
                              overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
                     {n.title}
                   </a>
@@ -1373,14 +1373,14 @@ function HotCorner({news, onCatClick}) {
                   }}>{n.category}</span>
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <div style={{flex:1,height:4,borderRadius:2,background:"#020e1c",overflow:"hidden"}}>
+                  <div style={{flex:1,height:4,borderRadius:2,background:"#ffffff",overflow:"hidden"}}>
                     <div style={{
                       height:"100%",width:pct+"%",borderRadius:2,
-                      background:top?"linear-gradient(90deg,#f87171,#fbbf24)":"linear-gradient(90deg,#0891b2,#00d4aa)",
+                      background:top?"linear-gradient(90deg,#9e2a1f,#7a4405)":"linear-gradient(90deg,#0b566a,#005c4a)",
                       transition:"width .4s",
                     }}/>
                   </div>
-                  <span style={{fontSize:10,fontWeight:800,color:top?"#f87171":"#00d4aa",fontFamily:MONO,flexShrink:0}}>
+                  <span style={{fontSize:10,fontWeight:800,color:top?"#9e2a1f":"#005c4a",fontFamily:MONO,flexShrink:0}}>
                     {r.heat}
                   </span>
                 </div>
@@ -1392,33 +1392,33 @@ function HotCorner({news, onCatClick}) {
 
       {/* 즉시검토 + 분포 */}
       <div style={{display:"grid",gridTemplateColumns:"1.2fr 1fr",gap:12,padding:"14px 18px 20px"}}>
-        <div style={{padding:"12px 13px",borderRadius:7,background:"rgba(248,113,113,.04)",border:"1px solid rgba(248,113,113,.18)"}}>
-          <div style={{fontSize:9.5,fontWeight:900,color:"#f87171",fontFamily:MONO,letterSpacing:"1px",marginBottom:8}}>
+        <div style={{padding:"12px 13px",borderRadius:7,background:"rgba(158,42,31,.04)",border:"1px solid rgba(158,42,31,.18)"}}>
+          <div style={{fontSize:9.5,fontWeight:900,color:"#9e2a1f",fontFamily:MONO,letterSpacing:"1px",marginBottom:8}}>
             🚨 즉시검토 {urgent.length}건
           </div>
           {urgent.length === 0
-            ? <div style={{fontSize:11,color:"#1c3349",fontFamily:KR}}>현재 즉시검토 등급 이슈가 없습니다.</div>
+            ? <div style={{fontSize:11,color:"#4a6379",fontFamily:KR}}>현재 즉시검토 등급 이슈가 없습니다.</div>
             : urgent.map((u,i)=>(
                 <div key={u.id??i} style={{display:"flex",gap:6,marginBottom:6,alignItems:"flex-start"}}>
-                  <span style={{fontSize:9,color:"#f87171",fontFamily:MONO,marginTop:2}}>▸</span>
-                  <span style={{fontSize:11.5,color:"#8fa8bd",lineHeight:1.5,fontFamily:KR}}>{u.title}</span>
+                  <span style={{fontSize:9,color:"#9e2a1f",fontFamily:MONO,marginTop:2}}>▸</span>
+                  <span style={{fontSize:11.5,color:"#2f4a61",lineHeight:1.5,fontFamily:KR}}>{u.title}</span>
                 </div>
               ))}
         </div>
-        <div style={{padding:"12px 13px",borderRadius:7,background:"rgba(0,0,0,.2)",border:"1px solid #071828"}}>
-          <div style={{fontSize:9.5,fontWeight:900,color:"#00d4aa",fontFamily:MONO,letterSpacing:"1px",marginBottom:8}}>
+        <div style={{padding:"12px 13px",borderRadius:7,background:"rgba(15,35,55,.09)",border:"1px solid #dbe6f0"}}>
+          <div style={{fontSize:9.5,fontWeight:900,color:"#005c4a",fontFamily:MONO,letterSpacing:"1px",marginBottom:8}}>
             📊 카테고리 분포
           </div>
           {byCat.map(c=>{
-            const cc = CAT[c.k]||{c:"#64748b"};
+            const cc = CAT[c.k]||{c:"#3d4a5c"};
             const w = Math.round(c.v / news.length * 100);
             return (
               <div key={c.k} style={{display:"flex",alignItems:"center",gap:7,marginBottom:6}}>
                 <span style={{width:64,flexShrink:0,fontSize:10,color:cc.c,fontFamily:MONO,fontWeight:700}}>{c.k}</span>
-                <div style={{flex:1,height:4,borderRadius:2,background:"#020e1c",overflow:"hidden"}}>
+                <div style={{flex:1,height:4,borderRadius:2,background:"#ffffff",overflow:"hidden"}}>
                   <div style={{height:"100%",width:w+"%",background:cc.c,borderRadius:2,opacity:.75}}/>
                 </div>
-                <span style={{fontSize:9.5,color:"#1c3349",fontFamily:MONO,width:16,textAlign:"right"}}>{c.v}</span>
+                <span style={{fontSize:9.5,color:"#4a6379",fontFamily:MONO,width:16,textAlign:"right"}}>{c.v}</span>
               </div>
             );
           })}
@@ -1434,7 +1434,7 @@ function HotCorner({news, onCatClick}) {
 function ExpCard({x, delay, done, onDone}) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
-  const lc = LEVEL_C[x.level] || "#60a5fa";
+  const lc = LEVEL_C[x.level] || "#174b85";
 
   const doCopy = () => {
     const ok = copyText(x.prompt);
@@ -1445,46 +1445,46 @@ function ExpCard({x, delay, done, onDone}) {
     <div className="card" style={{
       animationDelay:`${delay}ms`,
       borderRadius:8,marginBottom:8,overflow:"hidden",
-      background:done?"rgba(0,212,170,.045)":"rgba(0,0,0,.2)",
-      border:`1px solid ${done?"rgba(0,212,170,.3)":"#071828"}`,
+      background:done?"rgba(0,92,74,.045)":"rgba(15,35,55,.09)",
+      border:`1px solid ${done?"rgba(0,92,74,.3)":"#dbe6f0"}`,
       transition:"border-color .16s,background .2s",
     }}>
       <div style={{padding:"12px 14px",display:"flex",gap:11,alignItems:"flex-start"}}>
         <div style={{
           width:34,height:34,borderRadius:8,flexShrink:0,fontSize:17,
-          background:"rgba(0,212,170,.07)",border:"1px solid rgba(0,212,170,.16)",
+          background:"rgba(0,92,74,.07)",border:"1px solid rgba(0,92,74,.16)",
           display:"flex",alignItems:"center",justifyContent:"center",
         }}>{x.icon}</div>
 
         <div style={{flex:1,minWidth:0}}>
           <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4,flexWrap:"wrap"}}>
-            <span style={{fontSize:13,fontWeight:700,color:done?"#00d4aa":"#dde6f0",fontFamily:KR}}>
+            <span style={{fontSize:13,fontWeight:700,color:done?"#005c4a":"#0d2436",fontFamily:KR}}>
               {done ? "✓ " : ""}{x.title}
             </span>
             <span style={{
               padding:"1px 6px",borderRadius:3,fontSize:8.5,fontWeight:800,fontFamily:MONO,
               background:lc+"14",border:`1px solid ${lc}38`,color:lc,
             }}>{x.level}</span>
-            <span style={{fontSize:9.5,color:"#1c3349",fontFamily:MONO}}>⏱ {x.min}분</span>
-            <span style={{fontSize:9.5,color:"#1c3349",fontFamily:MONO}}>· {x.tool}</span>
-            {x.free && <span style={{fontSize:9.5,color:"#22c55e",fontFamily:MONO}}>· 무료 가능</span>}
+            <span style={{fontSize:9.5,color:"#4a6379",fontFamily:MONO}}>⏱ {x.min}분</span>
+            <span style={{fontSize:9.5,color:"#4a6379",fontFamily:MONO}}>· {x.tool}</span>
+            {x.free && <span style={{fontSize:9.5,color:"#0f5527",fontFamily:MONO}}>· 무료 가능</span>}
           </div>
 
-          <p style={{fontSize:11.5,color:"#5a7a94",lineHeight:1.6,marginBottom:7,fontFamily:KR}}>{x.goal}</p>
+          <p style={{fontSize:11.5,color:"#3d5a72",lineHeight:1.6,marginBottom:7,fontFamily:KR}}>{x.goal}</p>
 
           <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
             {x.sol.map(s=><SolTag key={s} s={s}/>)}
             <button className="toggle-btn" onClick={()=>setOpen(v=>!v)} style={{
               marginLeft:"auto",padding:"3px 10px",borderRadius:4,fontSize:10,fontWeight:700,fontFamily:KR,
-              border:`1px solid ${open?"rgba(0,212,170,.45)":"rgba(0,212,170,.2)"}`,
-              background:open?"rgba(0,212,170,.1)":"rgba(0,212,170,.04)",
-              color:open?"#00d4aa":"#004d3a",cursor:"pointer",
+              border:`1px solid ${open?"rgba(0,92,74,.45)":"rgba(0,92,74,.2)"}`,
+              background:open?"rgba(0,92,74,.1)":"rgba(0,92,74,.04)",
+              color:open?"#005c4a":"#2b5b4f",cursor:"pointer",
             }}>{open?"접기 ▲":"체험 가이드 ▼"}</button>
             <button className="toggle-btn" onClick={()=>onDone(x.id)} style={{
               padding:"3px 10px",borderRadius:4,fontSize:10,fontWeight:700,fontFamily:KR,
-              border:`1px solid ${done?"rgba(0,212,170,.5)":"#0d2035"}`,
-              background:done?"rgba(0,212,170,.12)":"transparent",
-              color:done?"#00d4aa":"#1c3349",cursor:"pointer",
+              border:`1px solid ${done?"rgba(0,92,74,.5)":"#c6d7e6"}`,
+              background:done?"rgba(0,92,74,.12)":"transparent",
+              color:done?"#005c4a":"#4a6379",cursor:"pointer",
             }}>{done?"✓ 체험완료":"체험 체크"}</button>
           </div>
         </div>
@@ -1492,52 +1492,52 @@ function ExpCard({x, delay, done, onDone}) {
 
       {open && (
         <div className="panel" style={{
-          padding:"12px 14px 14px",borderTop:"1px solid rgba(0,212,170,.12)",
-          background:"rgba(0,212,170,.03)",
+          padding:"12px 14px 14px",borderTop:"1px solid rgba(0,92,74,.12)",
+          background:"rgba(0,92,74,.03)",
         }}>
-          <div style={{fontSize:9,color:"#1c3349",fontFamily:MONO,fontWeight:700,letterSpacing:".8px",marginBottom:6}}>
+          <div style={{fontSize:9,color:"#4a6379",fontFamily:MONO,fontWeight:700,letterSpacing:".8px",marginBottom:6}}>
             따라하기 단계
           </div>
           {x.steps.map((s,i)=>(
             <div key={i} style={{display:"flex",gap:8,marginBottom:5,alignItems:"flex-start"}}>
               <span style={{
                 width:16,height:16,borderRadius:"50%",flexShrink:0,marginTop:1,
-                background:"rgba(0,212,170,.1)",border:"1px solid rgba(0,212,170,.28)",
-                fontSize:9,fontWeight:800,color:"#00d4aa",fontFamily:MONO,
+                background:"rgba(0,92,74,.1)",border:"1px solid rgba(0,92,74,.28)",
+                fontSize:9,fontWeight:800,color:"#005c4a",fontFamily:MONO,
                 display:"flex",alignItems:"center",justifyContent:"center",
               }}>{i+1}</span>
-              <span style={{fontSize:11.5,color:"#6a8fa8",lineHeight:1.58,fontFamily:KR}}>{s}</span>
+              <span style={{fontSize:11.5,color:"#3d5a72",lineHeight:1.58,fontFamily:KR}}>{s}</span>
             </div>
           ))}
 
           <div style={{
             marginTop:10,padding:"10px 12px",borderRadius:6,
-            background:"#010b16",border:"1px solid #0d2035",
+            background:"#eef4fa",border:"1px solid #c6d7e6",
           }}>
             <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
-              <span style={{fontSize:9,color:"#1e6050",fontFamily:MONO,fontWeight:700,letterSpacing:".8px"}}>
+              <span style={{fontSize:9,color:"#255547",fontFamily:MONO,fontWeight:700,letterSpacing:".8px"}}>
                 복사해서 바로 쓰는 프롬프트
               </span>
               <button className="toggle-btn" onClick={doCopy} style={{
                 marginLeft:"auto",padding:"2px 9px",borderRadius:4,fontSize:9.5,fontWeight:700,fontFamily:MONO,
-                border:`1px solid ${copied?"rgba(34,197,94,.45)":"rgba(0,212,170,.25)"}`,
-                background:copied?"rgba(34,197,94,.1)":"rgba(0,212,170,.05)",
-                color:copied?"#22c55e":"#00d4aa",cursor:"pointer",
+                border:`1px solid ${copied?"rgba(15,85,39,.45)":"rgba(0,92,74,.25)"}`,
+                background:copied?"rgba(15,85,39,.1)":"rgba(0,92,74,.05)",
+                color:copied?"#0f5527":"#005c4a",cursor:"pointer",
               }}>{copied?"✓ 복사됨":"📋 복사"}</button>
             </div>
             <pre style={{
-              fontSize:11,color:"#8fa8bd",lineHeight:1.66,fontFamily:MONO,
+              fontSize:11,color:"#2f4a61",lineHeight:1.66,fontFamily:MONO,
               whiteSpace:"pre-wrap",wordBreak:"break-word",margin:0,
             }}>{x.prompt}</pre>
           </div>
 
           <div style={{
             marginTop:9,padding:"8px 11px",borderRadius:6,
-            background:"rgba(251,191,36,.05)",border:"1px solid rgba(251,191,36,.16)",
+            background:"rgba(122,68,5,.05)",border:"1px solid rgba(122,68,5,.16)",
             display:"flex",gap:7,alignItems:"flex-start",
           }}>
             <span style={{fontSize:11,flexShrink:0}}>💡</span>
-            <span style={{fontSize:11,color:"#a58a4a",lineHeight:1.58,fontFamily:KR}}>{x.tip}</span>
+            <span style={{fontSize:11,color:"#645019",lineHeight:1.58,fontFamily:KR}}>{x.tip}</span>
           </div>
         </div>
       )}
@@ -1558,7 +1558,7 @@ function ExpCorner() {
   return (
     <div>
       <TalkBubble icon="🧪" title="읽는 AI에서 해보는 AI로">
-        오늘 <b style={{color:"#00d4aa"}}>딱 하나만</b> 골라 따라해 보세요. 카드마다 복사해서 바로 쓰는 프롬프트가 들어 있습니다.
+        오늘 <b style={{color:"#005c4a"}}>딱 하나만</b> 골라 따라해 보세요. 카드마다 복사해서 바로 쓰는 프롬프트가 들어 있습니다.
         체험을 마치면 체크해서 진행률을 채워보세요.
       </TalkBubble>
 
@@ -1566,21 +1566,21 @@ function ExpCorner() {
       <div style={{padding:"10px 18px 4px"}}>
         <div style={{
           padding:"11px 13px",borderRadius:7,
-          background:"rgba(0,212,170,.045)",border:"1px solid rgba(0,212,170,.18)",
+          background:"rgba(0,92,74,.045)",border:"1px solid rgba(0,92,74,.18)",
         }}>
           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:7}}>
-            <span style={{fontSize:11,fontWeight:800,color:"#00d4aa",fontFamily:KR}}>나의 체험 진행률</span>
-            <span style={{marginLeft:"auto",fontSize:13,fontWeight:800,color:"#00d4aa",fontFamily:MONO}}>
-              {cnt}/{EXPS.length} <span style={{fontSize:10,color:"#1e6050"}}>({pct}%)</span>
+            <span style={{fontSize:11,fontWeight:800,color:"#005c4a",fontFamily:KR}}>나의 체험 진행률</span>
+            <span style={{marginLeft:"auto",fontSize:13,fontWeight:800,color:"#005c4a",fontFamily:MONO}}>
+              {cnt}/{EXPS.length} <span style={{fontSize:10,color:"#255547"}}>({pct}%)</span>
             </span>
           </div>
-          <div style={{height:6,borderRadius:3,background:"#020e1c",overflow:"hidden"}}>
+          <div style={{height:6,borderRadius:3,background:"#ffffff",overflow:"hidden"}}>
             <div style={{
               height:"100%",width:pct+"%",borderRadius:3,
-              background:"linear-gradient(90deg,#0891b2,#00d4aa)",transition:"width .35s",
+              background:"linear-gradient(90deg,#0b566a,#005c4a)",transition:"width .35s",
             }}/>
           </div>
-          <div style={{fontSize:10,color:"#1c3349",fontFamily:KR,marginTop:6}}>
+          <div style={{fontSize:10,color:"#4a6379",fontFamily:KR,marginTop:6}}>
             {pct === 0 ? "아직 시작 전이에요. 가장 위 '입문' 카드부터 3분만 써보세요."
              : pct < 50 ? "좋은 출발입니다. 주 2개 페이스면 한 달 안에 전부 끝납니다."
              : pct < 100 ? "절반을 넘었습니다. 남은 건 대부분 실무 적용 단계예요."
@@ -1603,9 +1603,9 @@ function ExpCorner() {
    🎓 나에게 꼭 필요한 주요지식
 ══════════════════════════════════════════════════════════════ */
 const DEPTHS = [
-  {k:"s30", label:"30초 요약", c:"#4ade80"},
-  {k:"s3",  label:"3분 이해",  c:"#60a5fa"},
-  {k:"s10", label:"10분 심화", c:"#a78bfa"},
+  {k:"s30", label:"30초 요약", c:"#0f5527"},
+  {k:"s3",  label:"3분 이해",  c:"#174b85"},
+  {k:"s10", label:"10분 심화", c:"#5a1fb4"},
 ];
 
 function KnowCard({k, delay}) {
@@ -1616,13 +1616,13 @@ function KnowCard({k, delay}) {
     <div className="card" style={{
       animationDelay:`${delay}ms`,
       borderRadius:8,marginBottom:8,padding:"13px 14px",
-      background:"rgba(0,0,0,.2)",border:"1px solid #071828",
+      background:"rgba(15,35,55,.09)",border:"1px solid #dbe6f0",
       transition:"border-color .16s",
     }}>
       <div style={{display:"flex",gap:10,alignItems:"flex-start",marginBottom:9}}>
         <div style={{
           width:32,height:32,borderRadius:8,flexShrink:0,fontSize:16,
-          background:"rgba(96,165,250,.07)",border:"1px solid rgba(96,165,250,.16)",
+          background:"rgba(23,75,133,.07)",border:"1px solid rgba(23,75,133,.16)",
           display:"flex",alignItems:"center",justifyContent:"center",
         }}>{k.icon}</div>
         <div style={{flex:1,minWidth:0}}>
@@ -1630,13 +1630,13 @@ function KnowCard({k, delay}) {
             {k.must && (
               <span style={{
                 padding:"1px 6px",borderRadius:3,fontSize:8,fontWeight:900,fontFamily:MONO,
-                background:"rgba(248,113,113,.12)",border:"1px solid rgba(248,113,113,.35)",color:"#f87171",
+                background:"rgba(158,42,31,.12)",border:"1px solid rgba(158,42,31,.35)",color:"#9e2a1f",
               }}>MUST</span>
             )}
-            <span style={{fontSize:13,fontWeight:700,color:"#dde6f0",fontFamily:KR}}>{k.title}</span>
+            <span style={{fontSize:13,fontWeight:700,color:"#0d2436",fontFamily:KR}}>{k.title}</span>
           </div>
           <div style={{display:"flex",gap:5,alignItems:"center",flexWrap:"wrap"}}>
-            <span style={{fontSize:9.5,color:"#1c3349",fontFamily:MONO}}>{k.role} · {k.tag}</span>
+            <span style={{fontSize:9.5,color:"#4a6379",fontFamily:MONO}}>{k.role} · {k.tag}</span>
             {k.sol.map(s=><SolTag key={s} s={s}/>)}
           </div>
         </div>
@@ -1649,9 +1649,9 @@ function KnowCard({k, delay}) {
           return (
             <button key={d.k} className="chip" onClick={()=>setDepth(d.k)} style={{
               padding:"3px 11px",borderRadius:4,fontSize:10,fontWeight:800,fontFamily:KR,
-              border:`1px solid ${on?d.c+"55":"#0d2035"}`,
+              border:`1px solid ${on?d.c+"55":"#c6d7e6"}`,
               background:on?d.c+"14":"transparent",
-              color:on?d.c:"#1c3349",cursor:"pointer",
+              color:on?d.c:"#4a6379",cursor:"pointer",
             }}>{d.label}</button>
           );
         })}
@@ -1659,16 +1659,16 @@ function KnowCard({k, delay}) {
 
       <div className="pop" key={depth} style={{
         padding:"11px 13px",borderRadius:6,
-        background:"rgba(0,0,0,.26)",borderLeft:`2px solid ${dc}66`,
+        background:"rgba(15,35,55,.12)",borderLeft:`2px solid ${dc}66`,
       }}>
-        <p style={{fontSize:12.5,color:"#7a9cb4",lineHeight:1.75,fontFamily:KR}}>{k[depth]}</p>
+        <p style={{fontSize:12.5,color:"#2f4a61",lineHeight:1.75,fontFamily:KR}}>{k[depth]}</p>
       </div>
 
       <div style={{display:"flex",gap:4,flexWrap:"wrap",marginTop:9}}>
         {k.kw.map(w=>(
           <span key={w} style={{
             padding:"1px 7px",borderRadius:3,fontSize:9.5,fontWeight:700,fontFamily:MONO,
-            background:"rgba(100,116,139,.08)",border:"1px solid rgba(100,116,139,.18)",color:"#475569",
+            background:"rgba(71,85,105,.08)",border:"1px solid rgba(71,85,105,.18)",color:"#475569",
           }}>#{w}</span>
         ))}
       </div>
@@ -1684,20 +1684,20 @@ function KnowCorner() {
   return (
     <div>
       <TalkBubble icon="🎓" title="전부 다 알 필요는 없습니다">
-        내 역할에 <b style={{color:"#00d4aa"}}>실제로 쓰이는 지식</b>만 골라 담았습니다.
+        내 역할에 <b style={{color:"#005c4a"}}>실제로 쓰이는 지식</b>만 골라 담았습니다.
         각 카드는 30초 / 3분 / 10분 세 단계로 되어 있어, 시간에 맞춰 원하는 깊이만 읽으면 됩니다.
       </TalkBubble>
 
       <div style={{padding:"10px 18px 2px",display:"flex",gap:5,flexWrap:"wrap",alignItems:"center"}}>
-        <span style={{fontSize:9.5,color:"#1c3349",fontFamily:MONO,fontWeight:700,marginRight:2}}>내 역할</span>
+        <span style={{fontSize:9.5,color:"#4a6379",fontFamily:MONO,fontWeight:700,marginRight:2}}>내 역할</span>
         {ROLES.map(r=>{
           const on = role === r;
           return (
             <button key={r} className="chip" onClick={()=>setRole(r)} style={{
               padding:"4px 12px",borderRadius:15,fontSize:11,fontWeight:700,fontFamily:KR,
-              border:`1px solid ${on?"rgba(0,212,170,.45)":"#0d2035"}`,
-              background:on?"rgba(0,212,170,.1)":"transparent",
-              color:on?"#00d4aa":"#1c3349",cursor:"pointer",
+              border:`1px solid ${on?"rgba(0,92,74,.45)":"#c6d7e6"}`,
+              background:on?"rgba(0,92,74,.1)":"transparent",
+              color:on?"#005c4a":"#4a6379",cursor:"pointer",
             }}>{r}</button>
           );
         })}
@@ -1706,7 +1706,7 @@ function KnowCorner() {
       <SectionTitle right={`MUST ${musts}건 포함`}>{role} 필수 지식 {list.length}건</SectionTitle>
       <div style={{padding:"0 18px 20px"}}>
         {list.length === 0
-          ? <div style={{padding:"30px 0",textAlign:"center",fontSize:12,color:"#1c3349",fontFamily:KR}}>
+          ? <div style={{padding:"30px 0",textAlign:"center",fontSize:12,color:"#4a6379",fontFamily:KR}}>
               해당 역할의 카드가 아직 없습니다.
             </div>
           : list.map((k,i)=><KnowCard key={k.id} k={k} delay={i*45}/>)}
@@ -1777,15 +1777,15 @@ function QuizCorner({news, seed}) {
     });
   }, [allDone, rate]);
 
-  const grade = rate >= 90 ? {t:"AI 시사 최상위",c:"#4ade80",m:"경쟁사 동향 브리핑을 직접 맡아도 될 수준입니다."}
-              : rate >= 70 ? {t:"실무 적용 가능",c:"#00d4aa",m:"핵심은 잡혀 있습니다. 틀린 문항의 해설만 다시 읽어보세요."}
-              : rate >= 50 ? {t:"기초 보강 필요",c:"#fbbf24",m:"주요지식 코너의 MUST 카드 3건을 먼저 읽는 걸 권합니다."}
-              : {t:"오늘부터 시작",c:"#f87171",m:"괜찮습니다. 주요지식 30초 요약만 읽어도 다음 회차에서 확 올라갑니다."};
+  const grade = rate >= 90 ? {t:"AI 시사 최상위",c:"#0f5527",m:"경쟁사 동향 브리핑을 직접 맡아도 될 수준입니다."}
+              : rate >= 70 ? {t:"실무 적용 가능",c:"#005c4a",m:"핵심은 잡혀 있습니다. 틀린 문항의 해설만 다시 읽어보세요."}
+              : rate >= 50 ? {t:"기초 보강 필요",c:"#7a4405",m:"주요지식 코너의 MUST 카드 3건을 먼저 읽는 걸 권합니다."}
+              : {t:"오늘부터 시작",c:"#9e2a1f",m:"괜찮습니다. 주요지식 30초 요약만 읽어도 다음 회차에서 확 올라갑니다."};
 
   return (
     <div>
       <TalkBubble icon="✅" title="오늘의 AI 시사, 얼마나 알고 계신가요">
-        고정 문항 5개 + <b style={{color:"#00d4aa"}}>오늘 불러온 뉴스에서 자동 생성된 문항</b>으로 구성됩니다.
+        고정 문항 5개 + <b style={{color:"#005c4a"}}>오늘 불러온 뉴스에서 자동 생성된 문항</b>으로 구성됩니다.
         새로고침할 때마다 문항이 바뀌니 매일 한 판씩 가볍게 확인해 보세요.
       </TalkBubble>
 
@@ -1793,41 +1793,41 @@ function QuizCorner({news, seed}) {
       <div style={{padding:"10px 18px 4px"}}>
         <div style={{
           padding:"12px 14px",borderRadius:7,display:"flex",alignItems:"center",gap:14,flexWrap:"wrap",
-          background:allDone?grade.c+"0d":"rgba(0,0,0,.2)",
-          border:`1px solid ${allDone?grade.c+"33":"#071828"}`,
+          background:allDone?grade.c+"0d":"rgba(15,35,55,.09)",
+          border:`1px solid ${allDone?grade.c+"33":"#dbe6f0"}`,
         }}>
           <div>
-            <div style={{fontSize:9,color:"#1c3349",fontFamily:MONO,fontWeight:700,letterSpacing:".8px",marginBottom:3}}>
+            <div style={{fontSize:9,color:"#4a6379",fontFamily:MONO,fontWeight:700,letterSpacing:".8px",marginBottom:3}}>
               진행
             </div>
-            <div style={{fontSize:17,fontWeight:800,color:"#dde6f0",fontFamily:MONO}}>
-              {answered}<span style={{fontSize:11,color:"#1c3349"}}>/{questions.length}</span>
+            <div style={{fontSize:17,fontWeight:800,color:"#0d2436",fontFamily:MONO}}>
+              {answered}<span style={{fontSize:11,color:"#4a6379"}}>/{questions.length}</span>
             </div>
           </div>
           <div>
-            <div style={{fontSize:9,color:"#1c3349",fontFamily:MONO,fontWeight:700,letterSpacing:".8px",marginBottom:3}}>
+            <div style={{fontSize:9,color:"#4a6379",fontFamily:MONO,fontWeight:700,letterSpacing:".8px",marginBottom:3}}>
               정답
             </div>
-            <div style={{fontSize:17,fontWeight:800,color:"#00d4aa",fontFamily:MONO}}>
-              {correct}<span style={{fontSize:11,color:"#1e6050"}}>건</span>
+            <div style={{fontSize:17,fontWeight:800,color:"#005c4a",fontFamily:MONO}}>
+              {correct}<span style={{fontSize:11,color:"#255547"}}>건</span>
             </div>
           </div>
           <div>
-            <div style={{fontSize:9,color:"#1c3349",fontFamily:MONO,fontWeight:700,letterSpacing:".8px",marginBottom:3}}>
+            <div style={{fontSize:9,color:"#4a6379",fontFamily:MONO,fontWeight:700,letterSpacing:".8px",marginBottom:3}}>
               정답률
             </div>
             <div style={{fontSize:17,fontWeight:800,color:grade.c,fontFamily:MONO}}>{rate}%</div>
           </div>
 
           <div style={{flex:1,minWidth:150}}>
-            <div style={{height:6,borderRadius:3,background:"#020e1c",overflow:"hidden",marginBottom:6}}>
+            <div style={{height:6,borderRadius:3,background:"#ffffff",overflow:"hidden",marginBottom:6}}>
               <div style={{
                 height:"100%",width:(questions.length?Math.round(answered/questions.length*100):0)+"%",
-                borderRadius:3,background:"linear-gradient(90deg,#0891b2,#00d4aa)",transition:"width .3s",
+                borderRadius:3,background:"linear-gradient(90deg,#0b566a,#005c4a)",transition:"width .3s",
               }}/>
             </div>
             {allDone && (
-              <div className="pop" style={{fontSize:11,color:"#5a7a94",fontFamily:KR,lineHeight:1.5}}>
+              <div className="pop" style={{fontSize:11,color:"#3d5a72",fontFamily:KR,lineHeight:1.5}}>
                 <b style={{color:grade.c}}>{grade.t}</b> — {grade.m}
               </div>
             )}
@@ -1835,8 +1835,8 @@ function QuizCorner({news, seed}) {
 
           <button className="toggle-btn" onClick={()=>setRound(r=>r+1)} style={{
             padding:"5px 13px",borderRadius:5,fontSize:11,fontWeight:700,fontFamily:KR,
-            border:"1px solid rgba(0,212,170,.28)",background:"rgba(0,212,170,.06)",
-            color:"#00d4aa",cursor:"pointer",
+            border:"1px solid rgba(0,92,74,.28)",background:"rgba(0,92,74,.06)",
+            color:"#005c4a",cursor:"pointer",
           }}>↻ 다시 풀기</button>
         </div>
 
@@ -1845,22 +1845,22 @@ function QuizCorner({news, seed}) {
           <div style={{
             marginTop:6,padding:"7px 13px",borderRadius:6,
             display:"flex",alignItems:"center",gap:12,flexWrap:"wrap",
-            background:"rgba(0,0,0,.18)",border:"1px solid #071828",
+            background:"rgba(15,35,55,.08)",border:"1px solid #dbe6f0",
           }}>
-            <span style={{fontSize:9,color:"#1c3349",fontFamily:MONO,fontWeight:700,letterSpacing:".8px"}}>
+            <span style={{fontSize:9,color:"#4a6379",fontFamily:MONO,fontWeight:700,letterSpacing:".8px"}}>
               💾 누적 기록
             </span>
-            <span style={{fontSize:10.5,color:"#5a7a94",fontFamily:MONO}}>
-              풀이 <b style={{color:"#dde6f0"}}>{stat.plays}</b>회
+            <span style={{fontSize:10.5,color:"#3d5a72",fontFamily:MONO}}>
+              풀이 <b style={{color:"#0d2436"}}>{stat.plays}</b>회
             </span>
-            <span style={{fontSize:10.5,color:"#5a7a94",fontFamily:MONO}}>
-              최고 정답률 <b style={{color:"#00d4aa"}}>{stat.best}%</b>
+            <span style={{fontSize:10.5,color:"#3d5a72",fontFamily:MONO}}>
+              최고 정답률 <b style={{color:"#005c4a"}}>{stat.best}%</b>
             </span>
-            <span style={{fontSize:10.5,color:"#5a7a94",fontFamily:MONO}}>
-              연속 <b style={{color:"#fbbf24"}}>{stat.streak}</b>일
+            <span style={{fontSize:10.5,color:"#3d5a72",fontFamily:MONO}}>
+              연속 <b style={{color:"#7a4405"}}>{stat.streak}</b>일
             </span>
             {stat.streak >= 3 && (
-              <span style={{fontSize:10,color:"#fbbf24",fontFamily:KR}}>🔥 좋은 흐름입니다</span>
+              <span style={{fontSize:10,color:"#7a4405",fontFamily:KR}}>🔥 좋은 흐름입니다</span>
             )}
           </div>
         )}
@@ -1876,18 +1876,18 @@ function QuizCorner({news, seed}) {
             <div key={qi} className="card" style={{
               animationDelay:`${qi*45}ms`,
               borderRadius:8,marginBottom:9,padding:"13px 14px",
-              background:done?(ok?"rgba(74,222,128,.04)":"rgba(248,113,113,.04)"):"rgba(0,0,0,.2)",
-              border:`1px solid ${done?(ok?"rgba(74,222,128,.24)":"rgba(248,113,113,.24)"):"#071828"}`,
+              background:done?(ok?"rgba(15,85,39,.04)":"rgba(158,42,31,.04)"):"rgba(15,35,55,.09)",
+              border:`1px solid ${done?(ok?"rgba(15,85,39,.24)":"rgba(158,42,31,.24)"):"#dbe6f0"}`,
               transition:"all .2s",
             }}>
               <div style={{display:"flex",gap:8,marginBottom:10,alignItems:"flex-start"}}>
                 <span style={{
                   width:19,height:19,borderRadius:4,flexShrink:0,marginTop:1,
-                  background:"rgba(0,212,170,.08)",border:"1px solid rgba(0,212,170,.2)",
-                  fontSize:9.5,fontWeight:800,color:"#00d4aa",fontFamily:MONO,
+                  background:"rgba(0,92,74,.08)",border:"1px solid rgba(0,92,74,.2)",
+                  fontSize:9.5,fontWeight:800,color:"#005c4a",fontFamily:MONO,
                   display:"flex",alignItems:"center",justifyContent:"center",
                 }}>Q{qi+1}</span>
-                <span style={{flex:1,fontSize:12.5,fontWeight:700,color:"#dde6f0",lineHeight:1.55,fontFamily:KR}}>
+                <span style={{flex:1,fontSize:12.5,fontWeight:700,color:"#0d2436",lineHeight:1.55,fontFamily:KR}}>
                   {q.q}
                 </span>
               </div>
@@ -1900,11 +1900,11 @@ function QuizCorner({news, seed}) {
                 {q.opts.map((o,oi)=>{
                   const isA = oi === q.a;
                   const isS = oi === sel;
-                  let bg="transparent", bd="#0d2035", c="#5a7a94";
+                  let bg="transparent", bd="#c6d7e6", c="#3d5a72";
                   if (done) {
-                    if (isA)      { bg="rgba(74,222,128,.1)";  bd="rgba(74,222,128,.42)";  c="#4ade80"; }
-                    else if (isS) { bg="rgba(248,113,113,.1)"; bd="rgba(248,113,113,.42)"; c="#f87171"; }
-                    else          { c="#1c3349"; }
+                    if (isA)      { bg="rgba(15,85,39,.1)";  bd="rgba(15,85,39,.42)";  c="#0f5527"; }
+                    else if (isS) { bg="rgba(158,42,31,.1)"; bd="rgba(158,42,31,.42)"; c="#9e2a1f"; }
+                    else          { c="#4a6379"; }
                   }
                   return (
                     <button key={oi} onClick={()=>pick(qi,oi)} disabled={done} className={done?"":"chip"} style={{
@@ -1925,12 +1925,12 @@ function QuizCorner({news, seed}) {
               {done && (
                 <div className="pop" style={{
                   marginTop:9,padding:"10px 12px",borderRadius:6,
-                  background:"rgba(0,212,170,.04)",borderLeft:"2px solid rgba(0,212,170,.5)",
+                  background:"rgba(0,92,74,.04)",borderLeft:"2px solid rgba(0,92,74,.5)",
                 }}>
-                  <div style={{fontSize:9,color:ok?"#4ade80":"#f87171",fontFamily:MONO,fontWeight:800,letterSpacing:".8px",marginBottom:4}}>
+                  <div style={{fontSize:9,color:ok?"#0f5527":"#9e2a1f",fontFamily:MONO,fontWeight:800,letterSpacing:".8px",marginBottom:4}}>
                     {ok ? "✓ 정답" : "✗ 오답"} · 해설
                   </div>
-                  <p style={{fontSize:11.5,color:"#6a8fa8",lineHeight:1.7,fontFamily:KR}}>{q.why}</p>
+                  <p style={{fontSize:11.5,color:"#3d5a72",lineHeight:1.7,fontFamily:KR}}>{q.why}</p>
                 </div>
               )}
             </div>
@@ -1993,7 +1993,7 @@ function MindCorner({seed}) {
   return (
     <div>
       <TalkBubble icon="🌿" title="딱 60초, 마음도 새로고침">
-        업무 중 짧게 끊어 쓰는 <b style={{color:"#00d4aa"}}>나노 단위 케어</b>입니다.
+        업무 중 짧게 끊어 쓰는 <b style={{color:"#005c4a"}}>나노 단위 케어</b>입니다.
         호흡 1분 · 기분 체크 10초 · 루틴 5개 — 오늘 하나만 해도 충분합니다.
       </TalkBubble>
 
@@ -2002,7 +2002,7 @@ function MindCorner({seed}) {
       <div style={{padding:"0 18px 4px"}}>
         <div style={{
           padding:"20px 14px 18px",borderRadius:8,textAlign:"center",
-          background:"rgba(0,212,170,.035)",border:"1px solid rgba(0,212,170,.16)",
+          background:"rgba(0,92,74,.035)",border:"1px solid rgba(0,92,74,.16)",
         }}>
           <div style={{height:150,display:"flex",alignItems:"center",justifyContent:"center",marginBottom:12}}>
             <div className="breath-ring" style={{
@@ -2016,7 +2016,7 @@ function MindCorner({seed}) {
               <span style={{fontSize:13,fontWeight:800,color:cur.c,fontFamily:KR}}>
                 {running ? cur.t : "준비"}
               </span>
-              <span style={{fontSize:22,fontWeight:800,color:"#dde6f0",fontFamily:MONO,lineHeight:1}}>
+              <span style={{fontSize:22,fontWeight:800,color:"#0d2436",fontFamily:MONO,lineHeight:1}}>
                 {running ? left : "—"}
               </span>
             </div>
@@ -2027,8 +2027,8 @@ function MindCorner({seed}) {
               <span key={i} style={{
                 padding:"2px 9px",borderRadius:12,fontSize:9.5,fontWeight:700,fontFamily:KR,
                 background:running&&phase===i?b.c+"18":"transparent",
-                border:`1px solid ${running&&phase===i?b.c+"55":"#0d2035"}`,
-                color:running&&phase===i?b.c:"#1c3349",
+                border:`1px solid ${running&&phase===i?b.c+"55":"#c6d7e6"}`,
+                color:running&&phase===i?b.c:"#4a6379",
               }}>{b.t} {b.s}s</span>
             ))}
           </div>
@@ -2036,19 +2036,19 @@ function MindCorner({seed}) {
           <div style={{display:"flex",gap:7,justifyContent:"center"}}>
             <button className="toggle-btn" onClick={()=>setRunning(v=>!v)} style={{
               padding:"6px 20px",borderRadius:6,fontSize:12,fontWeight:700,fontFamily:KR,
-              border:`1px solid ${running?"rgba(248,113,113,.35)":"rgba(0,212,170,.4)"}`,
-              background:running?"rgba(248,113,113,.07)":"rgba(0,212,170,.09)",
-              color:running?"#f87171":"#00d4aa",cursor:"pointer",
+              border:`1px solid ${running?"rgba(158,42,31,.35)":"rgba(0,92,74,.4)"}`,
+              background:running?"rgba(158,42,31,.07)":"rgba(0,92,74,.09)",
+              color:running?"#9e2a1f":"#005c4a",cursor:"pointer",
             }}>{running?"⏸ 잠시 멈춤":"▶ 호흡 시작"}</button>
             <button className="toggle-btn" onClick={reset} style={{
               padding:"6px 14px",borderRadius:6,fontSize:12,fontWeight:700,fontFamily:KR,
-              border:"1px solid #0d2035",background:"transparent",color:"#1c3349",cursor:"pointer",
+              border:"1px solid #c6d7e6",background:"transparent",color:"#4a6379",cursor:"pointer",
             }}>초기화</button>
           </div>
 
-          <div style={{fontSize:10.5,color:"#1c3349",fontFamily:KR,marginTop:11,lineHeight:1.6}}>
+          <div style={{fontSize:10.5,color:"#4a6379",fontFamily:KR,marginTop:11,lineHeight:1.6}}>
             원의 크기에 맞춰 숨을 쉬세요. 4회(약 64초)면 심박이 눈에 띄게 안정됩니다.
-            {cycles >= 4 && <b style={{color:"#00d4aa"}}> 목표 달성! 오늘 몫은 충분합니다.</b>}
+            {cycles >= 4 && <b style={{color:"#005c4a"}}> 목표 달성! 오늘 몫은 충분합니다.</b>}
           </div>
         </div>
       </div>
@@ -2056,19 +2056,19 @@ function MindCorner({seed}) {
       {/* 기분 체크 */}
       <SectionTitle right="하루 1회 권장">오늘의 기분 체크</SectionTitle>
       <div style={{padding:"0 18px 4px"}}>
-        <div style={{padding:"13px 14px",borderRadius:8,background:"rgba(0,0,0,.2)",border:"1px solid #071828"}}>
+        <div style={{padding:"13px 14px",borderRadius:8,background:"rgba(15,35,55,.09)",border:"1px solid #dbe6f0"}}>
           <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:mood!=null?11:0}}>
             {MOODS.map((m,i)=>{
               const on = mood === i;
               return (
                 <button key={i} className="chip" onClick={()=>setMood(on?null:i)} style={{
                   flex:"1 1 90px",padding:"11px 6px",borderRadius:7,
-                  border:`1px solid ${on?m.c+"66":"#0d2035"}`,
+                  border:`1px solid ${on?m.c+"66":"#c6d7e6"}`,
                   background:on?m.c+"12":"transparent",cursor:"pointer",
                   display:"flex",flexDirection:"column",alignItems:"center",gap:5,
                 }}>
                   <span style={{fontSize:21,filter:on?"none":"grayscale(.6) opacity(.55)"}}>{m.e}</span>
-                  <span style={{fontSize:10,fontWeight:700,color:on?m.c:"#1c3349",fontFamily:KR}}>{m.t}</span>
+                  <span style={{fontSize:10,fontWeight:700,color:on?m.c:"#4a6379",fontFamily:KR}}>{m.t}</span>
                 </button>
               );
             })}
@@ -2078,7 +2078,7 @@ function MindCorner({seed}) {
               padding:"10px 12px",borderRadius:6,
               background:moodObj.c+"0d",borderLeft:`2px solid ${moodObj.c}88`,
             }}>
-              <p style={{fontSize:11.5,color:"#7a9cb4",lineHeight:1.68,fontFamily:KR}}>{moodObj.msg}</p>
+              <p style={{fontSize:11.5,color:"#2f4a61",lineHeight:1.68,fontFamily:KR}}>{moodObj.msg}</p>
             </div>
           )}
         </div>
@@ -2094,22 +2094,22 @@ function MindCorner({seed}) {
               animationDelay:`${i*40}ms`,
               display:"flex",gap:10,alignItems:"center",cursor:"pointer",
               padding:"10px 13px",marginBottom:6,borderRadius:7,
-              background:on?"rgba(0,212,170,.05)":"rgba(0,0,0,.2)",
-              border:`1px solid ${on?"rgba(0,212,170,.28)":"#071828"}`,
+              background:on?"rgba(0,92,74,.05)":"rgba(15,35,55,.09)",
+              border:`1px solid ${on?"rgba(0,92,74,.28)":"#dbe6f0"}`,
               transition:"all .18s",
             }}>
               <span style={{fontSize:16,flexShrink:0,filter:on?"none":"grayscale(.5) opacity(.7)"}}>{r.icon}</span>
               <div style={{flex:1,minWidth:0}}>
-                <div style={{fontSize:12,fontWeight:700,color:on?"#00d4aa":"#dde6f0",fontFamily:KR,marginBottom:2}}>
+                <div style={{fontSize:12,fontWeight:700,color:on?"#005c4a":"#0d2436",fontFamily:KR,marginBottom:2}}>
                   {r.t}
                 </div>
-                <div style={{fontSize:11,color:"#5a7a94",lineHeight:1.5,fontFamily:KR}}>{r.d}</div>
+                <div style={{fontSize:11,color:"#3d5a72",lineHeight:1.5,fontFamily:KR}}>{r.d}</div>
               </div>
               <span style={{
                 width:19,height:19,borderRadius:4,flexShrink:0,
-                border:`1px solid ${on?"rgba(0,212,170,.5)":"#0d2035"}`,
-                background:on?"rgba(0,212,170,.14)":"transparent",
-                color:"#00d4aa",fontSize:11,fontWeight:800,
+                border:`1px solid ${on?"rgba(0,92,74,.5)":"#c6d7e6"}`,
+                background:on?"rgba(0,92,74,.14)":"transparent",
+                color:"#005c4a",fontSize:11,fontWeight:800,
                 display:"flex",alignItems:"center",justifyContent:"center",
               }}>{on?"✓":""}</span>
             </div>
@@ -2119,47 +2119,47 @@ function MindCorner({seed}) {
 
       {/* 마음점수 + 한 줄 */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1.3fr",gap:12,padding:"12px 18px 22px"}}>
-        <div style={{padding:"13px 14px",borderRadius:8,background:"rgba(0,212,170,.04)",border:"1px solid rgba(0,212,170,.18)"}}>
-          <div style={{fontSize:9,color:"#1e6050",fontFamily:MONO,fontWeight:700,letterSpacing:".9px",marginBottom:6}}>
+        <div style={{padding:"13px 14px",borderRadius:8,background:"rgba(0,92,74,.04)",border:"1px solid rgba(0,92,74,.18)"}}>
+          <div style={{fontSize:9,color:"#255547",fontFamily:MONO,fontWeight:700,letterSpacing:".9px",marginBottom:6}}>
             오늘의 마음점수
           </div>
           <div style={{display:"flex",alignItems:"baseline",gap:4,marginBottom:8}}>
-            <span style={{fontSize:28,fontWeight:800,color:"#00d4aa",fontFamily:MONO,lineHeight:1}}>{score}</span>
-            <span style={{fontSize:12,color:"#1e6050",fontFamily:MONO}}>/100</span>
+            <span style={{fontSize:28,fontWeight:800,color:"#005c4a",fontFamily:MONO,lineHeight:1}}>{score}</span>
+            <span style={{fontSize:12,color:"#255547",fontFamily:MONO}}>/100</span>
           </div>
-          <div style={{height:6,borderRadius:3,background:"#020e1c",overflow:"hidden",marginBottom:7}}>
+          <div style={{height:6,borderRadius:3,background:"#ffffff",overflow:"hidden",marginBottom:7}}>
             <div style={{height:"100%",width:score+"%",borderRadius:3,
-                         background:"linear-gradient(90deg,#0891b2,#00d4aa)",transition:"width .35s"}}/>
+                         background:"linear-gradient(90deg,#0b566a,#005c4a)",transition:"width .35s"}}/>
           </div>
-          <div style={{fontSize:10,color:"#1c3349",fontFamily:KR,lineHeight:1.55}}>
-            기분 체크 60% + 루틴 실천 40%로 계산됩니다. 점수 자체보다 <b style={{color:"#00d4aa"}}>매일 재는 습관</b>이 중요합니다.
+          <div style={{fontSize:10,color:"#4a6379",fontFamily:KR,lineHeight:1.55}}>
+            기분 체크 60% + 루틴 실천 40%로 계산됩니다. 점수 자체보다 <b style={{color:"#005c4a"}}>매일 재는 습관</b>이 중요합니다.
             {LS.ok && <> 오늘({mind.date}) 기록은 저장되며 날짜가 바뀌면 자동으로 초기화됩니다.</>}
           </div>
         </div>
 
         <div style={{
           padding:"13px 14px",borderRadius:8,display:"flex",flexDirection:"column",
-          background:"rgba(0,0,0,.2)",border:"1px solid #071828",
+          background:"rgba(15,35,55,.09)",border:"1px solid #dbe6f0",
         }}>
           <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
-            <span style={{fontSize:9,color:"#1c3349",fontFamily:MONO,fontWeight:700,letterSpacing:".9px"}}>
+            <span style={{fontSize:9,color:"#4a6379",fontFamily:MONO,fontWeight:700,letterSpacing:".9px"}}>
               오늘의 마음 한 줄
             </span>
             <button className="toggle-btn" onClick={()=>setLineIdx(i=>(i+1)%LINES.length)} style={{
               marginLeft:"auto",padding:"2px 9px",borderRadius:4,fontSize:9.5,fontWeight:700,fontFamily:MONO,
-              border:"1px solid #0d2035",background:"transparent",color:"#1c3349",cursor:"pointer",
+              border:"1px solid #c6d7e6",background:"transparent",color:"#4a6379",cursor:"pointer",
             }}>↻ 다른 문장</button>
           </div>
           <div className="pop" key={lineIdx} style={{
             flex:1,display:"flex",alignItems:"center",
             padding:"12px 14px",borderRadius:6,
-            background:"rgba(167,139,250,.05)",borderLeft:"2px solid rgba(167,139,250,.5)",
+            background:"rgba(90,31,180,.05)",borderLeft:"2px solid rgba(90,31,180,.5)",
           }}>
-            <p style={{fontSize:13,color:"#a8bdd0",lineHeight:1.75,fontFamily:KR,fontWeight:500}}>
+            <p style={{fontSize:13,color:"#22394d",lineHeight:1.75,fontFamily:KR,fontWeight:500}}>
               “{LINES[lineIdx]}”
             </p>
           </div>
-          <div style={{fontSize:9.5,color:"#132436",fontFamily:KR,marginTop:8,lineHeight:1.55}}>
+          <div style={{fontSize:9.5,color:"#43596d",fontFamily:KR,marginTop:8,lineHeight:1.55}}>
             ※ 본 코너는 일반적인 self-care 정보이며 의학적 진단·치료를 대체하지 않습니다.
             지속적인 어려움이 있다면 전문가 상담을 권합니다.
           </div>
@@ -2174,18 +2174,18 @@ function MindCorner({seed}) {
 ══════════════════════════════════════════════════════════════ */
 function Legend() {
   return (
-    <div style={{padding:"10px 12px",background:"rgba(0,0,0,.22)",borderRadius:6,border:"1px solid #071828"}}>
+    <div style={{padding:"10px 12px",background:"rgba(15,35,55,.10)",borderRadius:6,border:"1px solid #dbe6f0"}}>
       <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:7,flexWrap:"nowrap",overflowX:"auto"}}>
-        <span style={{fontSize:9.5,color:"#132436",fontFamily:MONO,fontWeight:700,flexShrink:0}}>솔루션</span>
+        <span style={{fontSize:9.5,color:"#43596d",fontFamily:MONO,fontWeight:700,flexShrink:0}}>솔루션</span>
         {Object.keys(SOL).map(s=><SolTag key={s} s={s}/>)}
       </div>
       <div style={{display:"flex",alignItems:"center",gap:5,flexWrap:"nowrap",overflowX:"auto"}}>
-        <span style={{fontSize:9.5,color:"#132436",fontFamily:MONO,fontWeight:700,flexShrink:0}}>중요도</span>
+        <span style={{fontSize:9.5,color:"#43596d",fontFamily:MONO,fontWeight:700,flexShrink:0}}>중요도</span>
         {Object.keys(IMP).map(k=>{
           const v = IMP[k];
           return <span key={k} style={{padding:"1px 7px",borderRadius:3,fontSize:9.5,fontWeight:800,background:v.bg,border:`1px solid ${v.bd}`,color:v.c,fontFamily:MONO,flexShrink:0}}>{v.label}</span>;
         })}
-        <span style={{fontSize:9.5,color:"#132436",fontFamily:MONO,fontWeight:700,flexShrink:0,marginLeft:8}}>우선순위</span>
+        <span style={{fontSize:9.5,color:"#43596d",fontFamily:MONO,fontWeight:700,flexShrink:0,marginLeft:8}}>우선순위</span>
         {Object.keys(PRI).map(k=>(
           <span key={k} style={{fontSize:9.5,fontWeight:800,color:PRI[k].c,fontFamily:MONO,flexShrink:0}}>{k}</span>
         ))}
@@ -2507,34 +2507,34 @@ export default function App() {
 
   const isAI = mode==="ai";
   const cur  = STEPS[step%STEPS.length];
-  const dotC = loading?"#fbbf24":isAI?"#00d4aa":"#475569";
+  const dotC = loading?"#7a4405":isAI?"#005c4a":"#475569";
   const navObj = NAVS.filter(v=>v.k===nav)[0] || NAVS[0];
   const schedOn = daily || auto;
 
   return(
     <>
       <style>{CSS}</style>
-      <div style={{minHeight:EMBED?undefined:"100vh",background:"#010b16",color:"#dde6f0",fontFamily:KR}}>
+      <div style={{minHeight:EMBED?undefined:"100vh",background:"#eef4fa",color:"#0d2436",fontFamily:KR}}>
 
         {/* ── 헤더 ── */}
-        <header style={{background:"#020e1c",borderBottom:"1px solid #071828",minHeight:52,padding:"7px 18px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,flexWrap:"wrap",position:"sticky",top:0,zIndex:100,boxShadow:"0 1px 0 rgba(0,212,170,.06),0 4px 16px rgba(0,0,0,.4)"}}>
+        <header style={{background:"#ffffff",borderBottom:"1px solid #dbe6f0",minHeight:52,padding:"7px 18px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,flexWrap:"wrap",position:"sticky",top:0,zIndex:100,boxShadow:"0 1px 0 rgba(0,92,74,.06),0 4px 16px rgba(15,35,55,.16)"}}>
           <div style={{display:"flex",alignItems:"center",gap:10}}>
-            <div style={{width:29,height:29,borderRadius:6,flexShrink:0,background:"linear-gradient(135deg,#00d4aa,#0891b2)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:MONO,fontWeight:900,fontSize:10.5,color:"#010b16",letterSpacing:"-1px",animation:"glow 3s ease-in-out infinite"}}>DZ</div>
+            <div style={{width:29,height:29,borderRadius:6,flexShrink:0,background:"linear-gradient(135deg,#005c4a,#0b566a)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:MONO,fontWeight:900,fontSize:10.5,color:"#eef4fa",letterSpacing:"-1px",animation:"glow 3s ease-in-out infinite"}}>DZ</div>
             <div style={{lineHeight:1.2}}>
-              <div style={{fontSize:13.5,fontWeight:800,color:"#ecf4fb",letterSpacing:"-.3px"}}>AI 글로벌 뉴스 톡</div>
-              <div style={{fontSize:8.5,color:"#132436",letterSpacing:"1px",fontFamily:MONO}}>DOUZONE BIZON · STRATEGIC AI TALK</div>
+              <div style={{fontSize:13.5,fontWeight:800,color:"#0d2436",letterSpacing:"-.3px"}}>AI 글로벌 뉴스 톡</div>
+              <div style={{fontSize:8.5,color:"#43596d",letterSpacing:"1px",fontFamily:MONO}}>DOUZONE BIZON · STRATEGIC AI TALK</div>
             </div>
           </div>
 
           <div style={{display:"flex",alignItems:"center",gap:7,flexWrap:"wrap"}}>
-            {updAt&&<span style={{fontSize:9.5,color:"#132436",fontFamily:MONO}}>{updAt} #{n}</span>}
+            {updAt&&<span style={{fontSize:9.5,color:"#43596d",fontFamily:MONO}}>{updAt} #{n}</span>}
 
             {/* 스케줄 열기 버튼 */}
             <button className="auto-btn" onClick={()=>setShowSched(v=>!v)} style={{
               padding:"4px 11px",borderRadius:5,fontFamily:MONO,fontSize:10,fontWeight:700,cursor:"pointer",
-              border:`1px solid ${schedOn?"rgba(0,212,170,.4)":"rgba(100,116,139,.18)"}`,
-              background:schedOn?"rgba(0,212,170,.08)":"transparent",
-              color:schedOn?"#00d4aa":"#1c3349",
+              border:`1px solid ${schedOn?"rgba(0,92,74,.4)":"rgba(71,85,105,.18)"}`,
+              background:schedOn?"rgba(0,92,74,.08)":"transparent",
+              color:schedOn?"#005c4a":"#4a6379",
               display:"flex",alignItems:"center",gap:5,
             }}>
               <span>⏰</span>
@@ -2571,14 +2571,14 @@ export default function App() {
         )}
 
         {/* ── 코너 네비 ── */}
-        <nav style={{background:"#020e1c",borderBottom:"1px solid #071828",padding:"0 18px",display:"flex",overflowX:"auto",gap:2}}>
+        <nav style={{background:"#ffffff",borderBottom:"1px solid #dbe6f0",padding:"0 18px",display:"flex",overflowX:"auto",gap:2}}>
           {NAVS.map(v=>{
             const on = nav===v.k;
             return (
               <button key={v.k} className="nav-tab" onClick={()=>setNav(v.k)} style={{
                 padding:"10px 13px",border:"none",background:"transparent",
-                borderBottom:on?"2px solid #00d4aa":"2px solid transparent",
-                color:on?"#00d4aa":"#1c3349",fontSize:12,fontWeight:on?800:500,
+                borderBottom:on?"2px solid #005c4a":"2px solid transparent",
+                color:on?"#005c4a":"#4a6379",fontSize:12,fontWeight:on?800:500,
                 whiteSpace:"nowrap",fontFamily:KR,cursor:"pointer",
                 display:"flex",alignItems:"center",gap:5,
               }}>
@@ -2590,12 +2590,12 @@ export default function App() {
 
         {/* ── 뉴스 카테고리 탭 (뉴스/핫 코너에서만) ── */}
         {(nav==="news"||nav==="hot") && (
-          <nav style={{background:"rgba(2,14,28,.6)",borderBottom:"1px solid #071828",padding:"0 18px",display:"flex",overflowX:"auto"}}>
+          <nav style={{background:"rgba(255,255,255,.6)",borderBottom:"1px solid #dbe6f0",padding:"0 18px",display:"flex",overflowX:"auto"}}>
             {CATS.map(c=>(
               <button key={c} className="cat-tab" onClick={()=>{setCat(c);doFetch(c);}} style={{
                 padding:"7px 12px",border:"none",background:"transparent",
-                borderBottom:cat===c?"2px solid rgba(0,212,170,.55)":"2px solid transparent",
-                color:cat===c?"#00d4aa":"#1c3349",fontSize:11,fontWeight:cat===c?700:400,
+                borderBottom:cat===c?"2px solid rgba(0,92,74,.55)":"2px solid transparent",
+                color:cat===c?"#005c4a":"#4a6379",fontSize:11,fontWeight:cat===c?700:400,
                 whiteSpace:"nowrap",fontFamily:KR,cursor:"pointer",
               }}>{c}</button>
             ))}
@@ -2603,27 +2603,27 @@ export default function App() {
         )}
 
         {/* ── 상태 바 ── */}
-        <div style={{padding:"6px 18px",borderBottom:"1px solid #071828",background:"rgba(0,212,170,.014)",display:"flex",alignItems:"center",gap:7,flexWrap:"wrap"}}>
+        <div style={{padding:"6px 18px",borderBottom:"1px solid #dbe6f0",background:"rgba(0,92,74,.014)",display:"flex",alignItems:"center",gap:7,flexWrap:"wrap"}}>
           <span style={{width:6,height:6,borderRadius:"50%",flexShrink:0,display:"inline-block",background:dotC,boxShadow:loading||isAI?`0 0 6px ${dotC}`:"none",animation:loading?"blink 1s infinite":"none"}}/>
-          <span style={{fontSize:10.5,color:"#1c3349",fontFamily:MONO}}>
+          <span style={{fontSize:10.5,color:"#4a6379",fontFamily:MONO}}>
             {loading?`${cur.e} ${cur.t}...`:`${navObj.icon} ${navObj.label} · ${news.length}건 · ${isAI?"Claude AI 실시간 생성":"내장 데모 데이터"} · #${n}`}
           </span>
           {!loading&&(
-            <span style={{fontSize:8,padding:"1px 6px",borderRadius:2,fontWeight:900,letterSpacing:"1px",fontFamily:MONO,background:isAI?"rgba(0,212,170,.07)":"rgba(251,191,36,.07)",border:`1px solid ${isAI?"rgba(0,212,170,.18)":"rgba(251,191,36,.2)"}`,color:isAI?"#00d4aa":"#fbbf24"}}>
+            <span style={{fontSize:8,padding:"1px 6px",borderRadius:2,fontWeight:900,letterSpacing:"1px",fontFamily:MONO,background:isAI?"rgba(0,92,74,.07)":"rgba(122,68,5,.07)",border:`1px solid ${isAI?"rgba(0,92,74,.18)":"rgba(122,68,5,.2)"}`,color:isAI?"#005c4a":"#7a4405"}}>
               {isAI?"AI LIVE":"DEMO"}
             </span>
           )}
           {daily&&nextRun!=null&&(
-            <span style={{fontSize:10,color:"#00d4aa",fontFamily:MONO}}>· 📅 {fmtWhen(nextRun)} 자동갱신</span>
+            <span style={{fontSize:10,color:"#005c4a",fontFamily:MONO}}>· 📅 {fmtWhen(nextRun)} 자동갱신</span>
           )}
-          {auto&&!loading&&<span style={{fontSize:10,color:"#60a5fa",fontFamily:MONO}}>· ⏱ {cd}s 후 갱신</span>}
+          {auto&&!loading&&<span style={{fontSize:10,color:"#174b85",fontFamily:MONO}}>· ⏱ {cd}s 후 갱신</span>}
           {syncCode&&(
             <span style={{fontSize:10,color:(SYNC_STATE[syncStatus]||SYNC_STATE.off).c,fontFamily:MONO}}>
               · ☁️ {(SYNC_STATE[syncStatus]||SYNC_STATE.off).t}
             </span>
           )}
           {!loading&&(
-            <span style={{fontSize:10,color:"#1c3349",fontFamily:MONO,marginLeft:"auto"}}>
+            <span style={{fontSize:10,color:"#4a6379",fontFamily:MONO,marginLeft:"auto"}}>
               💡 {navObj.desc}
             </span>
           )}
@@ -2633,9 +2633,9 @@ export default function App() {
         <main style={{maxWidth:880,margin:"0 auto"}}>
           {loading&&(
             <div style={{padding:"56px 20px",textAlign:"center"}}>
-              <div style={{width:34,height:34,margin:"0 auto 14px",border:"2px solid #071828",borderTop:"2px solid #00d4aa",borderRadius:"50%",animation:"spin .85s linear infinite"}}/>
-              <div style={{fontSize:13,color:"#1c3349",marginBottom:4,animation:"blink 1s infinite",fontFamily:KR}}>{cur.e} {cur.t}...</div>
-              <div style={{fontSize:10.5,color:"#0d1e2d",fontFamily:MONO}}>더존비즈온 솔루션 전략분석 생성 중</div>
+              <div style={{width:34,height:34,margin:"0 auto 14px",border:"2px solid #dbe6f0",borderTop:"2px solid #005c4a",borderRadius:"50%",animation:"spin .85s linear infinite"}}/>
+              <div style={{fontSize:13,color:"#4a6379",marginBottom:4,animation:"blink 1s infinite",fontFamily:KR}}>{cur.e} {cur.t}...</div>
+              <div style={{fontSize:10.5,color:"#43596d",fontFamily:MONO}}>더존비즈온 솔루션 전략분석 생성 중</div>
             </div>
           )}
 
@@ -2643,13 +2643,13 @@ export default function App() {
             <>
               <TalkBubble icon="📰" title={`${cat} AI 뉴스 ${news.length}건을 정리했어요`}>
                 제목을 누르면 구글 뉴스 검색, 카테고리 뱃지를 누르면 필터가 걸립니다.
-                각 기사의 <b style={{color:"#00d4aa"}}>DZ전략분석</b>을 열면 연관 솔루션·중요도·대응 우선순위를 볼 수 있습니다.
+                각 기사의 <b style={{color:"#005c4a"}}>DZ전략분석</b>을 열면 연관 솔루션·중요도·대응 우선순위를 볼 수 있습니다.
               </TalkBubble>
               {news.map((item,i)=>(
                 <Item key={item.id??i} item={item} rank={i+1} delay={i*50} onCatClick={filterCat}/>
               ))}
               {news.length>0&&(
-                <div style={{padding:"12px 18px",borderTop:"1px solid #071828"}}>
+                <div style={{padding:"12px 18px",borderTop:"1px solid #dbe6f0"}}>
                   <Legend/>
                 </div>
               )}
@@ -2663,7 +2663,7 @@ export default function App() {
           {!loading && nav==="mind" && <MindCorner key={resetSeq} seed={n}/>}
 
           {!loading && (
-            <div style={{textAlign:"center",padding:"6px 18px 22px",fontSize:9.5,color:"#0d1e2d",letterSpacing:".4px",fontFamily:MONO}}>
+            <div style={{textAlign:"center",padding:"6px 18px 22px",fontSize:9.5,color:"#43596d",letterSpacing:".4px",fontFamily:MONO}}>
               AI 생성 콘텐츠 · 더존비즈온 전략분석은 내부 검토 참고용 · 공식 입장 아님 | v7.0
             </div>
           )}

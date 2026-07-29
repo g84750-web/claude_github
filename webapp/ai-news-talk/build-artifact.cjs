@@ -127,34 +127,34 @@ const envNoteText = LOCAL
 
 const html = `<title>AI 글로벌 뉴스 톡 — DZ 전략 인텔리전스</title>
 <style>
-  :root { color-scheme: dark; }
-  html, body { background: #010b16; margin: 0; padding: 0; }
+  :root { color-scheme: light; }
+  html, body { background: #eef4fa; margin: 0; padding: 0; }
 
   /* 아티팩트 환경 안내 — 앱 본체가 아니라 껍데기에 둔다 */
   .env-note {
     display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
     padding: 7px 18px;
-    background: rgba(251,191,36,.055);
-    border-bottom: 1px solid rgba(251,191,36,.16);
+    background: rgba(122,68,5,.055);
+    border-bottom: 1px solid rgba(122,68,5,.22);
     font-family: 'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',system-ui,sans-serif;
-    font-size: 11.5px; line-height: 1.55; color: #a58a4a;
+    font-size: 11.5px; line-height: 1.55; color: #645019;
   }
-  .env-note b { color: #fbbf24; font-weight: 700; }
+  .env-note b { color: #8a5a06; font-weight: 700; }
   .env-note code {
     font-family: 'JetBrains Mono',Menlo,Consolas,'Courier New',monospace;
-    font-size: 10.5px; color: #c9a95a;
-    background: rgba(251,191,36,.08); border-radius: 3px; padding: 1px 5px;
+    font-size: 10.5px; color: #6f5619;
+    background: rgba(122,68,5,.10); border-radius: 3px; padding: 1px 5px;
   }
   .env-note button {
     margin-left: auto; flex-shrink: 0; cursor: pointer;
     padding: 2px 10px; border-radius: 4px;
-    border: 1px solid rgba(251,191,36,.28);
-    background: transparent; color: #a58a4a;
+    border: 1px solid rgba(122,68,5,.35);
+    background: transparent; color: #645019;
     font-family: inherit; font-size: 10.5px; font-weight: 700;
     transition: background .15s, color .15s;
   }
-  .env-note button:hover { background: rgba(251,191,36,.1); color: #fbbf24; }
-  .env-note button:focus-visible { outline: 2px solid #fbbf24; outline-offset: 2px; }
+  .env-note button:hover { background: rgba(122,68,5,.12); color: #8a5a06; }
+  .env-note button:focus-visible { outline: 2px solid #7a4405; outline-offset: 2px; }
   .env-note[hidden] { display: none; }
 
   @media (prefers-reduced-motion: reduce) {
