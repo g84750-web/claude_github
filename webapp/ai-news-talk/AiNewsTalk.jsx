@@ -2363,14 +2363,16 @@ function unent(s) {
 
 /* 한글 CSV·TXT는 UTF-8이 아니라 CP949로 저장돼 오는 일이 흔하다.
    깨진 글자(U+FFFD)가 보이면 euc-kr로 한 번 더 시도한다. */
+/* 소스에 U+FFFD 문자를 직접 두지 않는다 — 배포 파이프라인이 걸러낸다 */
+const BAD = String.fromCharCode(0xFFFD);
 function decodeText(buf) {
   const u8 = new Uint8Array(buf);
   const body = (u8[0] === 0xEF && u8[1] === 0xBB && u8[2] === 0xBF) ? u8.subarray(3) : u8;
   const utf8 = new TextDecoder("utf-8").decode(body);
-  if (utf8.indexOf("�") === -1) return utf8;
+  if (utf8.indexOf(BAD) === -1) return utf8;
   try {
     const euc = new TextDecoder("euc-kr").decode(body);
-    if (euc.indexOf("�") === -1) return euc;
+    if (euc.indexOf(BAD) === -1) return euc;
   } catch (_) {}
   return utf8;
 }
