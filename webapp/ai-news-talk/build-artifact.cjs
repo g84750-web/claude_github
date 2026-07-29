@@ -15,10 +15,43 @@
 */
 const fs = require("fs");
 const path = require("path");
+const { createRequire } = require("module");
 const babel = require("@babel/core");
 
-const ROOT = "/home/user/claude_github";
-const SRC = path.join(ROOT, "webapp/ai-news-talk/AiNewsTalk.jsx");
+/* 의존성 해석 — 스크립트 위치에서 위로 올라가며 찾고(저장소 루트의 node_modules),
+   못 찾으면 실행 위치 기준으로 한 번 더 본다. 어느 PC에서 클론하든, 어느
+   디렉터리에서 실행하든 같은 결과가 나와야 한다. */
+const INSTALL_HINT =
+  `  저장소 루트에서 아래를 실행해 주세요 (React 19에는 UMD 빌드가 없어 18이 필요합니다):\n` +
+  `    npm install --no-save react@18 react-dom@18 @babel/core @babel/preset-react\n` +
+  `  찾아본 위치: ${path.dirname(__filename)}, ${process.cwd()} (및 각 상위 디렉터리)`;
+
+const FROM = [__filename, path.join(process.cwd(), "noop.js")];
+
+function resolveFrom(spec) {
+  for (const from of FROM) {
+    try { return createRequire(from).resolve(spec); } catch (_) {}
+  }
+  throw new Error(`'${spec}' 를 찾지 못했습니다.\n` + INSTALL_HINT);
+}
+
+/* 패키지 안의 임의 파일을 집는다. react 의 package.json 에는 exports 필드가 있어
+   'react/umd/...' 를 직접 resolve 하면 막힌다(파일은 있는데 노출되지 않음).
+   그래서 패키지 루트를 찾은 뒤 경로를 직접 잇는다. */
+function resolvePkgFile(pkg, rel) {
+  for (const from of FROM) {
+    try {
+      const root = path.dirname(createRequire(from).resolve(pkg + "/package.json"));
+      const file = path.join(root, rel);
+      if (fs.existsSync(file)) return file;
+    } catch (_) {}
+  }
+  throw new Error(`'${pkg}/${rel}' 를 찾지 못했습니다.\n` + INSTALL_HINT);
+}
+
+/* 경로는 이 스크립트 위치에서 끌어온다 — 어느 PC에서 클론하든, 어느
+   디렉터리에서 실행하든 똑같이 동작해야 한다. */
+const SRC = path.join(__dirname, "AiNewsTalk.jsx");
 const OUT = process.argv[2];
 const LOCAL = process.argv.includes("--local");
 
@@ -67,14 +100,21 @@ if (!src.includes(embedOff)) throw new Error("EMBED 플래그를 찾지 못했�
 if (!LOCAL) src = src.replace(embedOff, "const EMBED = true;");
 
 // JSX → JS (classic runtime: React.createElement 사용)
+// 프리셋은 절대경로로 넘긴다 — babel은 이름을 실행 위치(cwd) 기준으로 찾으므로
+// 저장소 밖에서 실행하면 이름만으로는 해석하지 못한다.
+const presetReact = resolveFrom("@babel/preset-react");
 const compiled = babel.transformSync(src, {
-  presets: [["@babel/preset-react", { runtime: "classic" }]],
-  filename: "AiNewsTalk.jsx",
+  presets: [[presetReact, { runtime: "classic" }]],
+  filename: SRC,
+  babelrc: false,
+  configFile: false,
   compact: false,
 }).code;
 
-const react = fs.readFileSync(path.join(ROOT, "node_modules/react/umd/react.production.min.js"), "utf8");
-const reactDom = fs.readFileSync(path.join(ROOT, "node_modules/react-dom/umd/react-dom.production.min.js"), "utf8");
+/* node_modules 위치를 가정하지 않고 Node 해석기에 맡긴다. React 19에는 UMD
+   빌드가 없으므로(제거됨) 18을 설치해야 한다는 안내까지 여기서 처리한다. */
+const react = fs.readFileSync(resolvePkgFile("react", "umd/react.production.min.js"), "utf8");
+const reactDom = fs.readFileSync(resolvePkgFile("react-dom", "umd/react-dom.production.min.js"), "utf8");
 
 /* 안내 배너 — 빌드 모드에 따라 사실관계가 다르므로 문구를 나눈다 */
 const envNoteText = LOCAL

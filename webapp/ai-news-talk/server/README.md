@@ -47,6 +47,39 @@ python3 -m http.server 5500
 > (`http://192.168.0.10:8000` 등)를 써야 하고, 서버도
 > `uvicorn app:app --host 0.0.0.0 --port 8000` 으로 띄워야 합니다.
 
+### Windows 명령 프롬프트에서
+
+위 명령은 bash 기준입니다. `cmd.exe` 에서는 이렇게 씁니다.
+
+| bash | cmd.exe |
+|---|---|
+| `cd "$(git rev-parse --show-toplevel)"` | `for /f %i in ('git rev-parse --show-toplevel') do cd %i` |
+| `cd webapp/ai-news-talk/server` | `cd webapp\ai-news-talk\server` (역슬래시) |
+| `python3` | `python` 또는 `py` |
+| `명령 # 주석` | 주석을 같은 줄에 쓰지 말 것 (`#`을 인자로 넘깁니다) |
+
+```bat
+cd /d D:\Projects\claude_github
+pip install -r requirements.txt
+
+cd webapp\ai-news-talk\server
+uvicorn app:app --port 8000
+```
+
+> `Could not import module "app"` 은 **서버 폴더가 아닌 곳에서 uvicorn을 실행했을 때** 납니다.
+> `app.py` 가 있는 `webapp\ai-news-talk\server` 로 이동한 뒤 실행하세요.
+> 루트에서 실행하려면 `uvicorn webapp.ai-news-talk.server.app:app` 이 아니라
+> `uvicorn --app-dir webapp\ai-news-talk\server app:app --port 8000` 을 쓰면 됩니다.
+
+앱 빌드에는 [Node.js](https://nodejs.org) 가 필요합니다(`node` 명령이 없다면 미설치).
+설치가 어렵다면 빌드를 건너뛰고 이미 만들어진 `local.html` 을 받아서 쓰면 됩니다 —
+빌드 산출물은 자체 완결형이라 그 파일 하나만 있으면 동작합니다.
+
+```bat
+cd /d D:\Projects\claude_github
+python -m http.server 5500
+```
+
 ### 명령줄만으로 확인하기
 
 앱 없이 API만 시험해 볼 수도 있습니다.
