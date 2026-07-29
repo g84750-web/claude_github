@@ -29,6 +29,12 @@ from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
+from ai import (  # type: ignore[import-not-found]
+    AiRefused,
+    AiUnavailable,
+    summarize_table,
+)
+from ai import status as ai_status  # type: ignore[import-not-found]
 from store import (  # type: ignore[import-not-found]
     InvalidCode,
     InvalidPayload,
@@ -184,6 +190,35 @@ def put_sync(code: str, body: PutRequest, _: None = Depends(rate_limit)) -> Sync
         )
 
     return _to_response(result.record)
+
+
+# ══════════════════════════════════════════════════════════════
+# 경험하기 코너 — 실제 AI 실행
+# ══════════════════════════════════════════════════════════════
+class SummarizeRequest(BaseModel):
+    table: str = Field(..., description="붙여넣은 표 (TSV/CSV 등 텍스트)")
+    note: str = Field(default="", description="추가 맥락 (선택)")
+
+
+@app.get("/api/ai/status")
+def ai_enabled() -> Dict[str, Any]:
+    """앱이 AI 실행 버튼을 켤지 말지 판단하는 데 쓴다."""
+    return ai_status()
+
+
+@app.post("/api/ai/summarize")
+def ai_summarize(body: SummarizeRequest, _: None = Depends(rate_limit)) -> Dict[str, Any]:
+    """표를 임원 보고용 3줄 요약으로 정리한다."""
+    try:
+        return summarize_table(body.table, body.note)
+    except AiUnavailable as exc:
+        # 503은 "서버는 살아 있는데 이 기능만 꺼져 있다"는 뜻 —
+        # 클라이언트는 이걸 받고 로컬 계산으로 떨어진다.
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except AiRefused as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 
 @app.delete("/api/sync/{code}", status_code=204)

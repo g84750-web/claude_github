@@ -214,7 +214,7 @@ const HOT_KEYWORDS = [
    🧪 경험하기 — 오늘 바로 따라하는 AI 체험 카드
 ══════════════════════════════════════════════════════════════ */
 const EXPS = [
-  {id:"e1",icon:"📊",title:"엑셀 원본 붙여넣고 3줄 요약 받기",tool:"Claude / ChatGPT",
+  {id:"e1",icon:"📊",title:"엑셀 원본 붙여넣고 3줄 요약 받기",tool:"Claude / ChatGPT",run:"excel3",
    level:"입문",min:3,free:true,sol:["A10","WEHAGO"],
    goal:"월 마감 데이터를 붙여넣기만 하면 임원 보고용 3줄 요약이 나온다.",
    steps:["엑셀에서 표 영역을 그대로 복사한다","아래 프롬프트를 붙여넣고 그 아래에 표를 붙인다","숫자 근거가 포함됐는지 한 번 검증한다"],
@@ -1431,10 +1431,153 @@ function HotCorner({news, onCatClick}) {
 /* ══════════════════════════════════════════════════════════════
    🧪 경험하기
 ══════════════════════════════════════════════════════════════ */
-function ExpCard({x, delay, done, onDone}) {
+/* ══════════════════════════════════════════════════════════════
+   📊 표 분석 — 서버(AI)가 없을 때 쓰는 로컬 계산 경로
+
+   AI 흉내를 내지 않는다. 표에서 실제로 읽어낸 수치만 말하고, 원인 추정처럼
+   데이터에 없는 것은 "표만으로는 알 수 없다"고 분명히 밝힌다. 그래야 카드가
+   설치 없이도 쓸모 있으면서, 사용자가 결과의 성격을 오해하지 않는다.
+══════════════════════════════════════════════════════════════ */
+const NUM_RE = new RegExp("^-?[0-9]+(\\.[0-9]+)?$");
+
+/* "1,234", "₩1,234", "12.5%", "(500)" → 숫자. 아니면 null */
+function toNum(raw) {
+  let s = String(raw == null ? "" : raw).trim();
+  if (!s) return null;
+  let neg = false;
+  if (s.charAt(0) === "(" && s.charAt(s.length-1) === ")") { neg = true; s = s.slice(1,-1); }
+  s = s.replace(new RegExp("[,\\s₩$€¥%]", "g"), "");
+  if (!NUM_RE.test(s)) return null;
+  const n = parseFloat(s);
+  return neg ? -n : n;
+}
+
+function splitRow(line) {
+  if (line.indexOf("\t") !== -1) return line.split("\t");
+  if (line.indexOf(",") !== -1) return line.split(",");
+  return line.split(new RegExp("\\s{2,}"));
+}
+
+const fmtNum = (n) => {
+  const r = Math.round(n * 100) / 100;
+  return r.toLocaleString("ko-KR", {maximumFractionDigits:2});
+};
+
+function analyzeTable(text) {
+  const lines = String(text || "").split("\n").map(l=>l.replace(/\r$/,"")).filter(l=>l.trim());
+  if (lines.length < 2) throw new Error("표가 너무 짧습니다. 머리글 1줄과 데이터 1줄 이상이 필요합니다.");
+
+  const rows = lines.map(splitRow).map(r=>r.map(c=>c.trim()));
+  const width = Math.max.apply(null, rows.map(r=>r.length));
+  const head = rows[0];
+  /* 첫 줄에 숫자가 하나도 없으면 머리글로 본다 */
+  const hasHeader = head.every(c=>toNum(c) === null);
+  const body = hasHeader ? rows.slice(1) : rows;
+  if (!body.length) throw new Error("데이터 행이 없습니다.");
+
+  const label = (i) => (hasHeader && head[i] ? head[i] : `${i+1}열`);
+
+  /* 숫자 열 — 데이터 행의 과반이 숫자로 읽히는 열 */
+  const numCols = [];
+  for (let c = 0; c < width; c++) {
+    const vals = body.map(r=>toNum(r[c])).filter(v=>v !== null);
+    if (vals.length >= Math.ceil(body.length / 2) && vals.length > 0) {
+      const sum = vals.reduce((a,b)=>a+b, 0);
+      const first = vals[0], last = vals[vals.length-1];
+      const delta = last - first;
+      numCols.push({
+        c, name: label(c), vals, n: vals.length,
+        sum, avg: sum / vals.length,
+        min: Math.min.apply(null, vals), max: Math.max.apply(null, vals),
+        first, last, delta,
+        pct: first !== 0 ? (delta / Math.abs(first)) * 100 : null,
+      });
+    }
+  }
+  if (!numCols.length) throw new Error("숫자로 읽을 수 있는 열을 찾지 못했습니다. 표 영역만 붙여넣었는지 확인해 주세요.");
+
+  /* 라벨 열 — 숫자 열이 아닌 첫 열 (기간·항목명으로 본다) */
+  const labelCol = (function(){
+    for (let c = 0; c < width; c++) {
+      if (numCols.some(nc=>nc.c === c)) continue;
+      const vals = body.map(r=>r[c]).filter(v=>v);
+      if (vals.length) return {c, name: label(c), first: vals[0], last: vals[vals.length-1]};
+    }
+    return null;
+  })();
+
+  /* 변화폭이 가장 큰 열 (비율 기준, 비율을 못 구하면 절대값) */
+  const ranked = numCols.slice().sort((a,b)=>{
+    const av = a.pct === null ? Math.abs(a.delta) : Math.abs(a.pct);
+    const bv = b.pct === null ? Math.abs(b.delta) : Math.abs(b.pct);
+    return bv - av;
+  });
+  const top = ranked[0];
+  const dir = top.delta > 0 ? "증가" : top.delta < 0 ? "감소" : "변동 없음";
+  const pctTxt = top.pct === null ? "" : ` (${top.pct > 0 ? "+" : ""}${fmtNum(top.pct)}%)`;
+  const span = labelCol ? `${labelCol.first}~${labelCol.last} 구간` : `${body.length}개 행`;
+
+  const summary = [
+    `${body.length}개 행 · 숫자 열 ${numCols.length}개(${numCols.map(n=>n.name).join(", ")})를 ${span}에서 읽었습니다.`,
+    numCols.slice(0,3).map(n=>`${n.name} 합계 ${fmtNum(n.sum)}, 평균 ${fmtNum(n.avg)}`).join(" / ") + ".",
+    `변동이 가장 큰 항목은 ${top.name}으로 ${fmtNum(top.first)} → ${fmtNum(top.last)}${pctTxt} ${dir}했습니다.`,
+  ];
+
+  return {
+    summary,
+    biggestChange: {
+      what: `${top.name}: ${fmtNum(top.first)} → ${fmtNum(top.last)}${pctTxt} ${dir} (최저 ${fmtNum(top.min)} · 최고 ${fmtNum(top.max)})`,
+      why: "표에 있는 수치만으로는 원인을 알 수 없습니다. 원인 가설이 필요하면 서버 동기화에 AI 실행을 연결하거나, 프롬프트를 복사해 Claude·ChatGPT에 붙여넣어 주세요.",
+    },
+    questions: [
+      {q:`${top.name}의 ${dir} 폭이 계획 대비 어느 수준인가?`,
+       a:`표에는 계획값이 없어 답할 수 없습니다. 실측은 ${fmtNum(top.first)} → ${fmtNum(top.last)}${pctTxt}입니다.`},
+      {q:`${numCols[0].name} 합계 ${fmtNum(numCols[0].sum)}는 어떻게 나온 값인가?`,
+       a:`${numCols[0].n}개 행의 단순 합입니다. 평균 ${fmtNum(numCols[0].avg)}, 최저 ${fmtNum(numCols[0].min)}, 최고 ${fmtNum(numCols[0].max)}.`},
+      {q:"이 표에서 바로 답할 수 없는 것은?",
+       a:"원인·계획 대비·전년 동기 비교입니다. 셋 다 이 표에 들어 있지 않습니다."},
+    ],
+    source: "local",
+    stats: {rows: body.length, cols: width, numeric: numCols.length},
+  };
+}
+
+function ExpCard({x, delay, done, onDone, aiUrl}) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const lc = LEVEL_C[x.level] || "#174b85";
+
+  /* 실행 가능한 카드(x.run)만 입력·결과 상태를 갖는다 */
+  const [tbl, setTbl] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [res, setRes] = useState(null);
+  const [runErr, setRunErr] = useState("");
+  const [note, setNote] = useState("");
+
+  const runCard = useCallback(async () => {
+    setBusy(true); setRunErr(""); setRes(null); setNote("");
+    let out = null;
+    /* ① 서버에 AI가 연결돼 있으면 그쪽으로. 없으면 조용히 ②로 내려간다. */
+    if (NET && aiUrl) {
+      const r = await syncFetch(joinUrl(aiUrl, "/api/ai/summarize"), {
+        method: "POST",
+        body: JSON.stringify({table: tbl, note: ""}),
+      });
+      if (r.ok && r.body && r.body.summary) {
+        out = Object.assign({}, r.body, {source: "ai"});
+      } else if (r.status === 422 && r.body && r.body.detail) {
+        setRunErr(String(r.body.detail)); setBusy(false); return;
+      } else if (r.status && r.status !== 503 && r.status !== 404) {
+        setNote("서버 AI 호출이 실패해 로컬 계산으로 처리했습니다.");
+      }
+    }
+    /* ② 로컬 계산 — 설치도 키도 없이 동작하는 경로 */
+    if (!out) {
+      try { out = analyzeTable(tbl); }
+      catch (e) { setRunErr(e.message || "표를 읽지 못했습니다."); setBusy(false); return; }
+    }
+    setRes(out); setBusy(false);
+  }, [tbl, aiUrl]);
 
   const doCopy = () => {
     const ok = copyText(x.prompt);
@@ -1531,6 +1674,109 @@ function ExpCard({x, delay, done, onDone}) {
             }}>{x.prompt}</pre>
           </div>
 
+          {x.run === "excel3" && (
+            <div style={{
+              marginTop:9,padding:"11px 12px",borderRadius:6,
+              background:"#ffffff",border:"1px solid rgba(0,92,74,.28)",
+            }}>
+              <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:7,flexWrap:"wrap"}}>
+                <span style={{fontSize:9,color:"#005c4a",fontFamily:MONO,fontWeight:700,letterSpacing:".8px"}}>
+                  ▶ 여기서 바로 실행
+                </span>
+                <span style={{fontSize:9.5,color:"#4a6379",fontFamily:KR}}>
+                  {aiUrl ? "서버 AI 연결됨 — 실패 시 로컬 계산" : "로컬 계산 (서버 없이 동작)"}
+                </span>
+              </div>
+
+              <textarea
+                value={tbl} onChange={e=>setTbl(e.target.value)} rows={5}
+                placeholder={"엑셀에서 표 영역을 복사해 그대로 붙여넣으세요.\n예)\n월\t매출\t비용\n1월\t1,200\t900\n2월\t1,450\t980"}
+                style={{
+                  width:"100%",boxSizing:"border-box",resize:"vertical",
+                  padding:"8px 10px",borderRadius:5,border:"1px solid #c6d7e6",
+                  fontSize:11,lineHeight:1.6,fontFamily:MONO,color:"#0d2436",
+                  background:"#eef4fa",
+                }}/>
+
+              <div style={{display:"flex",alignItems:"center",gap:7,marginTop:7,flexWrap:"wrap"}}>
+                <button className="toggle-btn" onClick={runCard} disabled={busy || !tbl.trim()} style={{
+                  padding:"4px 13px",borderRadius:4,fontSize:10.5,fontWeight:700,fontFamily:KR,
+                  border:"1px solid rgba(0,92,74,.4)",
+                  background: (busy||!tbl.trim()) ? "rgba(0,92,74,.05)" : "rgba(0,92,74,.12)",
+                  color: (busy||!tbl.trim()) ? "#4a6379" : "#005c4a",
+                  cursor: (busy||!tbl.trim()) ? "not-allowed" : "pointer",
+                }}>{busy ? "분석 중…" : "3줄 요약 실행"}</button>
+                {(res || runErr) && (
+                  <button className="toggle-btn" onClick={()=>{setRes(null);setRunErr("");setNote("");}} style={{
+                    padding:"4px 11px",borderRadius:4,fontSize:10,fontWeight:700,fontFamily:KR,
+                    border:"1px solid #c6d7e6",background:"transparent",color:"#4a6379",cursor:"pointer",
+                  }}>지우기</button>
+                )}
+                <span style={{marginLeft:"auto",fontSize:9.5,color:"#566f87",fontFamily:MONO}}>
+                  {tbl.trim() ? `${tbl.trim().split("\n").length}줄 입력됨` : ""}
+                </span>
+              </div>
+
+              {runErr && (
+                <div style={{
+                  marginTop:8,padding:"7px 10px",borderRadius:5,fontSize:10.5,lineHeight:1.55,
+                  background:"rgba(158,42,31,.06)",border:"1px solid rgba(158,42,31,.24)",
+                  color:"#9e2a1f",fontFamily:KR,
+                }}>{runErr}</div>
+              )}
+
+              {res && (
+                <div style={{marginTop:9}}>
+                  <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6,flexWrap:"wrap"}}>
+                    <span style={{
+                      padding:"1px 7px",borderRadius:3,fontSize:8.5,fontWeight:800,fontFamily:MONO,
+                      background: res.source==="ai" ? "rgba(0,92,74,.12)" : "rgba(23,75,133,.1)",
+                      border: `1px solid ${res.source==="ai" ? "rgba(0,92,74,.4)" : "rgba(23,75,133,.32)"}`,
+                      color: res.source==="ai" ? "#005c4a" : "#174b85",
+                    }}>{res.source==="ai" ? "AI 생성" : "로컬 계산"}</span>
+                    <span style={{fontSize:9.5,color:"#4a6379",fontFamily:KR}}>
+                      {res.source==="ai"
+                        ? `${res.model || "Claude"} · 표에서 인용한 수치 기준`
+                        : "표에서 직접 계산한 수치입니다 (추정·해석 없음)"}
+                    </span>
+                  </div>
+
+                  <div style={{fontSize:9,color:"#4a6379",fontFamily:MONO,fontWeight:700,letterSpacing:".8px",marginBottom:5}}>① 핵심 3줄</div>
+                  {res.summary.map((s,i)=>(
+                    <div key={i} style={{display:"flex",gap:7,marginBottom:4,alignItems:"flex-start"}}>
+                      <span style={{
+                        width:15,height:15,borderRadius:"50%",flexShrink:0,marginTop:1,
+                        background:"rgba(0,92,74,.1)",fontSize:8.5,fontWeight:800,color:"#005c4a",fontFamily:MONO,
+                        display:"flex",alignItems:"center",justifyContent:"center",
+                      }}>{i+1}</span>
+                      <span style={{fontSize:11.5,color:"#0d2436",lineHeight:1.6,fontFamily:KR}}>{s}</span>
+                    </div>
+                  ))}
+
+                  <div style={{fontSize:9,color:"#4a6379",fontFamily:MONO,fontWeight:700,letterSpacing:".8px",margin:"9px 0 5px"}}>② 가장 큰 변화</div>
+                  <div style={{fontSize:11.5,color:"#0d2436",lineHeight:1.6,fontFamily:KR}}>{res.biggestChange.what}</div>
+                  <div style={{fontSize:11,color:"#3d5a72",lineHeight:1.58,fontFamily:KR,marginTop:3}}>{res.biggestChange.why}</div>
+
+                  <div style={{fontSize:9,color:"#4a6379",fontFamily:MONO,fontWeight:700,letterSpacing:".8px",margin:"9px 0 5px"}}>③ 임원 예상질문</div>
+                  {res.questions.map((q,i)=>(
+                    <div key={i} style={{marginBottom:6}}>
+                      <div style={{fontSize:11,color:"#0d2436",fontWeight:700,lineHeight:1.55,fontFamily:KR}}>Q. {q.q}</div>
+                      <div style={{fontSize:11,color:"#3d5a72",lineHeight:1.58,fontFamily:KR}}>A. {q.a}</div>
+                    </div>
+                  ))}
+
+                  {note && (
+                    <div style={{
+                      marginTop:7,padding:"6px 9px",borderRadius:5,fontSize:10,lineHeight:1.5,
+                      background:"rgba(122,68,5,.05)",border:"1px solid rgba(122,68,5,.18)",
+                      color:"#645019",fontFamily:KR,
+                    }}>{note}</div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           <div style={{
             marginTop:9,padding:"8px 11px",borderRadius:6,
             background:"rgba(122,68,5,.05)",border:"1px solid rgba(122,68,5,.16)",
@@ -1545,7 +1791,7 @@ function ExpCard({x, delay, done, onDone}) {
   );
 }
 
-function ExpCorner() {
+function ExpCorner({aiUrl}) {
   const [done, setDone] = usePersist("expDone", {}, vObj);
   const toggle = (id) => setDone(prev => {
     const next = Object.assign({}, prev);
@@ -1592,7 +1838,7 @@ function ExpCorner() {
       <SectionTitle right="난이도 순">체험 카드 {EXPS.length}종</SectionTitle>
       <div style={{padding:"0 18px 20px"}}>
         {EXPS.map((x,i)=>(
-          <ExpCard key={x.id} x={x} delay={i*45} done={!!done[x.id]} onDone={toggle}/>
+          <ExpCard key={x.id} x={x} delay={i*45} done={!!done[x.id]} onDone={toggle} aiUrl={aiUrl}/>
         ))}
       </div>
     </div>
@@ -2657,7 +2903,7 @@ export default function App() {
           )}
 
           {!loading && nav==="hot"  && <HotCorner news={news} onCatClick={filterCat}/>}
-          {!loading && nav==="exp"  && <ExpCorner key={resetSeq}/>}
+          {!loading && nav==="exp"  && <ExpCorner key={resetSeq} aiUrl={syncUrl}/>}
           {!loading && nav==="know" && <KnowCorner key={resetSeq}/>}
           {!loading && nav==="quiz" && <QuizCorner key={resetSeq} news={news} seed={n}/>}
           {!loading && nav==="mind" && <MindCorner key={resetSeq} seed={n}/>}
