@@ -224,13 +224,13 @@ const EXPS = [
    level:"입문",min:2,free:true,sol:["NSM10","WEHAGO"],
    run:"meeting",
    goal:"회의를 음성으로 녹음하고, 받아쓰기에서 담당자·기한이 붙은 액션 아이템을 뽑는다.",
-   steps:["🎙 녹음 시작을 누르고 회의를 진행한다 (받아쓰기가 쌓인다)","정지 후 받아쓰기를 훑어보며 오탈자만 고친다","실행 과제 추출 → 담당자·기한 미지정 항목만 직접 채운다"],
+   steps:["🎙 녹음 시작으로 받아쓰기를 쌓거나, 회의 메모를 그대로 붙여넣는다","받아쓰기를 훑어보며 오탈자만 고친다","실행 과제 추출 → 담당자·기한 미지정 항목만 직접 채운다"],
    prompt:"다음 회의 메모에서 실행 과제만 뽑아 표로 만들어라. 열은 [과제 / 담당자 / 기한 / 선행조건 / 리스크]. 담당자나 기한이 메모에 없으면 '미지정'으로 두고 절대 임의로 만들지 마라. 마지막에 '이번 주 안에 안 하면 지연되는 것' 을 따로 정리하라.",
    tip:"'임의로 만들지 마라'를 빼면 AI가 담당자를 지어낸다."},
   {id:"e3",icon:"🤖",title:"내 업무용 미니 에이전트 설계해보기",tool:"Claude Projects",run:"agent4",
    level:"중급",min:8,free:true,sol:["A10","OmniEsol"],
    goal:"반복 업무 1개를 골라 지시문·입력·출력이 고정된 나만의 도우미를 만든다.",
-   steps:["주 3회 이상 반복하는 업무를 1개 고른다","역할/입력/출력/금지사항 4단 구조로 지시문을 쓴다","실제 사례 3건으로 테스트하고 지시문을 고친다"],
+   steps:["주 3회 이상 반복하는 업무를 1개 고른다 (업무명만 있어도 시작된다)","출력 항목을 한 줄에 하나씩 적어 결과 형식을 못박는다","실제 사례 3건으로 시험하고 걸린 부분을 금지사항에 옮긴다"],
    prompt:"너는 [업무명] 전담 어시스턴트다.\n[역할] 내가 주는 원자료를 정해진 양식으로 변환한다.\n[입력] 원자료 텍스트 또는 표\n[출력] ① 요약 3줄 ② 표 ③ 확인이 필요한 항목 목록\n[금지] 원자료에 없는 수치 생성, 추측을 사실처럼 쓰기\n준비됐으면 '입력을 주세요'만 답하라.",
    tip:"[금지] 항목이 품질의 80%를 결정한다. 실패할 때마다 여기에 한 줄씩 추가한다."},
   {id:"e4",icon:"🔍",title:"경쟁사 발표를 우리 관점으로 번역하기",tool:"Claude",
@@ -1551,66 +1551,180 @@ function analyzeTable(text) {
    모델이 필요해서 서버를 탄다 — 이것만은 흉내낼 방법이 없으니 그렇다고 말한다.
 ══════════════════════════════════════════════════════════════ */
 const AGENT_FIELDS = [
-  {k:"task",   label:"업무명",   ph:"주간 영업 리포트 정리",       rows:1},
-  {k:"role",   label:"역할",     ph:"내가 주는 원자료를 정해진 양식으로 변환한다", rows:2},
-  {k:"input",  label:"입력",     ph:"영업팀이 보내는 주간 실적 표와 특이사항 메모", rows:2},
-  {k:"output", label:"출력",     ph:"① 요약 3줄 ② 항목별 표 ③ 확인이 필요한 항목 목록", rows:3},
-  {k:"forbid", label:"금지사항", ph:"원자료에 없는 수치 생성\n추측을 사실처럼 쓰기", rows:3},
+  {k:"task",   label:"업무명",   req:true,  hint:"이것만 있으면 만들 수 있습니다",
+   ph:"주간 영업 리포트 정리", rows:1},
+  {k:"role",   label:"역할",     hint:"비우면 '원자료를 출력 형식대로 변환한다'로 채웁니다",
+   ph:"내가 주는 원자료를 정해진 양식으로 변환한다", rows:2},
+  {k:"input",  label:"입력",     hint:"무엇을 받아서 시작하는지",
+   ph:"영업팀이 보내는 주간 실적 표와 특이사항 메모", rows:2},
+  {k:"output", label:"출력",     hint:"한 줄에 하나씩, 또는 쉼표로 나눠 적으세요",
+   ph:"① 요약 3줄 ② 항목별 표 ③ 확인이 필요한 항목 목록", rows:3},
+  {k:"forbid", label:"금지사항", hint:"비우면 공통 금지 3줄을 대신 넣습니다",
+   ph:"원자료에 없는 수치 생성\n추측을 사실처럼 쓰기", rows:3},
 ];
 
 /* 지시문이 실패하는 전형적인 이유들 — 모호어는 모델이 알아서 메우고, 그 지점이
    나중에 품질 문제로 돌아온다. 팁이 "[금지]가 품질의 80%"라고 말하는 이유다. */
 const VAGUE = ["적절히","적당히","알아서","잘 ","필요시","등등","기타 등","가능하면","적절한","적당한"];
 
-function buildInstruction(f) {
-  const lines = (s) => String(s||"").split("\n").map(t=>t.trim()).filter(Boolean);
-  const bullet = (s) => lines(s).map(t=>t.replace(/^[-·•]\s*/,"")).map(t=>"- "+t).join("\n");
-  return [
-    `너는 ${f.task.trim()} 전담 어시스턴트다.`,
-    ``,
-    `[역할]`,
-    f.role.trim(),
-    ``,
-    `[입력]`,
-    f.input.trim(),
-    ``,
-    `[출력]`,
-    bullet(f.output) || f.output.trim(),
-    ``,
-    `[금지]`,
-    bullet(f.forbid) || f.forbid.trim(),
-    ``,
-    `준비됐으면 "입력을 주세요"만 답하라.`,
-  ].join("\n");
+/* 금지사항이 비면 어떤 업무에서든 먼저 터지는 세 가지를 대신 넣는다.
+   비워 두는 것보다 낫고, 화면에서 "기본값을 넣었다"고 밝힌다. */
+const DEFAULT_FORBID = [
+  "원자료에 없는 수치·날짜·이름을 만들어 쓰지 않는다.",
+  "근거가 없는 내용을 단정하지 않는다. 확인이 필요하면 [확인필요]로 표시한다.",
+  "요청하지 않은 의견·조언·인사말을 덧붙이지 않는다.",
+];
+
+/* 처음 여는 사람이 '제대로 채운 상태'를 한 번은 봐야 감이 온다 */
+const AGENT_EXAMPLE = {
+  task: "주간 영업 실적 보고서 작성",
+  role: "영업팀이 보내는 주간 원자료를 팀장 보고용 한 장짜리 보고서로 바꾼다. 전망이나 평가는 넣지 않고 자료에 있는 사실만 정리한다.",
+  input: "주차, 담당자, 목표금액, 실적금액, 특이사항이 들어 있는 표. 특이사항 칸은 비어 있을 수 있다.",
+  output: "핵심 3줄 요약\n담당자별 목표·실적·달성률 표\n달성률 80% 미만 담당자와 그 사유\n확인이 필요한 항목",
+  forbid: "원자료에 없는 금액·날짜를 만들어 쓰지 않는다\n달성률을 반올림해 100%로 올리지 않는다\n사유가 자료에 없으면 [확인필요]로 두고 추측하지 않는다\n칭찬·격려 문구를 넣지 않는다",
+};
+
+const BULLET_RE = new RegExp("^\\s*(?:[-·•*]|[0-9]{1,2}[).．.]|[①-⑳])\\s*");
+
+/* 사람마다 "① A ② B ③ C"를 한 줄로 쓰기도 하고 "A, B, C"로 쓰기도 한다.
+   줄바꿈만 보고 자르면 항목 네 개가 한 덩어리로 들어가 출력 형식이 고정되지 않는다.
+   ('/'는 "매출/비용"처럼 항목 안에서도 쓰이므로 구분자로 보지 않는다) */
+function splitItems(s) {
+  const raw = String(s || "").trim();
+  if (!raw) return [];
+  let parts = raw.split("\n").map(t => t.trim()).filter(Boolean);
+  if (parts.length === 1) {
+    const one = parts[0];
+    if (new RegExp("[①-⑳]").test(one)) parts = one.split(new RegExp("(?=[①-⑳])"));
+    else if (new RegExp("[,、·]").test(one)) parts = one.split(new RegExp("[,、·]"));
+  }
+  return parts.map(t => t.replace(BULLET_RE, "").trim()).filter(Boolean);
+}
+
+/* 분량 3단계. "간결"은 붙여넣고 바로 쓰는 용, "표준"이 기본,
+   "상세"는 남에게 넘겨줄 사내 표준 지시문용이다. */
+const AGENT_SIZES = [
+  {k:"short", label:"간결", desc:"역할·입력·출력·금지만"},
+  {k:"std",   label:"표준", desc:"+ 작업 절차·예외 처리"},
+  {k:"long",  label:"상세", desc:"+ 자체 점검·문체 규칙"},
+];
+
+function buildInstruction(f, size) {
+  const sz = size || "std";
+  const task = String(f.task || "").trim() || "업무";
+  const role = String(f.role || "").trim();
+  const input = String(f.input || "").trim();
+  const outs = splitItems(f.output);
+  const forbids = splitItems(f.forbid);
+  const usedDefault = forbids.length === 0;
+  const F = usedDefault ? DEFAULT_FORBID.slice() : forbids;
+
+  const L = [];
+  const push = function () { for (let i = 0; i < arguments.length; i++) L.push(arguments[i]); };
+
+  push(`# 역할`);
+  push(`너는 "${task}"를 전담하는 실무 어시스턴트다.`);
+  push(role || `사용자가 주는 원자료를 아래 [출력 형식]에 맞춰 그대로 변환하는 것이 유일한 임무다.`);
+  push(``);
+
+  push(`# 입력`);
+  push(input || `사용자가 ${task}에 필요한 원자료를 붙여넣는다.`);
+  push(`- 입력이 비어 있거나 형식이 다르면 추측해서 진행하지 말고, 무엇이 더 필요한지 한 줄로 되묻는다.`);
+  push(``);
+
+  if (sz !== "short") {
+    push(`# 작업 절차`);
+    push(`1. 입력을 끝까지 읽고, 아래 [출력 형식]의 각 항목에 쓸 근거를 원자료에서 먼저 찾는다.`);
+    push(`2. 근거를 못 찾은 항목은 비워 두지 말고 [확인필요: 무엇이 없는지] 형태로 적는다.`);
+    push(`3. 숫자는 원자료 값을 그대로 쓴다. 계산한 값은 계산식을 괄호로 함께 남긴다.`);
+    push(`4. [출력 형식]의 제목·순서·개수를 그대로 지켜 작성한다.`);
+    push(`5. 내보내기 전에 [금지]를 한 번 훑고 위반이 없는지 확인한다.`);
+    push(``);
+  }
+
+  push(`# 출력 형식`);
+  if (outs.length) {
+    push(`아래 틀을 그대로 쓴다. 항목을 빼거나 순서를 바꾸지 않는다.`);
+    push(``);
+    outs.forEach(function (o, i) {
+      push(`## ${i + 1}. ${o}`);
+      push(`(여기에 ${o} 작성)`);
+      push(``);
+    });
+    push(`- 위 제목 구조 밖의 서론·맺음말·"물론입니다" 같은 말은 붙이지 않는다.`);
+  } else {
+    push(`※ 출력 항목이 아직 비어 있다. 무엇을 어떤 순서로 내보낼지 먼저 정해야`);
+    push(`   결과가 회차마다 흔들리지 않는다. 위 [출력] 칸에 한 줄에 하나씩 적어라.`);
+  }
+  push(``);
+
+  push(`# 금지`);
+  /* 사람은 금지사항을 "서술형", "오타"처럼 명사로 적는다. 그대로 두면
+     지시가 아니라 낱말 나열이 되므로, 서술형 어미가 없을 때만 '금지'를 붙인다.
+     (사용자가 쓴 표현 자체는 건드리지 않는다) */
+  F.forEach(function (x) {
+    const done = new RegExp("(다|라|마|요|오|음|함|것|말라|말 것)\\.?$").test(x);
+    push(`- ${x}${done ? "" : " 금지"}`);
+  });
+  push(``);
+
+  if (sz === "long") {
+    push(`# 자체 점검 — 내보내기 직전에 스스로 확인한다`);
+    push(`- [ ] [출력 형식]의 항목이 하나도 빠지지 않았다.`);
+    push(`- [ ] 원자료에 없는 숫자·이름·날짜를 쓰지 않았다.`);
+    push(`- [ ] 근거를 못 찾은 칸은 [확인필요]로 표시했다.`);
+    push(`- [ ] [금지]의 각 항목을 위반하지 않았다.`);
+    push(`위 중 하나라도 아니면 내보내지 말고 그 부분만 고쳐서 다시 확인한다.`);
+    push(``);
+    push(`# 문체`);
+    push(`- 개조식으로 짧게 쓴다. 한 항목이 두 줄을 넘기지 않는다.`);
+    push(`- "훌륭한", "매우" 같은 평가어 대신 사실과 숫자로 쓴다.`);
+    push(``);
+  }
+
+  push(`# 시작`);
+  push(`준비되면 "입력을 주세요." 한 문장만 답하고 기다린다.`);
+
+  const text = L.join("\n");
+  return {text, usedDefault, nOut: outs.length, nForbid: F.length,
+          chars: text.length, lines: L.length};
 }
 
 function checkInstruction(f) {
-  const cnt = (s) => String(s||"").split("\n").map(t=>t.trim()).filter(Boolean).length;
-  const all = Object.keys(f).map(k=>f[k]).join("\n");
-  const found = VAGUE.filter(v=>all.indexOf(v) !== -1);
-  const nForbid = cnt(f.forbid), nOut = cnt(f.output);
-  const hasShape = new RegExp("[①1-9]\\s*[).．]|표|목록|줄|개조식|JSON").test(f.output);
+  const outs = splitItems(f.output);
+  const forbids = splitItems(f.forbid);
+  const all = AGENT_FIELDS.map(fd => String(f[fd.k] || "")).join("\n");
+  const found = VAGUE.filter(v => all.indexOf(v) !== -1);
+  const blank = AGENT_FIELDS.filter(fd => !fd.req && !String(f[fd.k] || "").trim());
+  const nForbid = forbids.length, nOut = outs.length;
+  const hasShape = new RegExp("[①-⑳]|[1-9]\\s*[).．]|표|목록|줄|개조식|JSON|양식|형식").test(String(f.output || ""));
 
   const items = [
-    {ok: nForbid >= 2, w: nForbid === 1,
-     t: `금지사항 ${nForbid}개`,
-     m: nForbid >= 2 ? "지시문 품질을 가르는 항목입니다. 좋습니다."
-        : nForbid === 1 ? "1개는 부족합니다. 실패할 때마다 여기에 한 줄씩 늘리세요."
-        : "비어 있습니다. 여기가 비면 모델이 빈칸을 스스로 메웁니다."},
+    {ok: blank.length === 0, w: blank.length === 1,
+     t: blank.length ? `비어 있는 칸 ${blank.length}개` : "모든 칸 작성됨",
+     m: blank.length
+        ? `${blank.map(b => b.label).join(", ")} — 비어도 지시문은 만들어지지만, 그 자리는 모델이 스스로 메웁니다. 결과가 마음에 안 들면 여기부터 채우세요.`
+        : "빈칸을 모델이 메울 여지가 없습니다."},
     {ok: nOut >= 2, w: nOut === 1,
      t: `출력 항목 ${nOut}개`,
-     m: nOut >= 2 ? "출력 구조가 고정돼 매번 같은 모양으로 나옵니다."
-        : "출력이 한 줄이면 결과 형식이 회차마다 흔들립니다."},
+     m: nOut >= 2 ? "각 항목이 지시문에서 제목 틀로 바뀌어 매번 같은 모양으로 나옵니다."
+        : nOut === 1 ? "항목이 하나면 형식이 고정되지 않습니다. 한 줄에 하나씩 늘려 보세요."
+        : "출력이 비어 있으면 이 지시문은 아직 에이전트로 쓸 수 없습니다."},
     {ok: hasShape, w: false,
      t: hasShape ? "출력 형식 지정됨" : "출력 형식 미지정",
      m: hasShape ? "번호·표·줄 수 같은 형식 단서가 있습니다."
         : "'표', '3줄', '① ②' 처럼 형태를 못박으면 결과가 안정됩니다."},
+    {ok: nForbid >= 2, w: nForbid === 1,
+     t: nForbid ? `금지사항 ${nForbid}개` : "금지사항 기본값 적용",
+     m: nForbid >= 2 ? "지시문 품질을 가르는 항목입니다. 좋습니다."
+        : nForbid === 1 ? "1개는 부족합니다. 실패할 때마다 여기에 한 줄씩 늘리세요."
+        : "비어 있어서 공통 금지 3줄을 대신 넣었습니다. 본인 업무에서 실제로 터지는 것으로 바꾸세요."},
     {ok: found.length === 0, w: found.length > 0 && found.length <= 2,
      t: found.length ? `모호한 표현 ${found.length}개` : "모호한 표현 없음",
-     m: found.length ? `"${found.map(v=>v.trim()).join('", "')}" — 모델이 알아서 해석합니다. 기준을 숫자나 조건으로 바꾸세요.`
+     m: found.length ? `"${found.map(v => v.trim()).join('", "')}" — 모델이 알아서 해석합니다. 기준을 숫자나 조건으로 바꾸세요.`
         : "판단을 모델에 떠넘기는 표현이 없습니다."},
   ];
-  const score = items.filter(i=>i.ok).length;
+  const score = items.filter(i => i.ok).length;
   return {items, score, total: items.length};
 }
 
@@ -1717,6 +1831,65 @@ function meetCaps() {
   };
 }
 
+/* getUserMedia가 던지는 이름별로 실제 해결 방법이 다르다.
+   "마이크를 열지 못했습니다"만 띄우면 사용자가 할 수 있는 게 없다. */
+const GUM_MSG = {
+  NotAllowedError: "브라우저가 마이크 권한을 막았습니다. 주소창 왼쪽 자물쇠(또는 ⓘ) → 마이크 → '허용'으로 바꾸고 새로고침해 주세요.",
+  PermissionDeniedError: "브라우저가 마이크 권한을 막았습니다. 주소창 왼쪽 자물쇠(또는 ⓘ) → 마이크 → '허용'으로 바꾸고 새로고침해 주세요.",
+  NotFoundError: "이 PC에서 마이크 장치를 찾지 못했습니다. Windows 설정 → 시스템 → 소리 → 입력에 마이크가 잡혀 있는지 확인해 주세요.",
+  DevicesNotFoundError: "이 PC에서 마이크 장치를 찾지 못했습니다. Windows 설정 → 시스템 → 소리 → 입력에 마이크가 잡혀 있는지 확인해 주세요.",
+  NotReadableError: "마이크를 다른 프로그램이 쓰고 있습니다. Teams·Zoom·녹음기 등을 끄고 다시 시도해 주세요.",
+  TrackStartError: "마이크를 다른 프로그램이 쓰고 있습니다. Teams·Zoom·녹음기 등을 끄고 다시 시도해 주세요.",
+  OverconstrainedError: "선택한 마이크를 쓸 수 없습니다. 아래 목록에서 다른 마이크를 골라 주세요.",
+  SecurityError: "브라우저 보안 정책에 막혔습니다. https 또는 localhost 주소로 열어 주세요.",
+  AbortError: "마이크를 여는 중 중단됐습니다. 한 번 더 시도해 주세요.",
+};
+
+/* 시스템 마이크 진단 — 무엇이 막혔는지 항목별로 보여준다.
+   장치 이름(label)은 권한을 한 번 허용해야 채워지므로, 그 전에는 개수만 나온다. */
+async function micDiag(devId) {
+  const d = {
+    secure: typeof window !== "undefined" && !!window.isSecureContext,
+    gum: !!(typeof navigator !== "undefined" && navigator.mediaDevices && navigator.mediaDevices.getUserMedia),
+    mr: typeof window !== "undefined" && typeof window.MediaRecorder !== "undefined",
+    stt: typeof window !== "undefined" && !!(window.SpeechRecognition || window.webkitSpeechRecognition),
+    perm: "",
+    list: [],
+    opened: false,
+    err: "",
+  };
+  try {
+    if (navigator.permissions && navigator.permissions.query) {
+      const st = await navigator.permissions.query({name: "microphone"});
+      d.perm = st.state;               /* granted | denied | prompt */
+    }
+  } catch (_) { /* 파이어폭스 등은 microphone 권한 조회를 지원하지 않는다 */ }
+
+  /* 실제로 한 번 열어 본다 — 이래야 장치 이름도 나오고 점유 여부도 드러난다 */
+  if (d.gum && d.secure) {
+    let stream = null;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia(
+        devId ? {audio: {deviceId: {exact: devId}}} : {audio: true});
+      d.opened = true;
+    } catch (e) {
+      d.err = GUM_MSG[e && e.name] || `마이크를 열지 못했습니다${e && e.name ? ` (${e.name})` : ""}.`;
+    } finally {
+      try { if (stream) stream.getTracks().forEach(t => t.stop()); } catch (_) {}
+    }
+  }
+  try {
+    if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+      const all = await navigator.mediaDevices.enumerateDevices();
+      d.list = all.filter(x => x.kind === "audioinput").map((x, i) => ({
+        id: x.deviceId,
+        label: x.label || `마이크 ${i + 1}`,
+      }));
+    }
+  } catch (_) {}
+  return d;
+}
+
 const pickMime = () => {
   const cands = ["audio/webm;codecs=opus","audio/webm","audio/mp4","audio/ogg;codecs=opus"];
   for (let i = 0; i < cands.length; i++) {
@@ -1738,6 +1911,10 @@ function MeetingRecorder({aiUrl}) {
   const [res, setRes] = useState(null);
   const [err, setErr] = useState("");
   const [note, setNote] = useState("");
+  const [micErr, setMicErr] = useState("");   /* 녹음 실패 — 녹음 버튼 바로 아래 표시 */
+  const [diag, setDiag] = useState(null);     /* 마이크 진단 결과 */
+  const [diagBusy, setDiagBusy] = useState(false);
+  const [devId, setDevId] = useState("");     /* 고른 마이크 */
 
   const recRef = useRef(null);
   const srRef = useRef(null);
@@ -1764,14 +1941,29 @@ function MeetingRecorder({aiUrl}) {
     try { if (urlRef.current) URL.revokeObjectURL(urlRef.current); } catch(_){}
   }, [release]);
 
+  /* 녹음 실패 직후에도 불린다 — 여기서 err을 지우면 방금 띄운 원인 안내가 사라진다 */
+  const runDiag = useCallback(async ()=>{
+    setDiagBusy(true);
+    let d;
+    try { d = await micDiag(devId); }
+    catch (e) { d = {secure:false, gum:false, mr:false, stt:false, list:[], err:"진단 중 오류가 발생했습니다."}; }
+    setDiag(d);
+    /* 장치가 하나뿐이면 굳이 고르게 하지 않고 그걸 쓴다 */
+    if (!devId && d.list.length === 1) setDevId(d.list[0].id);
+    setDiagBusy(false);
+    return d;
+  }, [devId]);
+
   const start = useCallback(async ()=>{
-    setErr(""); setNote(""); setRes(null); setInterim("");
+    setErr(""); setNote(""); setMicErr(""); setRes(null); setInterim("");
     let stream;
     try {
-      stream = await navigator.mediaDevices.getUserMedia({audio:true});
+      stream = await navigator.mediaDevices.getUserMedia(
+        devId ? {audio:{deviceId:{exact:devId}}} : {audio:true});
     } catch (e) {
-      setErr("마이크를 열지 못했습니다. 브라우저 주소창의 권한 설정을 확인해 주세요." +
-             (e && e.name ? ` (${e.name})` : ""));
+      /* 왜 안 되는지까지 알려준다 — 진단을 자동으로 한 번 돌린다 */
+      setMicErr(GUM_MSG[e && e.name] || `마이크를 열지 못했습니다${e && e.name ? ` (${e.name})` : ""}.`);
+      runDiag();
       return;
     }
     streamRef.current = stream;
@@ -1793,7 +1985,7 @@ function MeetingRecorder({aiUrl}) {
       mr.start(1000);
       recRef.current = mr;
     } catch (e) {
-      setErr("이 브라우저에서 녹음을 시작하지 못했습니다.");
+      setMicErr("이 브라우저에서 녹음을 시작하지 못했습니다.");
       release(); return;
     }
 
@@ -1822,7 +2014,7 @@ function MeetingRecorder({aiUrl}) {
       } catch(_) { setNote("이 브라우저에서 받아쓰기를 켜지 못했습니다. 녹음은 정상 진행됩니다."); }
     }
     setPhase("rec");
-  }, [release, setText]);
+  }, [release, setText, devId, runDiag]);
 
   const stop = useCallback(()=>{
     try { if (srRef.current) { srRef.current.onend = null; srRef.current.stop(); } } catch(_){}
@@ -1875,8 +2067,8 @@ function MeetingRecorder({aiUrl}) {
           ▶ 여기서 바로 녹음
         </span>
         <span style={{fontSize:9.5,color:"#4a6379",fontFamily:KR}}>
-          {caps.rec ? "말하면 받아쓰기가 쌓이고, 음성은 파일로 내려받을 수 있습니다."
-                    : "녹음을 쓸 수 없는 환경입니다 — 아래에 회의 메모를 직접 붙여넣어도 됩니다."}
+          {caps.rec ? "말하면 받아쓰기가 쌓입니다. 마이크가 안 되면 아래 회의 메모 칸에 붙여넣어도 결과는 같습니다."
+                    : "녹음을 쓸 수 없는 환경입니다 — 아래에 회의 메모를 직접 붙여넣으면 그대로 동작합니다."}
         </span>
       </div>
 
@@ -1906,6 +2098,14 @@ function MeetingRecorder({aiUrl}) {
               opacity: caps.rec ? 1 : .5, cursor: caps.rec ? "pointer" : "not-allowed",
             })}>🎙 {audio ? "다시 녹음" : "녹음 시작"}</button>
           : <button className="toggle-btn" onClick={stop} style={BTN(true)}>⏹ 녹음 정지</button>}
+
+        {phase !== "rec" && (
+          <button className="toggle-btn" onClick={()=>{setErr("");setNote("");runDiag();}} disabled={diagBusy} style={{
+            padding:"4px 11px",borderRadius:4,fontSize:10,fontWeight:700,fontFamily:KR,
+            border:"1px solid #c6d7e6",background:"transparent",
+            color:"#3d5a72",cursor:diagBusy?"progress":"pointer",
+          }}>{diagBusy ? "확인 중…" : "🔍 마이크 확인"}</button>
+        )}
 
         {phase === "rec" && (
           <span style={{display:"flex",alignItems:"center",gap:6}}>
@@ -1940,8 +2140,100 @@ function MeetingRecorder({aiUrl}) {
         </div>
       )}
 
+      {micErr && (
+        <div style={{
+          marginTop:8,padding:"7px 10px",borderRadius:5,fontSize:10.5,lineHeight:1.55,
+          background:"rgba(158,42,31,.06)",border:"1px solid rgba(158,42,31,.24)",
+          color:"#9e2a1f",fontFamily:KR,
+        }}>{micErr}</div>
+      )}
+
+      {/* ── 마이크 진단 ─────────────────────────────────────────
+          "마이크가 안 됩니다"는 원인이 다섯 가지쯤 된다. 어느 단계에서
+          막혔는지 항목별로 보여주고, 그래도 안 되면 붙여넣기로 안내한다. */}
+      {diag && (
+        <div style={{
+          marginTop:8,padding:"8px 11px",borderRadius:5,
+          background:"#eef4fa",border:"1px solid #c6d7e6",
+        }}>
+          <div style={{fontSize:9,color:"#4a6379",fontFamily:MONO,fontWeight:700,letterSpacing:".8px",marginBottom:6}}>
+            마이크 진단 결과
+          </div>
+          {[
+            ["보안 연결(https·localhost)", diag.secure,
+             "file:// 로 열면 브라우저가 마이크를 막습니다. localhost 주소로 여세요."],
+            ["브라우저 마이크 기능", diag.gum && diag.mr,
+             "이 브라우저는 녹음을 지원하지 않습니다. Chrome·Edge를 쓰세요."],
+            ["마이크 권한", diag.perm ? diag.perm === "granted" : diag.opened,
+             diag.perm === "denied"
+               ? "차단돼 있습니다. 주소창 왼쪽 자물쇠 → 마이크 → 허용 → 새로고침."
+               : "아직 허용 전입니다. 녹음 시작을 누르면 브라우저가 물어봅니다."],
+            [`입력 장치 ${diag.list.length}개`, diag.list.length > 0,
+             "Windows 설정 → 시스템 → 소리 → 입력에 마이크가 잡혀 있는지 확인하세요."],
+            /* 녹음 실패로 자동 진단이 돌았으면 상세 안내는 위 빨간 상자에 이미 있다 */
+            ["실제로 열림", diag.opened,
+             (diag.err && !micErr) ? diag.err : "위 항목부터 해결하면 열립니다."],
+          ].map(([t, ok, fix], i)=>(
+            <div key={i} style={{display:"flex",gap:7,marginBottom:3,alignItems:"flex-start"}}>
+              <span style={{fontSize:10,flexShrink:0,fontFamily:MONO,fontWeight:800,marginTop:1,
+                color: ok ? "#0f5527" : "#9e2a1f"}}>{ok ? "✓" : "✗"}</span>
+              <span style={{fontSize:10.5,lineHeight:1.55,fontFamily:KR}}>
+                <b style={{color: ok ? "#0f5527" : "#9e2a1f"}}>{t}</b>
+                {!ok && <span style={{color:"#3d5a72"}}> — {fix}</span>}
+              </span>
+            </div>
+          ))}
+
+          {diag.list.length > 1 && (
+            <div style={{marginTop:7}}>
+              <div style={Object.assign({}, LBL, {marginBottom:3})}>쓸 마이크 고르기</div>
+              <select value={devId} onChange={e=>setDevId(e.target.value)} style={{
+                width:"100%",boxSizing:"border-box",padding:"5px 8px",borderRadius:4,
+                border:"1px solid #c6d7e6",background:"#ffffff",
+                fontSize:10.5,fontFamily:KR,color:"#0d2436",
+              }}>
+                <option value="">브라우저 기본 마이크</option>
+                {diag.list.map(d=><option key={d.id} value={d.id}>{d.label}</option>)}
+              </select>
+              <div style={{fontSize:9.5,color:"#566f87",fontFamily:KR,marginTop:4,lineHeight:1.5}}>
+                기본 마이크가 엉뚱한 장치로 잡혀 있는 경우가 많습니다. 바꾼 뒤 다시 확인해 보세요.
+              </div>
+            </div>
+          )}
+
+          {!diag.opened && (
+            <div style={{
+              marginTop:7,paddingTop:7,borderTop:"1px dashed #c6d7e6",
+              fontSize:10.5,lineHeight:1.55,color:"#3d5a72",fontFamily:KR,
+            }}>
+              끝내 안 되어도 괜찮습니다 — <b>아래 회의 메모 칸에 붙여넣으면</b> 실행 과제 추출은 똑같이 동작합니다.
+              녹음은 편의 기능이고, 이 카드의 핵심은 그다음입니다.
+            </div>
+          )}
+        </div>
+      )}
+
       <div style={{marginTop:10}}>
-        <div style={LBL}>받아쓰기 / 회의 메모 <span style={{fontWeight:400,letterSpacing:0}}>— 직접 고치거나 붙여넣어도 됩니다</span></div>
+        <div style={{display:"flex",alignItems:"baseline",gap:7,flexWrap:"wrap",marginBottom:5}}>
+          <span style={Object.assign({}, LBL, {marginBottom:0})}>받아쓰기 / 회의 메모</span>
+          <span style={{fontSize:9.5,color:"#4a6379",fontFamily:KR}}>
+            녹음 없이 <b>여기에 붙여넣기만 해도</b> 됩니다 (Ctrl+V)
+          </span>
+          <button className="toggle-btn" onClick={async ()=>{
+            setErr("");
+            try {
+              const t = await navigator.clipboard.readText();
+              if (!t || !t.trim()) { setNote("클립보드가 비어 있습니다."); return; }
+              setText(prev => (prev ? prev.replace(new RegExp("\\s+$"), "") + "\n" : "") + t.trim());
+              setNote("");
+            } catch (_) {
+              setNote("브라우저가 클립보드 읽기를 막았습니다. 메모 칸을 클릭하고 Ctrl+V로 붙여넣어 주세요.");
+            }
+          }} style={{
+            marginLeft:"auto",padding:"3px 9px",borderRadius:4,fontSize:9.5,fontWeight:700,fontFamily:KR,
+            border:"1px solid #c6d7e6",background:"transparent",color:"#3d5a72",cursor:"pointer",
+          }}>📋 클립보드에서 붙여넣기</button>
+        </div>
         <textarea value={text + (interim ? (text ? "\n" : "") + interim : "")}
           onChange={e=>{ setText(e.target.value); setInterim(""); }}
           rows={6}
@@ -2058,13 +2350,23 @@ function AgentBuilder({aiUrl}) {
   const [busy, setBusy] = useState(false);
   const [run, setRun] = useState(null);
   const [err, setErr] = useState("");
+  const [size, setSize] = usePersist("agentSize", "std", vStr);
 
   const set = (k, v) => setF(prev => Object.assign({}, prev, {[k]: v}));
-  const filled = AGENT_FIELDS.every(fd => String(f[fd.k]||"").trim());
+  /* 업무명만 있으면 만들 수 있다. 나머지는 채울수록 정확해질 뿐,
+     비어 있다고 버튼을 잠그면 손도 못 대 보고 끝난다. */
+  const ready = !!String(f.task||"").trim();
 
-  const doBuild = () => {
+  const doBuild = useCallback((sz) => {
     setErr(""); setRun(null);
-    setBuilt({text: buildInstruction(f), check: checkInstruction(f)});
+    const b = buildInstruction(f, sz || size);
+    setBuilt(Object.assign({}, b, {check: checkInstruction(f)}));
+  }, [f, size]);
+
+  const pickSize = (sz) => { setSize(sz); if (built) doBuild(sz); };
+  const fillExample = () => {
+    setF(Object.assign({}, AGENT_EXAMPLE));
+    setBuilt(null); setRun(null); setErr("");
   };
   const doCopy = () => {
     if (!built) return;
@@ -2104,13 +2406,23 @@ function AgentBuilder({aiUrl}) {
           ▶ 여기서 바로 만들기
         </span>
         <span style={{fontSize:9.5,color:"#4a6379",fontFamily:KR}}>
-          4칸을 채우면 지시문이 만들어지고 바로 점검됩니다. 입력은 자동 저장됩니다.
+          <b>업무명 한 칸만</b> 있으면 만들어집니다. 나머지는 채울수록 정확해집니다. 입력은 자동 저장됩니다.
         </span>
+        <button className="toggle-btn" onClick={fillExample} style={{
+          marginLeft:"auto",padding:"3px 9px",borderRadius:4,fontSize:9.5,fontWeight:700,fontFamily:KR,
+          border:"1px solid #c6d7e6",background:"transparent",color:"#3d5a72",cursor:"pointer",
+        }}>예시로 채우기</button>
       </div>
 
       {AGENT_FIELDS.map(fd=>(
         <div key={fd.k} style={{marginBottom:7}}>
-          <div style={LBL}>{fd.label}</div>
+          <div style={{display:"flex",alignItems:"baseline",gap:6,flexWrap:"wrap",marginBottom:4}}>
+            <span style={Object.assign({}, LBL, {marginBottom:0})}>{fd.label}</span>
+            {fd.req
+              ? <span style={{fontSize:8.5,fontFamily:MONO,fontWeight:800,color:"#9e2a1f"}}>필수</span>
+              : <span style={{fontSize:8.5,fontFamily:MONO,fontWeight:700,color:"#566f87"}}>선택</span>}
+            <span style={{fontSize:9,color:"#566f87",fontFamily:KR}}>{fd.hint}</span>
+          </div>
           {fd.rows === 1
             ? <input value={f[fd.k]||""} onChange={e=>set(fd.k, e.target.value)}
                      placeholder={fd.ph} style={INPUT}/>
@@ -2120,13 +2432,31 @@ function AgentBuilder({aiUrl}) {
         </div>
       ))}
 
+      <div style={{display:"flex",alignItems:"center",gap:6,marginTop:9,flexWrap:"wrap"}}>
+        <span style={{fontSize:9,color:"#4a6379",fontFamily:MONO,fontWeight:700,letterSpacing:".8px"}}>분량</span>
+        {AGENT_SIZES.map(s=>{
+          const on = size === s.k;
+          return (
+            <button key={s.k} className="toggle-btn" onClick={()=>pickSize(s.k)} title={s.desc} style={{
+              padding:"3px 10px",borderRadius:4,fontSize:9.5,fontWeight:on?800:600,fontFamily:KR,
+              border:`1px solid ${on?"rgba(0,92,74,.45)":"#c6d7e6"}`,
+              background:on?"rgba(0,92,74,.12)":"transparent",
+              color:on?"#005c4a":"#3d5a72",cursor:"pointer",
+            }}>{s.label}</button>
+          );
+        })}
+        <span style={{fontSize:9,color:"#566f87",fontFamily:KR}}>
+          {(AGENT_SIZES.filter(s=>s.k===size)[0]||{}).desc}
+        </span>
+      </div>
+
       <div style={{display:"flex",alignItems:"center",gap:7,marginTop:8,flexWrap:"wrap"}}>
-        <button className="toggle-btn" onClick={doBuild} disabled={!filled} style={{
+        <button className="toggle-btn" onClick={()=>doBuild()} disabled={!ready} style={{
           padding:"4px 13px",borderRadius:4,fontSize:10.5,fontWeight:700,fontFamily:KR,
           border:"1px solid rgba(0,92,74,.4)",
-          background: filled ? "rgba(0,92,74,.12)" : "rgba(0,92,74,.05)",
-          color: filled ? "#005c4a" : "#4a6379",
-          cursor: filled ? "pointer" : "not-allowed",
+          background: ready ? "rgba(0,92,74,.12)" : "rgba(0,92,74,.05)",
+          color: ready ? "#005c4a" : "#4a6379",
+          cursor: ready ? "pointer" : "not-allowed",
         }}>지시문 만들기</button>
         {built && (
           <button className="toggle-btn" onClick={doCopy} style={{
@@ -2136,17 +2466,28 @@ function AgentBuilder({aiUrl}) {
             color:copied?"#0f5527":"#005c4a",cursor:"pointer",
           }}>{copied?"✓ 복사됨":"📋 복사"}</button>
         )}
-        {!filled && <span style={{fontSize:9.5,color:"#566f87",fontFamily:KR}}>5칸을 모두 채워 주세요</span>}
+        {!ready && <span style={{fontSize:9.5,color:"#566f87",fontFamily:KR}}>업무명을 적어 주세요</span>}
       </div>
 
       {built && (
         <div style={{marginTop:10}}>
-          <div style={LBL}>완성된 지시문</div>
+          <div style={{display:"flex",alignItems:"baseline",gap:7,flexWrap:"wrap",marginBottom:4}}>
+            <span style={Object.assign({}, LBL, {marginBottom:0})}>완성된 지시문</span>
+            <span style={{fontSize:9,color:"#566f87",fontFamily:MONO}}>
+              {built.lines}줄 · {built.chars.toLocaleString()}자 · 출력 {built.nOut}항목 · 금지 {built.nForbid}줄
+            </span>
+          </div>
           <pre style={{
             fontSize:10.5,color:"#0d2436",lineHeight:1.62,fontFamily:MONO,
             whiteSpace:"pre-wrap",wordBreak:"break-word",margin:0,
+            maxHeight:360,overflow:"auto",
             padding:"9px 11px",borderRadius:5,background:"#eef4fa",border:"1px solid #c6d7e6",
           }}>{built.text}</pre>
+          {built.usedDefault && (
+            <div style={{fontSize:9.5,color:"#645019",fontFamily:KR,marginTop:5,lineHeight:1.5}}>
+              금지사항 칸이 비어 있어 <b>공통 금지 3줄을 기본값으로 넣었습니다.</b> 본인 업무에서 실제로 터지는 것으로 바꿔 주세요.
+            </div>
+          )}
 
           <div style={{display:"flex",alignItems:"center",gap:6,margin:"10px 0 5px",flexWrap:"wrap"}}>
             <span style={{fontSize:9,color:"#4a6379",fontFamily:MONO,fontWeight:700,letterSpacing:".8px"}}>지시문 점검</span>
