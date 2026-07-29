@@ -305,3 +305,195 @@ def test_meeting_empty_task_list_is_allowed(client, monkeypatch):
     _install(monkeypatch, FakeClient(_message({"tasks": [], "urgent": []})))
     body = client.post("/api/ai/meeting-tasks", json={"transcript": "잡담만 했습니다"}).json()
     assert body["tasks"] == [] and body["urgent"] == []
+
+
+# ══════════════════════════════════════════════════════════════
+# 📚 AI 사전 (/api/ai/doc-ask)
+# ══════════════════════════════════════════════════════════════
+DOC_GOOD = {
+    "answer": "복귀일로부터 7영업일 이내입니다.",
+    "found": True,
+    "citations": [{"doc": "정산안내.docx", "quote": "복귀일로부터 7영업일 이내", "where": "2번째 문단"}],
+    "missing": [],
+}
+
+PNG_B64 = "iVBORw0KGgoAAAANSUhEUg=="   # 내용은 상관없다 — 블록 모양만 본다
+
+
+def _doc_body(**over):
+    body = {
+        "question": "정산 기한이 며칠인가요?",
+        "docs": [{"name": "정산안내.docx", "kind": "text",
+                  "text": "정산 기한은 복귀일로부터 7영업일 이내입니다."}],
+    }
+    body.update(over)
+    return body
+
+
+def test_doc_ask_503_without_key(monkeypatch):
+    """키가 없으면 503 — 클라이언트는 이걸 받고 로컬 검색으로 내려간다."""
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    c = TestClient(app_module.app)
+    assert c.post("/api/ai/doc-ask", json=_doc_body()).status_code == 503
+
+
+def test_doc_ask_returns_answer_and_citations(client, monkeypatch):
+    fake = FakeClient(message=_message(DOC_GOOD))
+    _install(monkeypatch, fake)
+    r = client.post("/api/ai/doc-ask", json=_doc_body())
+    assert r.status_code == 200
+    body = r.json()
+    assert body["found"] is True
+    assert body["answer"] == DOC_GOOD["answer"]
+    assert body["citations"][0]["doc"] == "정산안내.docx"
+    assert body["docs"] == 1
+    assert body["model"] == "claude-opus-5"
+
+
+def test_doc_ask_text_doc_is_labelled_with_filename(client, monkeypatch):
+    """모델이 인용할 때 파일명을 맞히려면 파일명이 프롬프트에 있어야 한다."""
+    fake = FakeClient(message=_message(DOC_GOOD))
+    _install(monkeypatch, fake)
+    client.post("/api/ai/doc-ask", json=_doc_body())
+    content = fake.calls[0][1]["messages"][0]["content"]
+    assert isinstance(content, list)
+    joined = "".join(b.get("text", "") for b in content if b["type"] == "text")
+    assert '파일명="정산안내.docx"' in joined
+    assert "7영업일" in joined
+    assert "정산 기한이 며칠인가요?" in joined
+
+
+def test_doc_ask_pdf_becomes_document_block(client, monkeypatch):
+    fake = FakeClient(message=_message(DOC_GOOD))
+    _install(monkeypatch, fake)
+    client.post("/api/ai/doc-ask", json=_doc_body(docs=[
+        {"name": "규정.pdf", "kind": "pdf", "data": PNG_B64}]))
+    content = fake.calls[0][1]["messages"][0]["content"]
+    docs = [b for b in content if b["type"] == "document"]
+    assert len(docs) == 1
+    assert docs[0]["source"] == {"type": "base64", "media_type": "application/pdf", "data": PNG_B64}
+
+
+def test_doc_ask_image_becomes_image_block(client, monkeypatch):
+    fake = FakeClient(message=_message(DOC_GOOD))
+    _install(monkeypatch, fake)
+    client.post("/api/ai/doc-ask", json=_doc_body(docs=[
+        {"name": "캡처.png", "kind": "image", "data": PNG_B64, "mediaType": "image/png"}]))
+    content = fake.calls[0][1]["messages"][0]["content"]
+    imgs = [b for b in content if b["type"] == "image"]
+    assert len(imgs) == 1
+    assert imgs[0]["source"]["media_type"] == "image/png"
+
+
+def test_doc_ask_mixes_text_and_binary_in_one_request(client, monkeypatch):
+    fake = FakeClient(message=_message(DOC_GOOD))
+    _install(monkeypatch, fake)
+    r = client.post("/api/ai/doc-ask", json=_doc_body(docs=[
+        {"name": "표.xlsx", "kind": "text", "text": "항목\t한도\n숙박비\t120000"},
+        {"name": "캡처.png", "kind": "image", "data": PNG_B64, "mediaType": "image/png"},
+        {"name": "규정.pdf", "kind": "pdf", "data": PNG_B64},
+    ]))
+    assert r.json()["docs"] == 3
+    kinds = [b["type"] for b in fake.calls[0][1]["messages"][0]["content"]]
+    assert "image" in kinds and "document" in kinds and "text" in kinds
+
+
+def test_doc_ask_system_forbids_inventing(client, monkeypatch):
+    """이 카드의 핵심은 '문서에 없으면 없다고 말하는 것'이다."""
+    fake = FakeClient(message=_message(DOC_GOOD))
+    _install(monkeypatch, fake)
+    client.post("/api/ai/doc-ask", json=_doc_body())
+    system = fake.calls[0][1]["system"]
+    assert "지어내지 마라" in system
+    assert "문서에 없음" in system
+    assert "사전 지식으로 문서를 보완하지 마라" in system
+
+
+def test_doc_ask_uses_schema_and_model(client, monkeypatch):
+    fake = FakeClient(message=_message(DOC_GOOD))
+    _install(monkeypatch, fake)
+    client.post("/api/ai/doc-ask", json=_doc_body())
+    kwargs = fake.calls[0][1]
+    assert kwargs["model"] == ai.MODEL
+    fmt = kwargs["output_config"]["format"]
+    assert fmt["type"] == "json_schema"
+    props = fmt["schema"]["properties"]
+    assert set(props) == {"answer", "found", "citations", "missing"}
+
+
+def test_doc_ask_not_found_is_passed_through(client, monkeypatch):
+    """모델이 '없다'고 하면 그대로 전달해야 한다 — 여기서 꾸미면 안 된다."""
+    fake = FakeClient(message=_message(
+        {"answer": "문서에 없음", "found": False, "citations": [],
+         "missing": ["2026년 개정판 규정"]}))
+    _install(monkeypatch, fake)
+    body = client.post("/api/ai/doc-ask", json=_doc_body()).json()
+    assert body["found"] is False
+    assert body["answer"] == "문서에 없음"
+    assert body["missing"] == ["2026년 개정판 규정"]
+
+
+def test_doc_ask_refusal_maps_to_502(client, monkeypatch):
+    fake = FakeClient(message=_message(
+        DOC_GOOD, stop_reason="refusal",
+        stop_details=SimpleNamespace(explanation="정책상 거절")))
+    _install(monkeypatch, fake)
+    assert client.post("/api/ai/doc-ask", json=_doc_body()).status_code == 502
+
+
+@pytest.mark.parametrize("payload,frag", [
+    ({"question": "", "docs": [{"name": "a.txt", "kind": "text", "text": "내용"}]}, "질문이 비어"),
+    ({"question": "뭐지", "docs": []}, "첨부한 문서가 없"),
+    ({"question": "뭐지", "docs": [{"name": "a.txt", "kind": "text", "text": "   "}]}, "읽을 수 있는 내용"),
+])
+def test_doc_ask_rejects_bad_input(client, monkeypatch, payload, frag):
+    _install(monkeypatch, FakeClient(message=_message(DOC_GOOD)))
+    r = client.post("/api/ai/doc-ask", json=payload)
+    assert r.status_code == 422
+    assert frag in r.json()["detail"]
+
+
+def test_doc_ask_rejects_too_many_files(client, monkeypatch):
+    _install(monkeypatch, FakeClient(message=_message(DOC_GOOD)))
+    docs = [{"name": f"{i}.txt", "kind": "text", "text": "내용"} for i in range(ai.MAX_DOCS + 1)]
+    r = client.post("/api/ai/doc-ask", json=_doc_body(docs=docs))
+    assert r.status_code == 422
+    assert "파일이 너무 많습니다" in r.json()["detail"]
+
+
+def test_doc_ask_rejects_oversized_total_text(client, monkeypatch):
+    _install(monkeypatch, FakeClient(message=_message(DOC_GOOD)))
+    big = "가" * ai.MAX_DOC_TEXT_CHARS
+    docs = [{"name": f"{i}.txt", "kind": "text", "text": big} for i in range(8)]
+    r = client.post("/api/ai/doc-ask", json=_doc_body(docs=docs))
+    assert r.status_code == 422
+    assert "분량이 너무 많습니다" in r.json()["detail"]
+
+
+def test_doc_ask_truncates_single_long_doc(client, monkeypatch):
+    """한 파일이 길면 잘라서 보내되, 잘렸다는 사실을 프롬프트에 남긴다."""
+    fake = FakeClient(message=_message(DOC_GOOD))
+    _install(monkeypatch, fake)
+    long_text = "나" * (ai.MAX_DOC_TEXT_CHARS + 500)
+    r = client.post("/api/ai/doc-ask", json=_doc_body(docs=[
+        {"name": "긴문서.txt", "kind": "text", "text": long_text}]))
+    assert r.status_code == 200
+    sent = "".join(b.get("text", "") for b in fake.calls[0][1]["messages"][0]["content"])
+    assert "(이하 잘림)" in sent
+    assert sent.count("나") <= ai.MAX_DOC_TEXT_CHARS + 10
+
+
+def test_doc_ask_rejects_unsupported_image_type(client, monkeypatch):
+    _install(monkeypatch, FakeClient(message=_message(DOC_GOOD)))
+    r = client.post("/api/ai/doc-ask", json=_doc_body(docs=[
+        {"name": "그림.bmp", "kind": "image", "data": PNG_B64, "mediaType": "image/bmp"}]))
+    assert r.status_code == 422
+    assert "지원하지 않는 이미지 형식" in r.json()["detail"]
+
+
+def test_doc_ask_falls_back_when_beta_param_unsupported(client, monkeypatch):
+    """fallbacks 파라미터를 모르는 SDK에서도 동작해야 한다."""
+    fake = FakeClient(message=_message(DOC_GOOD), beta_error=TypeError("unexpected keyword 'fallbacks'"))
+    _install(monkeypatch, fake)
+    assert client.post("/api/ai/doc-ask", json=_doc_body()).status_code == 200
+    assert [c[0] for c in fake.calls] == ["beta", "plain"]

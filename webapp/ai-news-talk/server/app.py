@@ -23,7 +23,7 @@ import os
 import threading
 import time
 from collections import defaultdict, deque
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -32,6 +32,7 @@ from pydantic import BaseModel, Field
 from ai import (  # type: ignore[import-not-found]
     AiRefused,
     AiUnavailable,
+    ask_docs,
     extract_tasks,
     run_agent,
     summarize_table,
@@ -250,6 +251,32 @@ def ai_meeting_tasks(body: MeetingRequest, _: None = Depends(rate_limit)) -> Dic
     """회의 내용에서 담당자·기한이 붙은 실행 과제를 뽑는다."""
     try:
         return extract_tasks(body.transcript)
+    except AiUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except AiRefused as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+class DocPart(BaseModel):
+    name: str = Field(..., description="파일명")
+    kind: str = Field(..., description="text | pdf | image")
+    text: str = Field(default="", description="브라우저가 뽑아낸 텍스트 (kind=text)")
+    data: str = Field(default="", description="base64 원본 (kind=pdf|image)")
+    mediaType: str = Field(default="", description="이미지 MIME 타입")
+
+
+class DocAskRequest(BaseModel):
+    question: str = Field(..., description="문서에 대해 묻는 질문")
+    docs: List[DocPart] = Field(default_factory=list, description="첨부 문서 목록")
+
+
+@app.post("/api/ai/doc-ask")
+def ai_doc_ask(body: DocAskRequest, _: None = Depends(rate_limit)) -> Dict[str, Any]:
+    """첨부한 문서에만 근거해 질문에 답한다 (AI 사전)."""
+    try:
+        return ask_docs(body.question, [d.model_dump() for d in body.docs])
     except AiUnavailable as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except ValueError as exc:

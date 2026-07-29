@@ -135,8 +135,11 @@ def summarize_table(table: str, note: str = "") -> Dict[str, Any]:
     }
 
 
-def _call(system: str, prompt: str, schema: Dict[str, Any], max_tokens: int) -> Dict[str, Any]:
-    """구조화 출력 한 번. 거절·파라미터 미지원 처리를 여기 모아 둔다."""
+def _call(system: str, prompt: Any, schema: Dict[str, Any], max_tokens: int) -> Dict[str, Any]:
+    """구조화 출력 한 번. 거절·파라미터 미지원 처리를 여기 모아 둔다.
+
+    prompt은 문자열이거나 콘텐츠 블록 리스트다 — PDF·이미지는 블록으로 넣어야 한다.
+    """
     client = _client()
     kwargs: Dict[str, Any] = {
         "model": MODEL,
@@ -311,6 +314,161 @@ def extract_tasks(transcript: str) -> Dict[str, Any]:
     return {
         "tasks": list(parsed.get("tasks") or []),
         "urgent": list(parsed.get("urgent") or []),
+        "model": result["model"],
+        "usage": result["usage"],
+    }
+
+
+# ══════════════════════════════════════════════════════════════
+# 📚 AI 사전 — 첨부한 문서에만 근거해서 답한다
+#
+# 표·문서(xlsx/docx/pptx/csv/txt)는 브라우저가 텍스트로 뽑아 보내고,
+# PDF와 이미지는 원본 그대로 보내 모델이 직접 읽는다. 두 경로가 한 요청에 섞인다.
+# ══════════════════════════════════════════════════════════════
+MAX_DOCS = 12
+MAX_DOC_TEXT_CHARS = 60_000        # 문서 하나
+MAX_TOTAL_TEXT_CHARS = 300_000     # 전부 합쳐서
+MAX_BINARY_BYTES = 20 * 1024 * 1024  # base64 문자열 길이 기준 (요청 한도 32MB 안쪽)
+MAX_QUESTION_CHARS = 2_000
+
+# 이미지·PDF는 API가 받는 형식이 정해져 있다. 그 밖은 브라우저가 변환해서 보낸다.
+IMAGE_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
+
+DOC_SCHEMA: Dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "answer": {
+            "type": "string",
+            "description": "첨부 문서에만 근거한 답변. 근거가 없으면 '문서에 없음'.",
+        },
+        "found": {
+            "type": "boolean",
+            "description": "문서에서 근거를 찾았으면 true, 못 찾았으면 false.",
+        },
+        "citations": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "doc": {"type": "string", "description": "근거가 있는 파일명"},
+                    "quote": {"type": "string", "description": "근거가 된 원문. 그대로 인용한다."},
+                    "where": {"type": "string", "description": "쪽·시트·항목 등 위치. 모르면 '위치 미상'."},
+                },
+                "required": ["doc", "quote", "where"],
+                "additionalProperties": False,
+            },
+            "description": "답의 근거. 문서에서 찾았다면 최소 1개.",
+        },
+        "missing": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "답하려면 더 필요한 정보. 없으면 빈 배열.",
+        },
+    },
+    "required": ["answer", "found", "citations", "missing"],
+    "additionalProperties": False,
+}
+
+DOC_SYSTEM = (
+    "너는 사내 'AI 사전'이다. 사용자가 첨부한 문서만 근거로 답한다.\n"
+    "지켜야 할 것:\n"
+    "① 첨부 문서에 없는 내용은 절대 지어내지 마라. 근거를 못 찾으면 found를 false로 두고 "
+    "answer에 '문서에 없음'이라고 쓴 뒤, 무엇이 있어야 답할 수 있는지 missing에 적어라.\n"
+    "② 일반 상식이나 사전 지식으로 문서를 보완하지 마라. 문서가 틀려 보여도 문서 내용을 그대로 전한다.\n"
+    "③ 답의 근거가 된 대목은 citations에 원문 그대로 인용하라. 요약하거나 바꿔 쓰지 마라.\n"
+    "④ 문서마다 파일명을 함께 줬다. 인용할 때 어느 파일인지 doc에 정확히 적어라.\n"
+    "⑤ 표(시트)는 탭으로 구분된 텍스트로 들어온다. 숫자는 표의 값을 그대로 인용하고, "
+    "계산이 필요하면 계산식을 answer에 함께 남겨라.\n"
+    "한국어로 답하라."
+)
+
+
+def ask_docs(question: str, docs: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """첨부 문서에만 근거해 질문에 답한다."""
+    question = (question or "").strip()
+    if not question:
+        raise ValueError("질문이 비어 있습니다.")
+    if len(question) > MAX_QUESTION_CHARS:
+        raise ValueError(f"질문이 너무 깁니다. {MAX_QUESTION_CHARS:,}자 이하로 줄여 주세요.")
+
+    docs = list(docs or [])
+    if not docs:
+        raise ValueError("첨부한 문서가 없습니다. 파일을 먼저 올려 주세요.")
+    if len(docs) > MAX_DOCS:
+        raise ValueError(f"파일이 너무 많습니다. {MAX_DOCS}개 이하로 올려 주세요.")
+
+    content: List[Dict[str, Any]] = []
+    total_text = 0
+    used = 0
+
+    for doc in docs:
+        name = str(doc.get("name") or "이름없음")[:200]
+        kind = doc.get("kind")
+
+        if kind == "text":
+            text = (doc.get("text") or "").strip()
+            if not text:
+                continue
+            if len(text) > MAX_DOC_TEXT_CHARS:
+                text = text[:MAX_DOC_TEXT_CHARS] + "\n…(이하 잘림)"
+            total_text += len(text)
+            if total_text > MAX_TOTAL_TEXT_CHARS:
+                raise ValueError(
+                    f"문서 분량이 너무 많습니다. 합쳐서 {MAX_TOTAL_TEXT_CHARS:,}자 이하로 줄여 주세요."
+                )
+            content.append({"type": "text", "text": f'<문서 파일명="{name}">\n{text}\n</문서>'})
+            used += 1
+
+        elif kind in ("pdf", "image"):
+            data = doc.get("data") or ""
+            if not data:
+                continue
+            if len(data) > MAX_BINARY_BYTES:
+                raise ValueError(f"'{name}' 파일이 너무 큽니다. 15MB 이하로 줄여 주세요.")
+            media = doc.get("mediaType") or ""
+            if kind == "image" and media not in IMAGE_TYPES:
+                raise ValueError(f"'{name}'은(는) 지원하지 않는 이미지 형식입니다({media or '알 수 없음'}).")
+            content.append({"type": "text", "text": f'<문서 파일명="{name}">'})
+            content.append(
+                {
+                    "type": "document" if kind == "pdf" else "image",
+                    "source": {
+                        "type": "base64",
+                        "media_type": "application/pdf" if kind == "pdf" else media,
+                        "data": data,
+                    },
+                }
+            )
+            content.append({"type": "text", "text": "</문서>"})
+            used += 1
+
+    if not used:
+        raise ValueError("읽을 수 있는 내용이 있는 파일이 없습니다.")
+
+    content.append(
+        {
+            "type": "text",
+            "text": (
+                "위 문서에만 근거해서 아래 질문에 답하라. "
+                "문서에 없으면 지어내지 말고 '문서에 없음'이라고 답하라.\n\n"
+                f"<질문>\n{question}\n</질문>"
+            ),
+        }
+    )
+
+    result = _call(
+        system=DOC_SYSTEM,
+        prompt=content,
+        schema=DOC_SCHEMA,
+        max_tokens=max(MAX_TOKENS, 8000),
+    )
+    parsed = result["parsed"]
+    return {
+        "answer": parsed.get("answer") or "",
+        "found": bool(parsed.get("found")),
+        "citations": list(parsed.get("citations") or [])[:8],
+        "missing": list(parsed.get("missing") or [])[:5],
+        "docs": used,
         "model": result["model"],
         "usage": result["usage"],
     }

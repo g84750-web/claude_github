@@ -239,10 +239,10 @@ const EXPS = [
    steps:["경쟁사 보도자료 원문을 붙여넣는다","우리 솔루션명을 명시해 관점을 고정한다","즉시/단기/중장기로 나뉜 결론만 취한다"],
    prompt:"아래는 경쟁사 발표 원문이다. 우리 회사 관점(ERP·그룹웨어·클라우드 사업)에서 ① 이 발표가 실제로 위협인 지점 ② 과장·마케팅 문구로 걸러야 할 지점 ③ 즉시/단기/중장기 대응안을 각각 2개씩 제시하라. 근거 없는 낙관은 쓰지 마라.",
    tip:"'과장으로 걸러야 할 지점'을 꼭 물어야 균형 잡힌 답이 나온다."},
-  {id:"e5",icon:"🗂️",title:"사내 문서 RAG Q&A 30분 프로토타입",tool:"NotebookLM / Claude",
-   level:"중급",min:30,free:true,sol:["FoEX","NSM10"],
-   goal:"규정·매뉴얼 PDF를 올려 '문서에 근거한' 질의응답을 체험한다.",
-   steps:["공개 가능한 사내 문서 5~10개를 준비한다","도구에 업로드하고 인덱싱을 기다린다","반드시 출처 표시를 켜고 오답률을 기록한다"],
+  {id:"e5",icon:"📚",title:"AI 사전 — 내 문서에 물어보기",tool:"파일 첨부 + Claude",run:"docqa",
+   level:"중급",min:5,free:true,sol:["FoEX","NSM10"],
+   goal:"규정·매뉴얼·표·캡처를 올려 두고 '문서에 근거한' 답만 받는다.",
+   steps:["문서·엑셀·PDF·캡처 이미지를 끌어다 놓는다","묻고 싶은 것을 한 줄로 적는다","답과 함께 나온 인용 원문을 원본에서 확인한다"],
    prompt:"업로드한 문서만 근거로 답하라. 문서에 없으면 '문서에 없음'이라고 답하고 추측하지 마라. 모든 문장 끝에 근거 문서명과 쪽수를 붙여라. 질문: [여기에 질문]",
    tip:"기밀 문서는 절대 외부 서비스에 올리지 않는다. 반드시 공개 가능 문서로만."},
   {id:"e6",icon:"✍️",title:"고객 메일 3종 톤 자동 생성",tool:"Copilot / Claude",
@@ -2341,6 +2341,585 @@ function MeetingRecorder({aiUrl}) {
   );
 }
 
+/* ══════════════════════════════════════════════════════════════
+   📚 AI 사전 — 첨부 파일 읽기
+
+   아티팩트는 외부 스크립트를 못 불러온다(CSP). 그래서 xlsx·docx·pptx를
+   여는 데 라이브러리를 쓸 수 없다 — 대신 셋 다 ZIP이라는 점을 이용한다.
+   브라우저의 DecompressionStream('deflate-raw')로 압축을 풀고 안의 XML에서
+   글자만 뽑는다. PDF와 이미지는 브라우저가 읽을 수 없으므로 원본을 서버로
+   보내 모델이 직접 보게 한다.
+══════════════════════════════════════════════════════════════ */
+const XML_ENT = {amp:"&", lt:"<", gt:">", quot:'"', apos:"'", nbsp:" "};
+function unent(s) {
+  return String(s).replace(new RegExp("&(#x?[0-9A-Fa-f]+|[a-z]+);", "g"), (m, g) => {
+    if (g[0] === "#") {
+      const n = g[1] === "x" || g[1] === "X" ? parseInt(g.slice(2), 16) : parseInt(g.slice(1), 10);
+      return isFinite(n) && n > 0 ? String.fromCodePoint(n) : m;
+    }
+    return XML_ENT[g] !== undefined ? XML_ENT[g] : m;
+  });
+}
+
+/* 한글 CSV·TXT는 UTF-8이 아니라 CP949로 저장돼 오는 일이 흔하다.
+   깨진 글자(U+FFFD)가 보이면 euc-kr로 한 번 더 시도한다. */
+function decodeText(buf) {
+  const u8 = new Uint8Array(buf);
+  const body = (u8[0] === 0xEF && u8[1] === 0xBB && u8[2] === 0xBF) ? u8.subarray(3) : u8;
+  const utf8 = new TextDecoder("utf-8").decode(body);
+  if (utf8.indexOf("�") === -1) return utf8;
+  try {
+    const euc = new TextDecoder("euc-kr").decode(body);
+    if (euc.indexOf("�") === -1) return euc;
+  } catch (_) {}
+  return utf8;
+}
+
+const zipOk = () => typeof window !== "undefined" && typeof window.DecompressionStream !== "undefined";
+
+/* ZIP 중앙 디렉터리를 직접 훑는다 (라이브러리 없이) */
+function zipEntries(buf) {
+  const dv = new DataView(buf), u8 = new Uint8Array(buf);
+  let eocd = -1;
+  const floor = Math.max(0, u8.length - 22 - 65535);
+  for (let i = u8.length - 22; i >= floor; i--) {
+    if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  }
+  if (eocd < 0) throw new Error("ZIP 구조를 읽지 못했습니다.");
+  const n = dv.getUint16(eocd + 10, true);
+  let off = dv.getUint32(eocd + 16, true);
+  const out = {};
+  const dec = new TextDecoder("utf-8");
+  for (let k = 0; k < n; k++) {
+    if (off + 46 > u8.length || dv.getUint32(off, true) !== 0x02014b50) break;
+    const method = dv.getUint16(off + 10, true);
+    const csize = dv.getUint32(off + 20, true);
+    const nameLen = dv.getUint16(off + 28, true);
+    const extraLen = dv.getUint16(off + 30, true);
+    const cmtLen = dv.getUint16(off + 32, true);
+    const lho = dv.getUint32(off + 42, true);
+    const name = dec.decode(u8.subarray(off + 46, off + 46 + nameLen));
+    /* 로컬 헤더의 이름·extra 길이는 중앙 디렉터리와 다를 수 있어 다시 읽는다 */
+    const lNameLen = dv.getUint16(lho + 26, true);
+    const lExtraLen = dv.getUint16(lho + 28, true);
+    const start = lho + 30 + lNameLen + lExtraLen;
+    out[name] = {method, raw: u8.subarray(start, start + csize)};
+    off += 46 + nameLen + extraLen + cmtLen;
+  }
+  return out;
+}
+
+async function zipText(entries, name) {
+  const e = entries[name];
+  if (!e) return "";
+  if (e.method === 0) return new TextDecoder("utf-8").decode(e.raw);   /* 무압축 */
+  const ds = new DecompressionStream("deflate-raw");
+  const buf = await new Response(new Blob([e.raw]).stream().pipeThrough(ds)).arrayBuffer();
+  return new TextDecoder("utf-8").decode(new Uint8Array(buf));
+}
+
+const TAGS = new RegExp("<[^>]*>", "g");
+
+/* 엑셀 — 공유 문자열 + 시트별 셀을 탭 구분 표로 되돌린다 */
+async function xlsxText(entries) {
+  const shared = [];
+  const ssXml = await zipText(entries, "xl/sharedStrings.xml");
+  if (ssXml) {
+    const items = ssXml.split(new RegExp("<si[ >]")).slice(1);
+    items.forEach(chunk => {
+      let s = "";
+      const ts = chunk.match(new RegExp("<t[^>]*>([\\s\\S]*?)</t>", "g")) || [];
+      ts.forEach(t => { s += unent(t.replace(TAGS, "")); });
+      shared.push(s);
+    });
+  }
+  /* 시트 이름과 파일 순서를 맞춘다 */
+  const wbXml = await zipText(entries, "xl/workbook.xml");
+  const names = [];
+  (wbXml.match(new RegExp("<sheet [^>]*>", "g")) || []).forEach(tag => {
+    const m = tag.match(new RegExp("name=\"([^\"]*)\""));
+    names.push(m ? unent(m[1]) : "시트");
+  });
+
+  const files = Object.keys(entries)
+    .filter(k => new RegExp("^xl/worksheets/sheet\\d+\\.xml$").test(k))
+    .sort((a, b) => (+a.replace(new RegExp("\\D", "g"), "")) - (+b.replace(new RegExp("\\D", "g"), "")));
+
+  const parts = [];
+  for (let i = 0; i < files.length; i++) {
+    const xml = await zipText(entries, files[i]);
+    const rows = xml.split(new RegExp("<row[ >]")).slice(1);
+    const lines = [];
+    rows.forEach(r => {
+      const cells = r.split(new RegExp("<c[ >]")).slice(1);
+      const cols = [];
+      cells.forEach(c => {
+        const ref = (c.match(new RegExp("^[^>]*r=\"([A-Z]+)")) || [])[1] || "";
+        const typ = (c.match(new RegExp("^[^>]*t=\"([a-zA-Z]+)\"")) || [])[1] || "";
+        let v = "";
+        if (typ === "inlineStr") {
+          const ts = c.match(new RegExp("<t[^>]*>([\\s\\S]*?)</t>", "g")) || [];
+          ts.forEach(t => { v += unent(t.replace(TAGS, "")); });
+        } else {
+          const m = c.match(new RegExp("<v[^>]*>([\\s\\S]*?)</v>"));
+          v = m ? unent(m[1]) : "";
+          if (typ === "s") { const idx = +v; v = shared[idx] !== undefined ? shared[idx] : ""; }
+        }
+        /* 빈 칸이 건너뛰어져 있으면 열 위치가 밀린다 — 열 문자로 자리를 맞춘다 */
+        let col = 0;
+        for (let j = 0; j < ref.length; j++) col = col * 26 + (ref.charCodeAt(j) - 64);
+        if (col > 0) { while (cols.length < col - 1) cols.push(""); cols[col - 1] = v; }
+        else cols.push(v);
+      });
+      if (cols.some(x => x !== "")) lines.push(cols.join("\t"));
+    });
+    if (lines.length) parts.push(`[시트: ${names[i] || files[i]}]\n` + lines.join("\n"));
+  }
+  return parts.join("\n\n");
+}
+
+/* 워드 — 문단은 줄바꿈, 탭은 탭으로 */
+async function docxText(entries) {
+  const xml = await zipText(entries, "word/document.xml");
+  if (!xml) return "";
+  return unent(xml
+    .replace(new RegExp("<w:tab[^>]*/>", "g"), "\t")
+    .replace(new RegExp("<w:br[^>]*/>", "g"), "\n")
+    .replace(new RegExp("</w:p>", "g"), "\n")
+    .replace(TAGS, ""))
+    .replace(new RegExp("\\n{3,}", "g"), "\n\n").trim();
+}
+
+/* 파워포인트 — 슬라이드 번호를 붙여 순서를 남긴다 */
+async function pptxText(entries) {
+  const files = Object.keys(entries)
+    .filter(k => new RegExp("^ppt/slides/slide\\d+\\.xml$").test(k))
+    .sort((a, b) => (+a.replace(new RegExp("\\D", "g"), "")) - (+b.replace(new RegExp("\\D", "g"), "")));
+  const parts = [];
+  for (let i = 0; i < files.length; i++) {
+    const xml = await zipText(entries, files[i]);
+    const ts = xml.match(new RegExp("<a:t>([\\s\\S]*?)</a:t>", "g")) || [];
+    const text = ts.map(t => unent(t.replace(TAGS, ""))).join("\n").trim();
+    if (text) parts.push(`[슬라이드 ${i + 1}]\n${text}`);
+  }
+  return parts.join("\n\n");
+}
+
+const b64 = (buf) => {
+  const u8 = new Uint8Array(buf);
+  let s = "";
+  for (let i = 0; i < u8.length; i += 0x8000) {
+    s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000));
+  }
+  return btoa(s);
+};
+
+const IMG_OK = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+const IMG_MAX = 2576;   /* 모델이 받는 최대 변 길이 — 그 이상은 토큰만 늘어난다 */
+
+/* 지원하지 않는 형식이거나 너무 크면 캔버스로 다시 그려 PNG로 바꾼다 */
+async function normImage(file) {
+  const type = file.type || "";
+  const buf = await file.arrayBuffer();
+  const bitmap = await createImageBitmap(new Blob([buf], {type: type || "image/png"}));
+  /* close()를 부르면 width·height가 0이 된다 — 먼저 읽어 둔다 */
+  const iw = bitmap.width, ih = bitmap.height;
+  const long = Math.max(iw, ih);
+  const need = IMG_OK.indexOf(type) === -1 || long > IMG_MAX;
+  if (!need) { bitmap.close && bitmap.close(); return {data: b64(buf), mediaType: type, w: iw, h: ih}; }
+  const scale = long > IMG_MAX ? IMG_MAX / long : 1;
+  const w = Math.max(1, Math.round(iw * scale));
+  const h = Math.max(1, Math.round(ih * scale));
+  const cv = document.createElement("canvas");
+  cv.width = w; cv.height = h;
+  cv.getContext("2d").drawImage(bitmap, 0, 0, w, h);
+  bitmap.close && bitmap.close();
+  const png = await new Promise(res => cv.toBlob(res, "image/png"));
+  return {data: b64(await png.arrayBuffer()), mediaType: "image/png", w, h, converted: true};
+}
+
+const TEXT_EXT = ["txt","md","markdown","csv","tsv","json","log","xml","html","htm","yaml","yml","ini","sql","py","js","ts","java","c","cpp","cs","go","rb","php","sh"];
+const ext = (n) => { const i = String(n).lastIndexOf("."); return i < 0 ? "" : n.slice(i + 1).toLowerCase(); };
+const fsize = (n) => n < 1024 ? `${n}B` : n < 1024*1024 ? `${Math.round(n/1024)}KB` : `${(n/1024/1024).toFixed(1)}MB`;
+
+const MAX_FILE_BYTES = 15 * 1024 * 1024;
+
+/* 파일 하나를 읽어 화면·서버가 쓸 형태로 만든다 */
+async function readAttachment(file) {
+  const base = {name: file.name, size: file.size, kind: "none", text: "", data: "", mediaType: ""};
+  if (file.size > MAX_FILE_BYTES) {
+    return Object.assign(base, {err: `파일이 너무 큽니다 (${fsize(file.size)}). 15MB 이하로 올려 주세요.`});
+  }
+  const e = ext(file.name), type = file.type || "";
+
+  if (type.indexOf("image/") === 0 || ["png","jpg","jpeg","gif","webp","bmp","tif","tiff"].indexOf(e) !== -1) {
+    try {
+      const img = await normImage(file);
+      return Object.assign(base, {kind:"image", data:img.data, mediaType:img.mediaType,
+        note: `${img.w}×${img.h}${img.converted ? " · PNG로 변환" : ""}`});
+    } catch (_) { return Object.assign(base, {err:"이미지를 읽지 못했습니다."}); }
+  }
+
+  if (type === "application/pdf" || e === "pdf") {
+    try { return Object.assign(base, {kind:"pdf", data: b64(await file.arrayBuffer())}); }
+    catch (_) { return Object.assign(base, {err:"PDF를 읽지 못했습니다."}); }
+  }
+
+  if (["xlsx","docx","pptx","xlsm"].indexOf(e) !== -1) {
+    if (!zipOk()) return Object.assign(base, {err:"이 브라우저에서는 오피스 파일을 열 수 없습니다(Chrome·Edge를 쓰세요)."});
+    try {
+      const entries = zipEntries(await file.arrayBuffer());
+      const text = e === "docx" ? await docxText(entries)
+                 : e === "pptx" ? await pptxText(entries)
+                 : await xlsxText(entries);
+      if (!text.trim()) return Object.assign(base, {err:"글자를 찾지 못했습니다(그림만 있는 파일일 수 있습니다)."});
+      return Object.assign(base, {kind:"text", text});
+    } catch (_) { return Object.assign(base, {err:"파일을 여는 데 실패했습니다. 손상됐거나 암호가 걸렸을 수 있습니다."}); }
+  }
+
+  if (e === "xls" || e === "doc" || e === "ppt") {
+    return Object.assign(base, {err:`옛 형식(.${e})은 읽지 못합니다. .${e}x로 다시 저장해 올려 주세요.`});
+  }
+  if (e === "hwp" || e === "hwpx") {
+    return Object.assign(base, {err:"한글 문서(.hwp)는 읽지 못합니다. PDF로 저장해 올려 주세요."});
+  }
+
+  if (TEXT_EXT.indexOf(e) !== -1 || type.indexOf("text/") === 0 || !e) {
+    try {
+      const text = decodeText(await file.arrayBuffer());
+      if (!text.trim()) return Object.assign(base, {err:"내용이 비어 있습니다."});
+      return Object.assign(base, {kind:"text", text});
+    } catch (_) { return Object.assign(base, {err:"텍스트를 읽지 못했습니다."}); }
+  }
+
+  return Object.assign(base, {err:`.${e || "확장자 없음"} 형식은 지원하지 않습니다.`});
+}
+
+/* ── 로컬 검색 (서버 없이) ────────────────────────────────────
+   AI 답변은 흉내낼 수 없다. 대신 질문의 낱말이 가장 많이 걸리는 대목을
+   찾아 원문 그대로 보여준다 — 판단은 사람이 한다. */
+const JOSA = new RegExp("(은|는|이|가|을|를|의|에|에서|으로|로|과|와|도|만|께|부터|까지|한테|에게|이나|나|랑|이란|란)$");
+function tokenize(q) {
+  return String(q || "")
+    .split(new RegExp("[^0-9A-Za-z가-힣]+"))
+    .map(t => t.trim()).filter(t => t.length >= 2)
+    .map(t => { const s = t.replace(JOSA, ""); return s.length >= 2 ? s : t; });
+}
+
+function searchDocs(question, docs) {
+  const toks = tokenize(question);
+  if (!toks.length) throw new Error("검색할 낱말이 없습니다. 질문을 조금 더 길게 적어 주세요.");
+  const readable = docs.filter(d => d.kind === "text" && d.text);
+  if (!readable.length) throw new Error("로컬 검색은 문서·엑셀·텍스트만 가능합니다. PDF·이미지는 서버 AI가 필요합니다.");
+
+  const hits = [];
+  readable.forEach(d => {
+    const lines = d.text.split("\n");
+    /* 3줄씩 묶어 앞뒤 맥락이 같이 보이게 한다 */
+    for (let i = 0; i < lines.length; i += 3) {
+      const chunk = lines.slice(i, i + 3).join("\n").trim();
+      if (!chunk) continue;
+      const low = chunk.toLowerCase();
+      let score = 0, matched = 0;
+      toks.forEach(t => {
+        const lt = t.toLowerCase();
+        let at = 0, c = 0;
+        while (true) { const p = low.indexOf(lt, at); if (p === -1) break; c++; at = p + lt.length; }
+        if (c) { matched++; score += t.length * Math.min(c, 3); }
+      });
+      if (!matched) continue;
+      score *= matched;                                  /* 여러 낱말이 함께 걸릴수록 우선 */
+      hits.push({doc: d.name, quote: chunk.slice(0, 500), where: `${i + 1}번째 줄 부근`, score, matched});
+    }
+  });
+  hits.sort((a, b) => b.score - a.score);
+  return {source: "local", hits: hits.slice(0, 5), terms: toks, scanned: readable.length};
+}
+
+function DocQA({aiUrl}) {
+  const [files, setFiles] = useState([]);
+  const [q, setQ] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [res, setRes] = useState(null);
+  const [err, setErr] = useState("");
+  const [note, setNote] = useState("");
+  const [drag, setDrag] = useState(false);
+  const inputRef = useRef(null);
+  const seq = useRef(0);
+
+  const addFiles = useCallback(async (list) => {
+    const arr = [...list];
+    if (!arr.length) return;
+    setErr(""); setLoading(true);
+    const read = [];
+    for (let i = 0; i < arr.length; i++) {
+      try { read.push(Object.assign({id: ++seq.current}, await readAttachment(arr[i]))); }
+      catch (e) { read.push({id: ++seq.current, name: arr[i].name, size: arr[i].size, kind:"none", err:"읽지 못했습니다."}); }
+    }
+    setFiles(prev => prev.concat(read).slice(0, 12));
+    setLoading(false);
+  }, []);
+
+  const drop = useCallback((ev) => {
+    ev.preventDefault(); setDrag(false);
+    if (ev.dataTransfer && ev.dataTransfer.files) addFiles(ev.dataTransfer.files);
+  }, [addFiles]);
+
+  const usable = files.filter(f => !f.err && f.kind !== "none");
+  const localOnly = usable.filter(f => f.kind === "text");
+  const needServer = usable.filter(f => f.kind !== "text");
+  const chars = localOnly.reduce((s, f) => s + f.text.length, 0);
+
+  const ask = useCallback(async () => {
+    setBusy(true); setErr(""); setNote(""); setRes(null);
+    let out = null;
+    if (NET && aiUrl) {
+      const r = await syncFetch(joinUrl(aiUrl, "/api/ai/doc-ask"), {
+        method: "POST",
+        body: JSON.stringify({
+          question: q,
+          docs: usable.map(f => ({name: f.name, kind: f.kind, text: f.text || "",
+                                  data: f.data || "", mediaType: f.mediaType || ""})),
+        }),
+      });
+      if (r.ok && r.body && typeof r.body.answer === "string") out = Object.assign({}, r.body, {source:"ai"});
+      else if (r.status === 422 && r.body && r.body.detail) { setErr(String(r.body.detail)); setBusy(false); return; }
+      else if (r.status && r.status !== 503 && r.status !== 404) setNote("서버 AI 호출이 실패해 로컬 검색으로 처리했습니다.");
+    }
+    if (!out) {
+      try { out = searchDocs(q, usable); }
+      catch (e) { setErr(e.message || "검색하지 못했습니다."); setBusy(false); return; }
+      if (NET && aiUrl) { /* 위에서 이미 안내함 */ }
+      else if (needServer.length) setNote(`PDF·이미지 ${needServer.length}건은 서버 AI가 있어야 읽을 수 있어 이번 검색에서 빠졌습니다.`);
+    }
+    setRes(out); setBusy(false);
+  }, [q, usable, needServer, aiUrl]);
+
+  const canAsk = !busy && !loading && q.trim() && usable.length > 0;
+  const LBL = {fontSize:9,color:"#4a6379",fontFamily:MONO,fontWeight:700,letterSpacing:".8px",marginBottom:5};
+  const KIND = {text:{t:"텍스트 추출",c:"#0f5527"}, pdf:{t:"PDF · 서버에서 읽음",c:"#174b85"}, image:{t:"이미지 · 서버에서 읽음",c:"#174b85"}};
+
+  return (
+    <div style={{
+      marginTop:9,padding:"11px 12px",borderRadius:6,
+      background:"#ffffff",border:"1px solid rgba(0,92,74,.28)",
+    }}>
+      <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8,flexWrap:"wrap"}}>
+        <span style={{fontSize:9,color:"#005c4a",fontFamily:MONO,fontWeight:700,letterSpacing:".8px"}}>
+          ▶ 여기서 바로 물어보기
+        </span>
+        <span style={{fontSize:9.5,color:"#4a6379",fontFamily:KR}}>
+          파일을 올리고 질문하면 <b>그 문서에 있는 내용만</b> 답합니다. 없으면 "문서에 없음"이라고 말합니다.
+        </span>
+      </div>
+
+      {/* 기밀 문서 경고 — 이 카드에서 가장 중요한 안내다 */}
+      <div style={{
+        padding:"7px 10px",borderRadius:5,marginBottom:8,
+        background:"rgba(122,68,5,.05)",border:"1px solid rgba(122,68,5,.2)",
+        fontSize:10,lineHeight:1.55,color:"#645019",fontFamily:KR,
+      }}>
+        <b>파일이 어디로 가는지</b> — 문서·엑셀은 <b>브라우저 안에서</b> 글자만 뽑아냅니다.
+        PDF·이미지는 원본이 <b>직접 지정한 서버로</b> 전송되어 AI가 읽습니다.
+        서버 주소를 넣지 않았다면 파일은 이 브라우저 밖으로 나가지 않습니다. 대외비 문서는 사내 서버에만 연결해 쓰세요.
+      </div>
+
+      {/* ── 파일 첨부 ── */}
+      <div
+        onDragOver={e=>{e.preventDefault();setDrag(true);}}
+        onDragLeave={()=>setDrag(false)}
+        onDrop={drop}
+        onClick={()=>inputRef.current && inputRef.current.click()}
+        style={{
+          padding:"14px 12px",borderRadius:6,cursor:"pointer",textAlign:"center",
+          border:`1.5px dashed ${drag?"rgba(0,92,74,.6)":"#c6d7e6"}`,
+          background: drag?"rgba(0,92,74,.06)":"#eef4fa",
+          transition:"background .15s,border-color .15s",
+        }}>
+        <div style={{fontSize:11.5,color:"#0d2436",fontFamily:KR,fontWeight:700,marginBottom:3}}>
+          📎 파일을 끌어다 놓거나 눌러서 고르세요
+        </div>
+        <div style={{fontSize:9.5,color:"#4a6379",fontFamily:KR,lineHeight:1.55}}>
+          워드(.docx) · 엑셀(.xlsx) · 파워포인트(.pptx) · PDF · 이미지(캡처) · CSV · 텍스트 — 한 번에 12개까지
+        </div>
+        <input ref={inputRef} type="file" multiple style={{display:"none"}}
+          accept=".docx,.xlsx,.xlsm,.pptx,.pdf,.csv,.tsv,.txt,.md,.json,.xml,.log,image/*"
+          onChange={e=>{ addFiles(e.target.files); e.target.value = ""; }}/>
+      </div>
+
+      {loading && (
+        <div style={{fontSize:10,color:"#4a6379",fontFamily:KR,marginTop:6}}>파일 읽는 중…</div>
+      )}
+
+      {files.length > 0 && (
+        <div style={{marginTop:8}}>
+          {files.map(f=>{
+            const k = KIND[f.kind];
+            return (
+              <div key={f.id} style={{
+                display:"flex",alignItems:"flex-start",gap:7,padding:"6px 9px",borderRadius:5,marginBottom:4,
+                background: f.err ? "rgba(158,42,31,.05)" : "#eef4fa",
+                border: `1px solid ${f.err ? "rgba(158,42,31,.22)" : "#c6d7e6"}`,
+              }}>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:11,color:"#0d2436",fontFamily:KR,fontWeight:700,wordBreak:"break-all"}}>{f.name}</div>
+                  <div style={{fontSize:9.5,fontFamily:KR,lineHeight:1.5,marginTop:2,
+                    color: f.err ? "#9e2a1f" : "#3d5a72"}}>
+                    {f.err ? f.err
+                      : `${fsize(f.size)} · ${k ? k.t : ""}${f.kind==="text" ? ` · ${f.text.length.toLocaleString()}자` : ""}${f.note ? ` · ${f.note}` : ""}`}
+                  </div>
+                </div>
+                <button className="toggle-btn" onClick={()=>setFiles(p=>p.filter(x=>x.id!==f.id))} style={{
+                  flexShrink:0,padding:"2px 7px",borderRadius:4,fontSize:9.5,fontWeight:700,fontFamily:KR,
+                  border:"1px solid #c6d7e6",background:"transparent",color:"#4a6379",cursor:"pointer",
+                }}>빼기</button>
+              </div>
+            );
+          })}
+          <div style={{fontSize:9.5,color:"#566f87",fontFamily:KR,marginTop:2}}>
+            읽을 수 있는 파일 {usable.length}개
+            {localOnly.length ? ` · 추출된 글자 ${chars.toLocaleString()}자` : ""}
+            {needServer.length ? ` · 서버 필요 ${needServer.length}건` : ""}
+          </div>
+        </div>
+      )}
+
+      {/* ── 질문 ── */}
+      <div style={{marginTop:10}}>
+        <div style={LBL}>질문</div>
+        <input value={q} onChange={e=>setQ(e.target.value)}
+          onKeyDown={e=>{ if (e.key === "Enter" && canAsk) ask(); }}
+          placeholder="예) 출장비 정산 기한이 며칠인가요?"
+          style={{
+            width:"100%",boxSizing:"border-box",padding:"8px 10px",borderRadius:5,
+            border:"1px solid #c6d7e6",fontSize:11.5,fontFamily:KR,color:"#0d2436",background:"#eef4fa",
+          }}/>
+        <div style={{display:"flex",alignItems:"center",gap:7,marginTop:7,flexWrap:"wrap"}}>
+          <button className="toggle-btn" onClick={ask} disabled={!canAsk} style={{
+            padding:"4px 13px",borderRadius:4,fontSize:10.5,fontWeight:700,fontFamily:KR,
+            border:"1px solid rgba(0,92,74,.4)",
+            background: canAsk ? "rgba(0,92,74,.12)" : "rgba(0,92,74,.05)",
+            color: canAsk ? "#005c4a" : "#4a6379",
+            cursor: canAsk ? "pointer" : "not-allowed",
+          }}>{busy ? "찾는 중…" : "📚 문서에서 찾기"}</button>
+          {files.length > 0 && (
+            <button className="toggle-btn" onClick={()=>{setFiles([]);setRes(null);setErr("");setNote("");}} style={{
+              padding:"4px 11px",borderRadius:4,fontSize:10,fontWeight:700,fontFamily:KR,
+              border:"1px solid #c6d7e6",background:"transparent",color:"#4a6379",cursor:"pointer",
+            }}>모두 지우기</button>
+          )}
+          <span style={{marginLeft:"auto",fontSize:9.5,color:"#566f87",fontFamily:KR}}>
+            {!usable.length ? "파일을 먼저 올려 주세요"
+             : aiUrl && NET ? "서버 AI 연결됨 — 실패 시 로컬 검색"
+             : "로컬 검색 (서버 없이 · 문서/엑셀만)"}
+          </span>
+        </div>
+      </div>
+
+      {err && (
+        <div style={{
+          marginTop:8,padding:"7px 10px",borderRadius:5,fontSize:10.5,lineHeight:1.55,
+          background:"rgba(158,42,31,.06)",border:"1px solid rgba(158,42,31,.24)",
+          color:"#9e2a1f",fontFamily:KR,
+        }}>{err}</div>
+      )}
+      {note && (
+        <div style={{
+          marginTop:8,padding:"6px 9px",borderRadius:5,fontSize:10,lineHeight:1.5,
+          background:"rgba(122,68,5,.05)",border:"1px solid rgba(122,68,5,.18)",
+          color:"#645019",fontFamily:KR,
+        }}>{note}</div>
+      )}
+
+      {res && (
+        <div style={{marginTop:10}}>
+          <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:7,flexWrap:"wrap"}}>
+            <span style={{
+              padding:"1px 7px",borderRadius:3,fontSize:8.5,fontWeight:800,fontFamily:MONO,
+              background: res.source==="ai" ? "rgba(0,92,74,.12)" : "rgba(23,75,133,.1)",
+              border: `1px solid ${res.source==="ai" ? "rgba(0,92,74,.4)" : "rgba(23,75,133,.32)"}`,
+              color: res.source==="ai" ? "#005c4a" : "#174b85",
+            }}>{res.source==="ai" ? "AI 답변" : "로컬 검색"}</span>
+            <span style={{fontSize:9.5,color:"#4a6379",fontFamily:KR}}>
+              {res.source==="ai"
+                ? `${res.model || "Claude"} · 문서 ${res.docs}건에서`
+                : `문서 ${res.scanned}건에서 "${(res.terms||[]).join('", "')}" 검색 — 관련 대목만 찾아줍니다`}
+            </span>
+          </div>
+
+          {res.source === "ai" ? (
+            <>
+              <div style={{
+                padding:"9px 11px",borderRadius:5,marginBottom:8,
+                background: res.found ? "#eef4fa" : "rgba(122,68,5,.05)",
+                border: `1px solid ${res.found ? "#c6d7e6" : "rgba(122,68,5,.22)"}`,
+                fontSize:11.5,lineHeight:1.68,color:"#0d2436",fontFamily:KR,whiteSpace:"pre-wrap",
+              }}>{res.answer}</div>
+
+              {res.citations && res.citations.length > 0 && (
+                <div style={{marginBottom:8}}>
+                  <div style={LBL}>근거 — 문서 원문 <span style={{fontWeight:400,letterSpacing:0}}>(원본에서 꼭 확인하세요)</span></div>
+                  {res.citations.map((c,i)=>(
+                    <div key={i} style={{
+                      padding:"7px 10px",borderRadius:5,marginBottom:5,
+                      background:"#eef4fa",border:"1px solid #c6d7e6",borderLeft:"3px solid rgba(0,92,74,.45)",
+                    }}>
+                      <div style={{fontSize:9.5,color:"#005c4a",fontFamily:MONO,fontWeight:700,marginBottom:3}}>
+                        {c.doc} · {c.where}
+                      </div>
+                      <div style={{fontSize:11,color:"#0d2436",lineHeight:1.6,fontFamily:KR,whiteSpace:"pre-wrap"}}>{c.quote}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {res.missing && res.missing.length > 0 && (
+                <div style={{
+                  padding:"8px 11px",borderRadius:5,
+                  background:"rgba(122,68,5,.05)",border:"1px solid rgba(122,68,5,.2)",
+                }}>
+                  <div style={{fontSize:9,color:"#7a4405",fontFamily:MONO,fontWeight:700,letterSpacing:".8px",marginBottom:5}}>
+                    답하려면 더 필요한 것
+                  </div>
+                  {res.missing.map((m,i)=>(
+                    <div key={i} style={{fontSize:11,color:"#645019",lineHeight:1.58,fontFamily:KR}}>· {m}</div>
+                  ))}
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              {res.hits.length === 0 && (
+                <div style={{fontSize:11,color:"#3d5a72",fontFamily:KR,lineHeight:1.6}}>
+                  그 낱말이 들어간 대목을 찾지 못했습니다. 문서에 실제로 쓰인 표현으로 바꿔 보세요.
+                </div>
+              )}
+              {res.hits.map((h,i)=>(
+                <div key={i} style={{
+                  padding:"7px 10px",borderRadius:5,marginBottom:5,
+                  background:"#eef4fa",border:"1px solid #c6d7e6",borderLeft:"3px solid rgba(23,75,133,.4)",
+                }}>
+                  <div style={{fontSize:9.5,color:"#174b85",fontFamily:MONO,fontWeight:700,marginBottom:3}}>
+                    {h.doc} · {h.where}
+                  </div>
+                  <div style={{fontSize:11,color:"#0d2436",lineHeight:1.6,fontFamily:KR,whiteSpace:"pre-wrap"}}>{h.quote}</div>
+                </div>
+              ))}
+              {res.hits.length > 0 && (
+                <div style={{fontSize:10,color:"#645019",fontFamily:KR,lineHeight:1.55,marginTop:5}}>
+                  로컬 검색은 <b>낱말이 겹치는 대목을 찾아줄 뿐</b>이고, 요약·판단은 하지 않습니다.
+                  문장으로 된 답이 필요하면 ⏰ 시간설정 → ☁️ 서버 동기화에 서버 주소를 넣어 주세요.
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function AgentBuilder({aiUrl}) {
   const [f, setF] = usePersist("agentDraft",
     {task:"",role:"",input:"",output:"",forbid:""}, vObj);
@@ -2714,6 +3293,7 @@ function ExpCard({x, delay, done, onDone, aiUrl}) {
           {x.run === "meeting" && <MeetingRecorder aiUrl={aiUrl}/>}
 
           {x.run === "agent4" && <AgentBuilder aiUrl={aiUrl}/>}
+          {x.run === "docqa" && <DocQA aiUrl={aiUrl}/>}
 
           {x.run === "excel3" && (
             <div style={{
