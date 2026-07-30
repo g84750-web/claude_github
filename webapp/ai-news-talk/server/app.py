@@ -33,7 +33,10 @@ from ai import (  # type: ignore[import-not-found]
     AiRefused,
     AiUnavailable,
     ask_docs,
+    brief_rival,
     extract_tasks,
+    mail_tones,
+    recheck_answer,
     run_agent,
     summarize_table,
 )
@@ -277,6 +280,61 @@ def ai_doc_ask(body: DocAskRequest, _: None = Depends(rate_limit)) -> Dict[str, 
     """첨부한 문서에만 근거해 질문에 답한다 (AI 사전)."""
     try:
         return ask_docs(body.question, [d.model_dump() for d in body.docs])
+    except AiUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except AiRefused as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+class RivalRequest(BaseModel):
+    text: str = Field(..., description="경쟁사 보도자료 원문")
+    ours: str = Field(default="", description="우리 회사 사업 영역 (관점 고정용)")
+
+
+@app.post("/api/ai/rival-brief")
+def ai_rival_brief(body: RivalRequest, _: None = Depends(rate_limit)) -> Dict[str, Any]:
+    """경쟁사 발표를 위협·과장·대응안으로 번역한다."""
+    try:
+        return brief_rival(body.text, body.ours)
+    except AiUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except AiRefused as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+class MailRequest(BaseModel):
+    subject: str = Field(..., description="용건 한 줄")
+    facts: str = Field(..., description="핵심 사실 (한 줄에 하나)")
+    to: str = Field(default="", description="받는 곳")
+    ask: str = Field(default="", description="상대에게 바라는 것")
+
+
+@app.post("/api/ai/mail-tones")
+def ai_mail_tones(body: MailRequest, _: None = Depends(rate_limit)) -> Dict[str, Any]:
+    """핵심 사실만으로 정중·간결·설득 3종 메일을 만든다."""
+    try:
+        return mail_tones(body.subject, body.facts, body.to, body.ask)
+    except AiUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except AiRefused as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+class RecheckRequest(BaseModel):
+    answer: str = Field(..., description="검토할 AI 답변 전문")
+
+
+@app.post("/api/ai/recheck")
+def ai_recheck(body: RecheckRequest, _: None = Depends(rate_limit)) -> Dict[str, Any]:
+    """숫자 답변의 전제·정의·출처를 짚는다 (산수는 브라우저가 계산)."""
+    try:
+        return recheck_answer(body.answer)
     except AiUnavailable as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except ValueError as exc:

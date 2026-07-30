@@ -474,6 +474,216 @@ def ask_docs(question: str, docs: List[Dict[str, Any]]) -> Dict[str, Any]:
     }
 
 
+# ══════════════════════════════════════════════════════════════
+# 🔍 경쟁사 발표 → 우리 관점 (카드 4)
+# ══════════════════════════════════════════════════════════════
+MAX_RIVAL_CHARS = 40_000
+
+_POINT = {
+    "type": "array",
+    "items": {
+        "type": "object",
+        "properties": {
+            "point": {"type": "string", "description": "지점 한 줄"},
+            "why": {"type": "string", "description": "원문의 어느 대목을 근거로 그렇게 보는지"},
+        },
+        "required": ["point", "why"],
+        "additionalProperties": False,
+    },
+}
+
+RIVAL_SCHEMA: Dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "threats": dict(_POINT, description="실제로 위협인 지점. 2개."),
+        "hype": dict(_POINT, description="과장·마케팅 문구로 걸러야 할 지점. 2개."),
+        "actions": {
+            "type": "object",
+            "properties": {
+                "immediate": {"type": "array", "items": {"type": "string"}, "description": "즉시(1주 내) 할 일 2개"},
+                "short": {"type": "array", "items": {"type": "string"}, "description": "단기(1분기) 2개"},
+                "long": {"type": "array", "items": {"type": "string"}, "description": "중장기 2개"},
+            },
+            "required": ["immediate", "short", "long"],
+            "additionalProperties": False,
+        },
+    },
+    "required": ["threats", "hype", "actions"],
+    "additionalProperties": False,
+}
+
+RIVAL_SYSTEM = (
+    "너는 경쟁사 발표를 자사 관점으로 번역해 주는 분석 보조다. "
+    "원문에 실제로 쓰인 내용만 근거로 삼아라 — 업계 소문이나 사전 지식으로 보태지 마라. "
+    "근거 없는 낙관도, 근거 없는 위기감도 쓰지 마라. why에는 원문의 어느 대목 때문인지 밝혀라. "
+    "발표문에서 '예정·계획·목표'인 것은 아직 일어나지 않은 일이다 — 현재의 위협과 구분해서 다뤄라. "
+    "대응안은 실행 가능한 행동으로 쓴다('검토한다'가 아니라 무엇을 누가 언제까지). 한국어로 답하라."
+)
+
+
+def brief_rival(text: str, ours: str = "") -> Dict[str, Any]:
+    """경쟁사 발표문을 위협·과장·대응안으로 정리한다."""
+    text = (text or "").strip()
+    if not text:
+        raise ValueError("보도자료 원문이 비어 있습니다.")
+    if len(text) > MAX_RIVAL_CHARS:
+        raise ValueError(f"원문이 너무 깁니다. {MAX_RIVAL_CHARS:,}자 이하로 줄여 주세요.")
+
+    ours = (ours or "").strip()[:60]
+    prompt = (
+        f"우리 회사는 {ours or 'ERP·그룹웨어·클라우드'} 사업을 한다. 그 관점에서 아래 발표문을 읽어라.\n"
+        "① 실제로 위협인 지점 2개 ② 과장·마케팅으로 걸러야 할 지점 2개 "
+        "③ 즉시/단기/중장기 대응안 각 2개.\n\n"
+        f"<발표문>\n{text}\n</발표문>"
+    )
+    result = _call(system=RIVAL_SYSTEM, prompt=prompt, schema=RIVAL_SCHEMA,
+                   max_tokens=max(MAX_TOKENS, 6000))
+    parsed = result["parsed"]
+    acts = parsed.get("actions") or {}
+    return {
+        "threats": _exactly(parsed.get("threats"), 3),
+        "hype": _exactly(parsed.get("hype"), 3),
+        "actions": {k: _exactly(acts.get(k), 3) for k in ("immediate", "short", "long")},
+        "model": result["model"],
+        "usage": result["usage"],
+    }
+
+
+# ══════════════════════════════════════════════════════════════
+# ✍️ 고객 메일 3종 톤 (카드 6)
+# ══════════════════════════════════════════════════════════════
+MAX_MAIL_CHARS = 8_000
+
+MAIL_SCHEMA: Dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "polite": {"type": "string", "description": "정중·격식체 메일 전문"},
+        "brief": {"type": "string", "description": "간결·실무체 메일 전문"},
+        "persuasive": {"type": "string", "description": "설득·제안형 메일 전문"},
+        "risks": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "t": {"type": "string", "description": "리스크 이름"},
+                    "m": {"type": "string", "description": "무엇을 확인해야 하는지"},
+                },
+                "required": ["t", "m"],
+                "additionalProperties": False,
+            },
+            "description": "보내기 전에 확인할 대외 리스크. 없으면 빈 배열.",
+        },
+    },
+    "required": ["polite", "brief", "persuasive", "risks"],
+    "additionalProperties": False,
+}
+
+MAIL_SYSTEM = (
+    "너는 고객 안내 메일을 세 가지 어투로 작성하는 보조다. "
+    "주어진 핵심 사실만 사용하라 — 일정 확정, 할인, 보장처럼 사실에 없는 약속은 절대 넣지 마라. "
+    "사실이 모자라 문장을 채울 수 없으면 채우지 말고 그 자리를 비워라. "
+    "세 버전 모두 같은 사실을 담되 어투만 다르게 한다. 각 400자 이내, 한국어 비즈니스 메일 형식. "
+    "그리고 주어진 사실 자체에 대외 리스크가 있으면(승인이 필요한 금액 약속, 결과 보장, "
+    "날짜 없는 속도 약속 등) risks에 짚어라. 한국어로 답하라."
+)
+
+
+def mail_tones(subject: str, facts: str, to: str = "", ask: str = "") -> Dict[str, Any]:
+    """핵심 사실만으로 정중·간결·설득 3종 메일을 만든다."""
+    subject = (subject or "").strip()
+    facts = (facts or "").strip()
+    if not subject:
+        raise ValueError("용건을 한 줄로 적어 주세요.")
+    if not facts:
+        raise ValueError("전달할 핵심 사실을 한 줄에 하나씩 적어 주세요.")
+    if len(subject) + len(facts) + len(to or "") + len(ask or "") > MAX_MAIL_CHARS:
+        raise ValueError(f"입력이 너무 깁니다. 합쳐서 {MAX_MAIL_CHARS:,}자 이하로 줄여 주세요.")
+
+    prompt = (
+        f"받는 곳: {(to or '고객').strip()}\n"
+        f"용건: {subject}\n"
+        f"핵심 사실:\n{facts}\n"
+        f"상대에게 바라는 것: {(ask or '확인 요청').strip()}\n\n"
+        "위 사실만 사용해 ①정중·격식 ②간결·실무 ③설득·제안형 3가지 메일을 써라."
+    )
+    result = _call(system=MAIL_SYSTEM, prompt=prompt, schema=MAIL_SCHEMA,
+                   max_tokens=max(MAX_TOKENS, 5000))
+    parsed = result["parsed"]
+    return {
+        "tones": [
+            {"k": "정중형", "desc": "격식·대외 공문", "text": parsed.get("polite") or ""},
+            {"k": "간결형", "desc": "실무 담당자 간", "text": parsed.get("brief") or ""},
+            {"k": "설득형", "desc": "제안·회신 유도", "text": parsed.get("persuasive") or ""},
+        ],
+        "risks": _exactly(parsed.get("risks"), 5),
+        "model": result["model"],
+        "usage": result["usage"],
+    }
+
+
+# ══════════════════════════════════════════════════════════════
+# 🧮 수치 교차 확인 (카드 7)
+#
+# 산수는 브라우저가 직접 계산한다. 서버는 '전제와 맥락'만 본다 —
+# 어떤 값을 어디서 가져왔는지, 정의가 흔들리지 않았는지.
+# ══════════════════════════════════════════════════════════════
+MAX_RECHECK_CHARS = 20_000
+
+RECHECK_SCHEMA: Dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "findings": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "claim": {"type": "string", "description": "문제가 될 수 있는 주장"},
+                    "note": {"type": "string", "description": "전제·정의·출처에서 무엇이 불분명한지"},
+                },
+                "required": ["claim", "note"],
+                "additionalProperties": False,
+            },
+            "description": "전제·정의·출처 관점의 지적. 없으면 빈 배열.",
+        },
+        "confidence": {"type": "string", "description": "이 답변을 그대로 쓸 수 있는지: 상 | 중 | 하"},
+    },
+    "required": ["findings", "confidence"],
+    "additionalProperties": False,
+}
+
+RECHECK_SYSTEM = (
+    "너는 숫자가 든 답변을 검토하는 역할이다. 단순 산수는 이미 별도로 다시 계산되었으니 "
+    "네가 볼 것은 그 바깥이다 — 값의 출처가 밝혀져 있는지, 기간·범위·단위의 정의가 도중에 "
+    "바뀌지 않았는지, 비교 대상이 같은 기준인지, 빠진 항목이 결론을 뒤집는지. "
+    "산수가 맞는지 다시 따지지 마라. 문제가 없으면 findings를 빈 배열로 두고 confidence만 답하라. "
+    "지적할 것이 없는데 억지로 만들어내지 마라. 한국어로 답하라."
+)
+
+
+def recheck_answer(answer: str) -> Dict[str, Any]:
+    """숫자 답변의 전제·정의·출처를 짚는다 (산수는 클라이언트가 계산)."""
+    answer = (answer or "").strip()
+    if not answer:
+        raise ValueError("검산할 답변이 비어 있습니다.")
+    if len(answer) > MAX_RECHECK_CHARS:
+        raise ValueError(f"답변이 너무 깁니다. {MAX_RECHECK_CHARS:,}자 이하로 줄여 주세요.")
+
+    prompt = (
+        "아래 답변에서 전제·정의·출처가 불분명한 지점을 짚어라. "
+        "사칙연산 자체는 이미 따로 검산되었으니 다시 계산하지 마라.\n\n"
+        f"<답변>\n{answer}\n</답변>"
+    )
+    result = _call(system=RECHECK_SYSTEM, prompt=prompt, schema=RECHECK_SCHEMA,
+                   max_tokens=max(MAX_TOKENS, 4000))
+    parsed = result["parsed"]
+    return {
+        "findings": _exactly(parsed.get("findings"), 6),
+        "confidence": parsed.get("confidence") or "미표기",
+        "model": result["model"],
+        "usage": result["usage"],
+    }
+
+
 def _exactly(items: Any, n: int) -> List[Any]:
     """항목 수는 스키마로 강제할 수 없다(배열 제약 미지원). 여기서 맞춘다."""
     items = list(items or [])

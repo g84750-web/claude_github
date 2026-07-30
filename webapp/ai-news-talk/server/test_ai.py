@@ -65,6 +65,15 @@ class FakeClient:
         self.beta = SimpleNamespace(messages=_BetaMessages())
 
 
+@pytest.fixture(autouse=True)
+def _fresh_limiter():
+    """IP당 분당 60건 제한이 테스트 사이로 흘러넘친다 — 파일 전체가 같은 IP라
+    테스트가 늘어나면 뒤쪽이 429를 받는다. 매 테스트 앞에서 비운다."""
+    app_module.limiter.reset()
+    yield
+    app_module.limiter.reset()
+
+
 @pytest.fixture
 def client(monkeypatch):
     monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
@@ -497,3 +506,174 @@ def test_doc_ask_falls_back_when_beta_param_unsupported(client, monkeypatch):
     _install(monkeypatch, fake)
     assert client.post("/api/ai/doc-ask", json=_doc_body()).status_code == 200
     assert [c[0] for c in fake.calls] == ["beta", "plain"]
+
+
+# ══════════════════════════════════════════════════════════════
+# 🔍 경쟁사 발표 (/api/ai/rival-brief)
+# ══════════════════════════════════════════════════════════════
+RIVAL_GOOD = {
+    "threats": [{"point": "고객 350곳", "why": "도입 기업 350곳 확보 대목"}],
+    "hype": [{"point": "업계 최초", "why": "검증 주체가 없는 표현"}],
+    "actions": {"immediate": ["현황 집계"], "short": ["가격 재검토"], "long": ["로드맵 수립"]},
+}
+RIVAL_TEXT = "A사는 업계 최초로 차세대 ERP를 출시했다. 도입 기업 350곳을 확보했다."
+
+
+def test_rival_503_without_key(monkeypatch):
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    c = TestClient(app_module.app)
+    assert c.post("/api/ai/rival-brief", json={"text": RIVAL_TEXT}).status_code == 503
+
+
+def test_rival_returns_three_groups(client, monkeypatch):
+    _install(monkeypatch, FakeClient(message=_message(RIVAL_GOOD)))
+    body = client.post("/api/ai/rival-brief", json={"text": RIVAL_TEXT, "ours": "ERP"}).json()
+    assert body["threats"][0]["point"] == "고객 350곳"
+    assert body["hype"][0]["why"]
+    assert set(body["actions"]) == {"immediate", "short", "long"}
+
+
+def test_rival_puts_our_perspective_in_prompt(client, monkeypatch):
+    """관점이 프롬프트에 실려야 '우리 관점으로 번역'이 성립한다."""
+    fake = FakeClient(message=_message(RIVAL_GOOD))
+    _install(monkeypatch, fake)
+    client.post("/api/ai/rival-brief", json={"text": RIVAL_TEXT, "ours": "그룹웨어·클라우드"})
+    prompt = fake.calls[0][1]["messages"][0]["content"]
+    assert "그룹웨어·클라우드" in prompt
+    assert RIVAL_TEXT in prompt
+
+
+def test_rival_system_separates_future_from_present(client, monkeypatch):
+    fake = FakeClient(message=_message(RIVAL_GOOD))
+    _install(monkeypatch, fake)
+    client.post("/api/ai/rival-brief", json={"text": RIVAL_TEXT})
+    system = fake.calls[0][1]["system"]
+    assert "아직 일어나지 않은 일" in system
+    assert "사전 지식으로 보태지 마라" in system
+
+
+@pytest.mark.parametrize("payload,frag", [
+    ({"text": ""}, "원문이 비어"),
+    ({"text": "가" * (ai.MAX_RIVAL_CHARS + 1)}, "너무 깁니다"),
+])
+def test_rival_rejects_bad_input(client, monkeypatch, payload, frag):
+    _install(monkeypatch, FakeClient(message=_message(RIVAL_GOOD)))
+    r = client.post("/api/ai/rival-brief", json=payload)
+    assert r.status_code == 422
+    assert frag in r.json()["detail"]
+
+
+# ══════════════════════════════════════════════════════════════
+# ✍️ 고객 메일 3종 (/api/ai/mail-tones)
+# ══════════════════════════════════════════════════════════════
+MAIL_GOOD = {
+    "polite": "안녕하십니까. 정중형입니다.",
+    "brief": "간결형입니다.",
+    "persuasive": "설득형입니다.",
+    "risks": [{"t": "무료 약속", "m": "승인 여부를 확인하세요."}],
+}
+MAIL_BODY = {"subject": "3월 정기점검 안내", "facts": "점검일은 3월 14일입니다\n무료입니다", "to": "○○상사"}
+
+
+def test_mail_503_without_key(monkeypatch):
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    c = TestClient(app_module.app)
+    assert c.post("/api/ai/mail-tones", json=MAIL_BODY).status_code == 503
+
+
+def test_mail_returns_three_tones(client, monkeypatch):
+    _install(monkeypatch, FakeClient(message=_message(MAIL_GOOD)))
+    body = client.post("/api/ai/mail-tones", json=MAIL_BODY).json()
+    assert [t["k"] for t in body["tones"]] == ["정중형", "간결형", "설득형"]
+    assert body["tones"][0]["text"] == MAIL_GOOD["polite"]
+    assert body["risks"][0]["t"] == "무료 약속"
+
+
+def test_mail_system_forbids_inventing_promises(client, monkeypatch):
+    """대외 메일에서 없는 약속을 지어내면 그대로 분쟁이 된다."""
+    fake = FakeClient(message=_message(MAIL_GOOD))
+    _install(monkeypatch, fake)
+    client.post("/api/ai/mail-tones", json=MAIL_BODY)
+    system = fake.calls[0][1]["system"]
+    assert "사실에 없는 약속은 절대 넣지 마라" in system
+    assert "채우지 말고" in system
+
+
+def test_mail_passes_all_fields(client, monkeypatch):
+    fake = FakeClient(message=_message(MAIL_GOOD))
+    _install(monkeypatch, fake)
+    client.post("/api/ai/mail-tones", json=dict(MAIL_BODY, ask="3월 10일까지 회신"))
+    prompt = fake.calls[0][1]["messages"][0]["content"]
+    for frag in ("○○상사", "3월 정기점검 안내", "점검일은 3월 14일", "3월 10일까지 회신"):
+        assert frag in prompt
+
+
+@pytest.mark.parametrize("payload,frag", [
+    ({"subject": "", "facts": "사실"}, "용건을"),
+    ({"subject": "용건", "facts": ""}, "핵심 사실"),
+])
+def test_mail_rejects_bad_input(client, monkeypatch, payload, frag):
+    _install(monkeypatch, FakeClient(message=_message(MAIL_GOOD)))
+    r = client.post("/api/ai/mail-tones", json=payload)
+    assert r.status_code == 422
+    assert frag in r.json()["detail"]
+
+
+# ══════════════════════════════════════════════════════════════
+# 🧮 수치 교차 확인 (/api/ai/recheck)
+# ══════════════════════════════════════════════════════════════
+RECHECK_GOOD = {"findings": [{"claim": "상반기 합계", "note": "기간 정의가 없습니다."}], "confidence": "중"}
+
+
+def test_recheck_503_without_key(monkeypatch):
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    c = TestClient(app_module.app)
+    assert c.post("/api/ai/recheck", json={"answer": "매출 100원"}).status_code == 503
+
+
+def test_recheck_returns_findings_and_confidence(client, monkeypatch):
+    _install(monkeypatch, FakeClient(message=_message(RECHECK_GOOD)))
+    body = client.post("/api/ai/recheck", json={"answer": "1분기 매출 1200만원"}).json()
+    assert body["findings"][0]["note"]
+    assert body["confidence"] == "중"
+
+
+def test_recheck_system_delegates_arithmetic_to_client(client, monkeypatch):
+    """산수는 브라우저가 한다 — 모델에게 다시 계산하라고 시키면 안 된다."""
+    fake = FakeClient(message=_message(RECHECK_GOOD))
+    _install(monkeypatch, fake)
+    client.post("/api/ai/recheck", json={"answer": "1200 + 1980 = 3280"})
+    system = fake.calls[0][1]["system"]
+    assert "단순 산수는 이미 별도로 다시 계산되었으니" in system
+    assert "산수가 맞는지 다시 따지지 마라" in system
+    assert "억지로 만들어내지 마라" in system
+    assert "다시 계산하지 마라" in fake.calls[0][1]["messages"][0]["content"]
+
+
+def test_recheck_empty_findings_is_valid(client, monkeypatch):
+    """지적할 게 없으면 없다고 답해야 한다 — 억지로 만들면 안 된다."""
+    _install(monkeypatch, FakeClient(message=_message({"findings": [], "confidence": "상"})))
+    body = client.post("/api/ai/recheck", json={"answer": "매출은 100원이다"}).json()
+    assert body["findings"] == []
+    assert body["confidence"] == "상"
+
+
+def test_recheck_rejects_empty(client, monkeypatch):
+    _install(monkeypatch, FakeClient(message=_message(RECHECK_GOOD)))
+    r = client.post("/api/ai/recheck", json={"answer": "   "})
+    assert r.status_code == 422
+    assert "비어 있습니다" in r.json()["detail"]
+
+
+def test_all_ai_endpoints_map_refusal_to_502(client, monkeypatch):
+    """네 카드 전부 같은 규칙 — 거절은 502."""
+    cases = [
+        ("/api/ai/rival-brief", {"text": RIVAL_TEXT}, RIVAL_GOOD),
+        ("/api/ai/mail-tones", MAIL_BODY, MAIL_GOOD),
+        ("/api/ai/recheck", {"answer": "1+1=3"}, RECHECK_GOOD),
+    ]
+    for path, payload, good in cases:
+        fake = FakeClient(message=_message(good, stop_reason="refusal",
+                                          stop_details=SimpleNamespace(explanation="거절")))
+        _install(monkeypatch, fake)
+        assert client.post(path, json=payload).status_code == 502, path

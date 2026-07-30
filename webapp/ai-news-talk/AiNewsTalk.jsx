@@ -233,10 +233,10 @@ const EXPS = [
    steps:["주 3회 이상 반복하는 업무를 1개 고른다 (업무명만 있어도 시작된다)","출력 항목을 한 줄에 하나씩 적어 결과 형식을 못박는다","실제 사례 3건으로 시험하고 걸린 부분을 금지사항에 옮긴다"],
    prompt:"너는 [업무명] 전담 어시스턴트다.\n[역할] 내가 주는 원자료를 정해진 양식으로 변환한다.\n[입력] 원자료 텍스트 또는 표\n[출력] ① 요약 3줄 ② 표 ③ 확인이 필요한 항목 목록\n[금지] 원자료에 없는 수치 생성, 추측을 사실처럼 쓰기\n준비됐으면 '입력을 주세요'만 답하라.",
    tip:"[금지] 항목이 품질의 80%를 결정한다. 실패할 때마다 여기에 한 줄씩 추가한다."},
-  {id:"e4",icon:"🔍",title:"경쟁사 발표를 우리 관점으로 번역하기",tool:"Claude",
+  {id:"e4",icon:"🔍",title:"경쟁사 발표를 우리 관점으로 번역하기",tool:"Claude",run:"rival",
    level:"중급",min:5,free:true,sol:["A10","WEHAGO","NSM10"],
    goal:"경쟁사 보도자료를 '우리가 지금 무엇을 해야 하는가'로 바꾼다.",
-   steps:["경쟁사 보도자료 원문을 붙여넣는다","우리 솔루션명을 명시해 관점을 고정한다","즉시/단기/중장기로 나뉜 결론만 취한다"],
+   steps:["경쟁사 보도자료 원문을 붙여넣는다","검증 가능한 주장과 수식어를 갈라서 읽는다","아직 안 된 것을 지금의 위협과 구분한다"],
    prompt:"아래는 경쟁사 발표 원문이다. 우리 회사 관점(ERP·그룹웨어·클라우드 사업)에서 ① 이 발표가 실제로 위협인 지점 ② 과장·마케팅 문구로 걸러야 할 지점 ③ 즉시/단기/중장기 대응안을 각각 2개씩 제시하라. 근거 없는 낙관은 쓰지 마라.",
    tip:"'과장으로 걸러야 할 지점'을 꼭 물어야 균형 잡힌 답이 나온다."},
   {id:"e5",icon:"📚",title:"AI 사전 — 내 문서에 물어보기",tool:"파일 첨부 + Claude",run:"docqa",
@@ -245,19 +245,19 @@ const EXPS = [
    steps:["문서·엑셀·PDF·캡처 이미지를 끌어다 놓는다","묻고 싶은 것을 한 줄로 적는다","답과 함께 나온 인용 원문을 원본에서 확인한다"],
    prompt:"업로드한 문서만 근거로 답하라. 문서에 없으면 '문서에 없음'이라고 답하고 추측하지 마라. 모든 문장 끝에 근거 문서명과 쪽수를 붙여라. 질문: [여기에 질문]",
    tip:"기밀 문서는 절대 외부 서비스에 올리지 않는다. 반드시 공개 가능 문서로만."},
-  {id:"e6",icon:"✍️",title:"고객 메일 3종 톤 자동 생성",tool:"Copilot / Claude",
+  {id:"e6",icon:"✍️",title:"고객 메일 3종 톤 자동 생성",tool:"Copilot / Claude",run:"mail3",
    level:"입문",min:2,free:true,sol:["WEHAGO","OmniEsol"],
    goal:"같은 내용을 정중형·간결형·설득형 3가지로 뽑아 상황에 맞춰 고른다.",
-   steps:["전달할 핵심 사실 3가지를 적는다","3종 톤으로 동시에 생성한다","가장 가까운 안을 골라 손본다"],
+   steps:["용건과 핵심 사실을 한 줄에 하나씩 적는다","정중형·간결형·설득형 3종을 한 번에 받는다","대외 리스크 경고를 확인하고 골라 손본다"],
    prompt:"다음 핵심 사실만 사용해 고객 안내 메일을 3가지 버전으로 써라. ①정중·격식 ②간결·실무 ③설득·제안형. 각 200자 이내. 사실에 없는 약속(일정 확정, 할인 등)은 절대 넣지 마라. 핵심 사실: [여기에 입력]",
    tip:"'사실에 없는 약속 금지'가 대외 리스크를 막는다."},
-  {id:"e7",icon:"🧮",title:"수치 검산 이중 확인 습관 만들기",tool:"모든 LLM 공통",
+  {id:"e7",icon:"🧮",title:"수치 검산 이중 확인 습관 만들기",tool:"브라우저 계산 + LLM",run:"recheck",
    level:"필수",min:1,free:true,sol:["A10","NSM10"],
    goal:"AI가 낸 숫자를 그대로 쓰지 않는 최소 안전장치를 몸에 익힌다.",
-   steps:["AI 답변을 받는다","같은 질문을 검산 프롬프트로 한 번 더 던진다","불일치가 나오면 원자료로 직접 확인한다"],
+   steps:["AI 답변을 그대로 붙여넣는다","계산 주장을 브라우저가 직접 다시 계산한다","불일치가 나오면 원자료로 직접 확인한다"],
    prompt:"방금 네가 계산한 값을 다시 검산하라. ① 계산에 사용한 수식을 그대로 쓰고 ② 각 항의 출처를 표시하고 ③ 처음 답과 달라지면 어디서 틀렸는지 밝혀라. 확신도(상/중/하)도 표기하라.",
    tip:"보고서에 들어가는 숫자는 예외 없이 이 단계를 거친다."},
-  {id:"e8",icon:"🛡️",title:"내 프롬프트 정보보안 셀프 점검",tool:"체크리스트",
+  {id:"e8",icon:"🛡️",title:"내 프롬프트 정보보안 셀프 점검",tool:"브라우저 검사 (전송 없음)",run:"secscan",
    level:"필수",min:2,free:true,sol:["WEHAGO","iCUBE"],
    goal:"외부 AI에 넣어도 되는 정보와 안 되는 정보의 선을 스스로 긋는다.",
    steps:["최근 사용한 프롬프트 3건을 꺼내본다","고객사명·계약금액·개인정보 포함 여부를 확인한다","마스킹 규칙을 1줄로 만들어 고정한다"],
@@ -2922,6 +2922,846 @@ function DocQA({aiUrl}) {
   );
 }
 
+/* ══════════════════════════════════════════════════════════════
+   🔍 경쟁사 발표 분류 (카드 4) — 로컬
+
+   대응안은 판단이라 로컬에서 만들지 않는다. 대신 판단의 재료를 나눈다:
+   숫자·날짜가 붙은 검증 가능한 주장 / 근거 없는 수식어 / 아직 안 된 것.
+   이 세 줄만 갈라 놓아도 보도자료를 읽는 눈이 달라진다.
+══════════════════════════════════════════════════════════════ */
+const HYPE_TERMS = ["업계 최초","세계 최초","국내 최초","최초로","혁신적","혁신을","혁신","최고의","최상의",
+  "최고 수준","완벽한","완벽하게","유일한","유일무이","차세대","획기적","압도적","전례 없","독보적",
+  "선도적","선도하","리딩","글로벌 표준","패러다임","비약적","놀라운","강력한","막강","탁월","뛰어난","최적의","대폭"];
+const HYPE_SORTED = HYPE_TERMS.slice().sort((a, b) => b.length - a.length);
+const FUTURE_RE = new RegExp("(예정|계획|목표|전망|추진|검토|로드맵|향후|기대|예상|나설|할 것|하겠)");
+const NUM_UNIT_G = new RegExp("[0-9][0-9,.]*\\s*(?:조|억|만|천)?\\s*(?:원|달러|엔|%|퍼센트|개|건|명|사|곳|배|년|개월|주|일|시간|분|초|대|위|점|GB|TB|MB|km|kg)", "g");
+const DATE_RE = new RegExp("(\\d{4}\\s*년|\\d{1,2}\\s*월|\\d{1,2}\\s*일|\\d{1,2}\\s*분기|상반기|하반기|연내|올해|내년)");
+
+function analyzeRival(text) {
+  const sents = splitSentences(text);
+  if (!sents.length) throw new Error("보도자료 원문이 비어 있습니다.");
+
+  const facts = [], future = [], hypeMap = {};
+  sents.forEach(s => {
+    const nums = s.match(NUM_UNIT_G) || [];
+    const hasDate = DATE_RE.test(s);
+    let scan = s;
+    HYPE_SORTED.forEach(t => {
+      if (scan.indexOf(t) === -1) return;
+      scan = scan.split(t).join(" ".repeat(t.length));   /* 그 자리를 지운다 */
+      if (!hypeMap[t]) hypeMap[t] = {term: t, text: s};
+    });
+    if (FUTURE_RE.test(s)) future.push({text: s, nums: nums.slice(0, 4)});
+    else if (nums.length || hasDate) facts.push({text: s, nums: nums.slice(0, 4), date: hasDate});
+  });
+  const hype = Object.keys(hypeMap).map(k => hypeMap[k]);
+  return {
+    source: "local",
+    facts, future, hype,
+    stats: {sentences: sents.length, fact: facts.length, future: future.length, hype: hype.length},
+  };
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ✍️ 고객 메일 3종 (카드 6) — 로컬은 '문틀 조립'이다
+
+   AI가 쓴 문장이 아니라 정해진 틀에 사실을 끼운 것이다. 화면에서 그렇게
+   밝힌다. 다만 대외 리스크 검사는 로컬로도 제대로 할 수 있다 —
+   사실에 섞인 약속·보장·기한 없는 속도 표현을 짚어 준다.
+══════════════════════════════════════════════════════════════ */
+const MAIL_RISK = [
+  {re: new RegExp("(할인|무료|공짜|감면|면제|서비스로 드리)"), t: "금액 약속",
+   m: "할인·면제는 승인된 조건만 적으세요. 메일이 곧 근거가 됩니다."},
+  {re: new RegExp("(보장|반드시|100%|절대|틀림없|문제없)"), t: "보장 표현",
+   m: "결과를 보장하는 표현은 분쟁 소지가 됩니다. '예상', '목표'로 바꾸세요."},
+  {re: new RegExp("(즉시|바로|당일|빠르게|조속히|최대한 빨리|신속히)"), t: "기한 없는 속도 약속",
+   m: "'빠르게' 대신 날짜를 적으세요. 안 지켜지면 그대로 항의 근거가 됩니다."},
+  {re: new RegExp("(확정|결정되었|승인되었|확답)"), t: "확정 표현",
+   m: "정말 확정된 사항인지 확인하세요. 내부 검토 중이면 '검토 중'으로."},
+];
+
+function buildMails(f) {
+  const subject = String(f.subject || "").trim();
+  const facts = String(f.facts || "").split("\n").map(t => t.replace(BULLET_RE, "").trim()).filter(Boolean);
+  if (!subject) throw new Error("용건을 한 줄로 적어 주세요.");
+  if (!facts.length) throw new Error("전달할 핵심 사실을 한 줄에 하나씩 적어 주세요.");
+  const to = String(f.to || "").trim() || "고객";
+  const ask = String(f.ask || "").trim();
+
+  const num = facts.map((t, i) => `${i + 1}. ${t}`).join("\n");
+  const dot = facts.map(t => `· ${t}`).join("\n");
+  const askLine = ask || "확인 부탁드립니다.";
+
+  const polite = [
+    `${to} 담당자님, 안녕하십니까.`, ``,
+    `${subject} 건과 관련하여 아래와 같이 안내드립니다.`, ``,
+    num, ``,
+    askLine, ``,
+    `문의사항이 있으시면 언제든 연락 주십시오.`,
+    `감사합니다.`,
+  ].join("\n");
+
+  const brief = [
+    `${to} 담당자님,`, ``,
+    `${subject} 관련 안내입니다.`, ``,
+    dot, ``,
+    askLine,
+  ].join("\n");
+
+  const persuade = [
+    `${to} 담당자님, 안녕하세요.`, ``,
+    `${subject} 건으로 말씀드리고자 연락드립니다.`, ``,
+    `현재 확인된 내용은 다음과 같습니다.`,
+    dot, ``,
+    askLine,
+    `회신 주시면 곧바로 다음 단계를 준비하겠습니다.`, ``,
+    `감사합니다.`,
+  ].join("\n");
+
+  const all = subject + "\n" + facts.join("\n") + "\n" + ask;
+  const risks = MAIL_RISK.filter(r => r.re.test(all)).map(r => ({t: r.t, m: r.m}));
+  if (facts.length < 2) {
+    risks.push({t: "사실 1건", m: "메일로 보내기엔 정보가 적습니다. 상대가 되물을 것을 미리 채우세요."});
+  }
+  return {
+    source: "local",
+    tones: [
+      {k: "정중형", desc: "격식·대외 공문", text: polite},
+      {k: "간결형", desc: "실무 담당자 간", text: brief},
+      {k: "설득형", desc: "제안·회신 유도", text: persuade},
+    ],
+    risks,
+  };
+}
+
+/* ══════════════════════════════════════════════════════════════
+   🧮 수치 검산 (카드 7) — 여기는 로컬이 AI보다 낫다
+
+   산수는 계산하면 끝난다. 모델에게 다시 물어볼 일이 아니다.
+   붙여넣은 답변에서 계산 주장을 찾아 직접 다시 계산한다.
+══════════════════════════════════════════════════════════════ */
+const UNIT_MUL = {"조": 1e12, "억": 1e8, "만": 1e4, "천": 1e3};
+const NUMTOK = "[0-9][0-9,.]*\\s*(?:조|억|만|천)?\\s*(?:원|달러|개|건|명|곳|대)?";
+
+function pnum(raw) {
+  const s = String(raw).replace(new RegExp("[\\s,]", "g"), "");
+  if (new RegExp("^[0-9]+(?:\\.[0-9]+)?$").test(s)) return parseFloat(s);
+  let total = 0, rest = s, hit = false;
+  ["조", "억", "만", "천"].forEach(u => {
+    const m = rest.match(new RegExp("([0-9]+(?:\\.[0-9]+)?)" + u));
+    if (m) { total += parseFloat(m[1]) * UNIT_MUL[u]; rest = rest.replace(m[0], ""); hit = true; }
+  });
+  const tail = rest.match(new RegExp("([0-9]+(?:\\.[0-9]+)?)"));
+  if (tail) { total += parseFloat(tail[1]); hit = true; }
+  return hit ? total : NaN;
+}
+
+/* 쉼표·세 자리 이상·단위가 붙은 것만 '값'으로 본다 — "1분기"의 1은 값이 아니다 */
+const BIG_RE = new RegExp("[,]|[0-9]{3,}|[조억만천]|원|달러|개|건|명|곳|대");
+function bigNums(s) {
+  return (String(s).match(new RegExp(NUMTOK, "g")) || [])
+    .filter(t => BIG_RE.test(t)).map(pnum).filter(n => isFinite(n) && n !== 0);
+}
+
+const fnum = (n) => {
+  if (!isFinite(n)) return "?";
+  const r = Math.round(n * 100) / 100;
+  return r.toLocaleString("ko-KR", {maximumFractionDigits: 2});
+};
+
+/* 정수 계산은 딱 맞아야 하고, 비율은 반올림 여지를 준다 */
+function verdictOf(stated, computed, isPct) {
+  if (!isFinite(stated) || !isFinite(computed)) return "판정 불가";
+  const diff = Math.abs(stated - computed);
+  if (diff < 1e-6) return "일치";
+  if (isPct) return diff <= 0.5 ? "반올림 차이" : "불일치";
+  const rel = computed === 0 ? diff : diff / Math.abs(computed);
+  if (diff < 0.5 || rel < 0.001) return "반올림 차이";
+  return "불일치";
+}
+
+function recheckNumbers(text) {
+  const raw = String(text || "").trim();
+  if (!raw) throw new Error("검산할 답변을 붙여넣어 주세요.");
+  const items = [];
+  const push = (kind, claim, stated, computed, expr, isPct) => {
+    items.push({kind, claim: claim.trim().slice(0, 160), stated, computed, expr,
+                verdict: verdictOf(stated, computed, !!isPct)});
+  };
+
+  /* ① 등호가 있는 사칙연산 — 2~4항 */
+  const EQ = new RegExp("(" + NUMTOK + ")((?:\\s*[+＋×✕xX*÷]\\s*" + NUMTOK + "){1,3})\\s*[=＝]\\s*(" + NUMTOK + ")", "g");
+  let m;
+  while ((m = EQ.exec(raw)) !== null) {
+    let acc = pnum(m[1]);
+    const ops = m[2].match(new RegExp("[+＋×✕xX*÷]\\s*" + NUMTOK, "g")) || [];
+    let bad = false;
+    ops.forEach(seg => {
+      const op = seg[0];
+      const v = pnum(seg.slice(1));
+      if (!isFinite(v)) { bad = true; return; }
+      if (op === "+" || op === "＋") acc += v;
+      else if (op === "÷") acc = v === 0 ? NaN : acc / v;
+      else acc *= v;
+    });
+    if (!bad) push("사칙연산", m[0], pnum(m[3]), acc, m[0].replace(new RegExp("\\s+", "g"), " "));
+  }
+
+  /* ② 「A의 N% = C」 */
+  const PCTOF = new RegExp("(" + NUMTOK + ")\\s*(?:원|개|건|명)?\\s*의\\s*([0-9]+(?:\\.[0-9]+)?)\\s*%\\s*(?:는|은|=|＝|:|이면|라면)?\\s*(" + NUMTOK + ")", "g");
+  while ((m = PCTOF.exec(raw)) !== null) {
+    const base = pnum(m[1]), pct = parseFloat(m[2]);
+    push("비율 적용", m[0], pnum(m[3]), base * pct / 100,
+         `${fnum(base)} × ${pct}% = ${fnum(base * pct / 100)}`);
+  }
+
+  /* ③ 증감률 — 문장 안에 기준값·비교값·퍼센트가 함께 있을 때 */
+  const CHG = new RegExp("(증가|감소|상승|하락|성장|늘|줄)");
+  splitSentences(raw).forEach(s => {
+    if (!CHG.test(s) || s.indexOf("%") === -1) return;
+    const pcts = s.match(new RegExp("([0-9]+(?:\\.[0-9]+)?)\\s*%", "g")) || [];
+    if (pcts.length !== 1) return;
+    const pct = parseFloat(pcts[0]);
+    const nums = bigNums(s.replace(new RegExp("[0-9]+(?:\\.[0-9]+)?\\s*%"), ""));
+    if (nums.length !== 2) return;
+    const a = nums[0], b = nums[1];
+    const up = new RegExp("(증가|상승|성장|늘)").test(s);
+    const computed = Math.abs((b - a) / a * 100);
+    const dirOk = up ? b >= a : b <= a;
+    items.push({
+      kind: "증감률", claim: s.slice(0, 160), stated: pct, computed,
+      expr: `(${fnum(b)} − ${fnum(a)}) ÷ ${fnum(a)} × 100 = ${fnum(computed)}%`,
+      verdict: !dirOk ? "방향 불일치" : verdictOf(pct, computed, true),
+    });
+  });
+
+  /* ④ 합계 줄 — 위 숫자들의 합과 맞는지 */
+  const lines = raw.split("\n");
+  lines.forEach((line, i) => {
+    if (!new RegExp("(합계|총계|총합|소계|합\\s*:)").test(line)) return;
+    const tot = (line.match(new RegExp(NUMTOK, "g")) || []).map(pnum).filter(isFinite);
+    if (tot.length !== 1) return;          /* 합계 줄에 숫자가 여럿이면 표가 아니다 */
+    const stated = tot[0];
+    const parts = [];
+    for (let j = i - 1; j >= 0 && j >= i - 30; j--) {
+      const l = lines[j];
+      if (!l.trim()) { if (parts.length) break; else continue; }
+      if (new RegExp("(합계|총계|총합|소계)").test(l)) break;
+      const ns = (l.match(new RegExp(NUMTOK, "g")) || []).map(pnum).filter(isFinite);
+      /* 숫자가 정확히 하나인 줄만 항목으로 본다 — 산문에서 오탐이 나면
+         검산 도구로서 신뢰를 잃는다 */
+      if (ns.length !== 1) { if (parts.length) break; else continue; }
+      parts.push(ns[0]);
+    }
+    if (parts.length < 2) return;
+    const sum = parts.reduce((a, b) => a + b, 0);
+    push("합계", line, stated, sum, `${parts.length}개 항목 합 = ${fnum(sum)}`);
+  });
+
+  /* ⑤ 구성비 — 여러 %가 나열됐는데 100%가 아니면 짚는다 */
+  splitSentences(raw).forEach(s => {
+    const pcts = (s.match(new RegExp("([0-9]+(?:\\.[0-9]+)?)\\s*%", "g")) || []).map(x => parseFloat(x));
+    if (pcts.length < 3) return;
+    const sum = pcts.reduce((a, b) => a + b, 0);
+    if (sum > 90 && sum < 110 && Math.abs(sum - 100) > 0.6) {
+      items.push({kind: "구성비 합", claim: s.slice(0, 160), stated: 100, computed: sum,
+        expr: `${pcts.join("% + ")}% = ${fnum(sum)}%`, verdict: "불일치"});
+    }
+  });
+
+  const bad = items.filter(i => i.verdict === "불일치" || i.verdict === "방향 불일치").length;
+  const round = items.filter(i => i.verdict === "반올림 차이").length;
+  return {source: "local", items, checked: items.length, bad, round};
+}
+
+/* ══════════════════════════════════════════════════════════════
+   🛡️ 프롬프트 보안 점검 (카드 8) — 설계상 로컬 전용
+
+   점검 대상 자체가 민감정보다. 그것을 서버로 보내 검사한다면 카드가
+   가르치려는 것과 정반대다. 그래서 이 카드에는 서버 경로를 두지 않는다.
+══════════════════════════════════════════════════════════════ */
+/* 순서가 곧 우선권이다 — 좁은 규칙(주민번호·휴대폰)이 먼저 자기 몫을 가져가야
+   넓은 규칙(계좌번호)이 같은 숫자를 다시 신고하지 않는다 */
+const SEC_RULES = [
+  {t:"주민등록번호", sev:"위험", mask:"[주민번호]",
+   re:new RegExp("\\b\\d{6}\\s*[-–]\\s*[1-4]\\d{6}\\b", "g")},
+  {t:"카드번호", sev:"위험", mask:"[카드번호]",
+   re:new RegExp("\\b\\d{4}[- ]\\d{4}[- ]\\d{4}[- ]\\d{4}\\b", "g")},
+  {t:"API 키·토큰", sev:"위험", mask:"[API키]",
+   re:new RegExp("\\b(?:sk-ant-[A-Za-z0-9_\\-]{16,}|sk-[A-Za-z0-9]{20,}|ghp_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|AIza[0-9A-Za-z_\\-]{20,}|xox[baprs]-[A-Za-z0-9-]{10,})", "g")},
+  {t:"비밀번호 기재", sev:"위험", mask:"[비밀번호]",
+   re:new RegExp("(?:비밀번호|패스워드|password|passwd|pw)\\s*[:=]\\s*\\S+", "gi")},
+  {t:"여권번호", sev:"위험", mask:"[여권번호]",
+   re:new RegExp("\\b[A-Z]{1,2}\\d{7,8}\\b", "g")},
+  {t:"휴대전화", sev:"주의", mask:"[휴대전화]",
+   re:new RegExp("\\b01[016789][- ]?\\d{3,4}[- ]?\\d{4}\\b", "g")},
+  {t:"사업자등록번호", sev:"주의", mask:"[사업자번호]",
+   re:new RegExp("\\b\\d{3}\\s*-\\s*\\d{2}\\s*-\\s*\\d{5}\\b", "g")},
+  {t:"계좌번호", sev:"주의", mask:"[계좌번호]",
+   re:new RegExp("\\b\\d{2,3}-\\d{2,6}-\\d{4,7}\\b", "g")},
+  {t:"이메일", sev:"주의", mask:"[이메일]",
+   re:new RegExp("\\b[A-Za-z0-9._%+\\-]+@[A-Za-z0-9.\\-]+\\.[A-Za-z]{2,}\\b", "g")},
+  {t:"사내 IP", sev:"주의", mask:"[내부IP]",
+   re:new RegExp("\\b(?:10|172|192)\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\b", "g")},
+  {t:"이름+직함", sev:"주의", mask:"[담당자]",
+   re:new RegExp("[가-힣]{2,4}\\s*(?:과장|차장|부장|팀장|대리|사원|이사|상무|전무|대표|선임|수석|책임)", "g")},
+];
+
+/* 원본을 그대로 보여주면 화면·스크린샷으로 다시 새어 나간다 — 일부만 남긴다 */
+const peek = (s) => {
+  const t = String(s);
+  if (t.length <= 4) return t[0] + "***";
+  return t.slice(0, 3) + "***" + t.slice(-1);
+};
+
+function scanSecrets(text) {
+  const raw = String(text || "");
+  if (!raw.trim()) throw new Error("점검할 프롬프트를 붙여넣어 주세요.");
+  let masked = raw;
+  const items = [];
+  /* 좁은 규칙이 먼저 자기 몫을 가져가고 지운다 — 안 그러면 휴대폰 번호가
+     계좌번호로도 잡혀 같은 값이 두 번 신고된다 */
+  SEC_RULES.forEach(r => {
+    const hits = masked.match(r.re) || [];
+    if (hits.length) {
+      const uniq = [];
+      hits.forEach(h => { if (uniq.indexOf(h) === -1) uniq.push(h); });
+      items.push({t: r.t, sev: r.sev, count: hits.length, samples: uniq.slice(0, 3).map(peek)});
+      masked = masked.replace(r.re, r.mask);
+    }
+  });
+  const risk = items.filter(i => i.sev === "위험").length;
+  const warn = items.filter(i => i.sev === "주의").length;
+  return {source: "local", items, masked, risk, warn, chars: raw.length};
+}
+
+/* 네 카드가 공유하는 껍데기 — 제목줄·에러·안내·배지가 매번 같다 */
+const PANEL = {marginTop:9,padding:"11px 12px",borderRadius:6,
+  background:"#ffffff",border:"1px solid rgba(0,92,74,.28)"};
+const LBL9 = {fontSize:9,color:"#4a6379",fontFamily:MONO,fontWeight:700,letterSpacing:".8px",marginBottom:5};
+const TA = {width:"100%",boxSizing:"border-box",resize:"vertical",padding:"8px 10px",borderRadius:5,
+  border:"1px solid #c6d7e6",fontSize:11,lineHeight:1.62,fontFamily:KR,color:"#0d2436",background:"#eef4fa"};
+const btnStyle = (on)=>({padding:"4px 13px",borderRadius:4,fontSize:10.5,fontWeight:700,fontFamily:KR,
+  border:"1px solid rgba(0,92,74,.4)",background:on?"rgba(0,92,74,.12)":"rgba(0,92,74,.05)",
+  color:on?"#005c4a":"#4a6379",cursor:on?"pointer":"not-allowed"});
+
+function PanelHead({title, desc, right}) {
+  return (
+    <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8,flexWrap:"wrap"}}>
+      <span style={{fontSize:9,color:"#005c4a",fontFamily:MONO,fontWeight:700,letterSpacing:".8px"}}>▶ {title}</span>
+      <span style={{fontSize:9.5,color:"#4a6379",fontFamily:KR}}>{desc}</span>
+      {right}
+    </div>
+  );
+}
+function ErrBox({children}) {
+  if (!children) return null;
+  return <div style={{marginTop:8,padding:"7px 10px",borderRadius:5,fontSize:10.5,lineHeight:1.55,
+    background:"rgba(158,42,31,.06)",border:"1px solid rgba(158,42,31,.24)",color:"#9e2a1f",fontFamily:KR}}>{children}</div>;
+}
+function NoteBox({children}) {
+  if (!children) return null;
+  return <div style={{marginTop:8,padding:"6px 9px",borderRadius:5,fontSize:10,lineHeight:1.5,
+    background:"rgba(122,68,5,.05)",border:"1px solid rgba(122,68,5,.18)",color:"#645019",fontFamily:KR}}>{children}</div>;
+}
+function SrcBadge({ai, aiText, localText}) {
+  return (
+    <span style={{padding:"1px 7px",borderRadius:3,fontSize:8.5,fontWeight:800,fontFamily:MONO,
+      background: ai?"rgba(0,92,74,.12)":"rgba(23,75,133,.1)",
+      border:`1px solid ${ai?"rgba(0,92,74,.4)":"rgba(23,75,133,.32)"}`,
+      color: ai?"#005c4a":"#174b85"}}>{ai?aiText:localText}</span>
+  );
+}
+/* 서버가 있으면 AI, 없거나 503이면 로컬 — 세 카드가 같은 절차를 쓴다 */
+async function twoTier({aiUrl, path, body, local, setErr, setNote}) {
+  if (NET && aiUrl) {
+    const r = await syncFetch(joinUrl(aiUrl, path), {method:"POST", body: JSON.stringify(body)});
+    if (r.ok && r.body) return Object.assign({}, r.body, {source:"ai"});
+    if (r.status === 422 && r.body && r.body.detail) { setErr(String(r.body.detail)); return null; }
+    if (r.status && r.status !== 503 && r.status !== 404) setNote("서버 AI 호출이 실패해 로컬 처리로 내려갔습니다.");
+  }
+  return local();
+}
+
+/* ── 카드 4 — 경쟁사 발표 ───────────────────────────────────── */
+function RivalBrief({aiUrl}) {
+  const [text, setText] = useState("");
+  const [ours, setOurs] = usePersist("rivalOurs", "ERP·그룹웨어·클라우드", vStr);
+  const [busy, setBusy] = useState(false);
+  const [res, setRes] = useState(null);
+  const [err, setErr] = useState("");
+  const [note, setNote] = useState("");
+
+  const run = useCallback(async ()=>{
+    setBusy(true); setErr(""); setNote(""); setRes(null);
+    const out = await twoTier({
+      aiUrl, path:"/api/ai/rival-brief", body:{text, ours},
+      local: ()=>{ try { return analyzeRival(text); } catch(e) { setErr(e.message); return null; } },
+      setErr, setNote,
+    });
+    if (out) setRes(out);
+    setBusy(false);
+  }, [text, ours, aiUrl]);
+
+  const can = !busy && text.trim().length >= 20;
+  const GROUP = [["즉시","immediate","#9e2a1f"],["단기","short","#7a4405"],["중장기","long","#005c4a"]];
+
+  return (
+    <div style={PANEL}>
+      <PanelHead title="여기서 바로 분류" desc="원문을 붙여넣으면 검증 가능한 주장 / 수식어 / 아직 안 된 것으로 갈라 줍니다."/>
+      <div style={{marginBottom:7}}>
+        <div style={LBL9}>우리 관점 <span style={{fontWeight:400,letterSpacing:0}}>— 무엇을 하는 회사로 볼지 (서버 AI 연결 시 사용)</span></div>
+        <input value={ours} onChange={e=>setOurs(e.target.value.slice(0,38))}
+          placeholder="ERP·그룹웨어·클라우드"
+          style={Object.assign({}, TA, {resize:"none",fontSize:11.5})}/>
+      </div>
+      <div style={LBL9}>경쟁사 보도자료 원문</div>
+      <textarea value={text} onChange={e=>setText(e.target.value)} rows={7}
+        placeholder={"보도자료·발표문을 그대로 붙여넣으세요.\n\n예)\nA사는 업계 최초로 AI 기반 차세대 ERP를 출시했다고 12일 밝혔다.\n도입 기업 350곳을 확보했으며 매출은 전년 대비 40% 증가했다.\n하반기에는 글로벌 진출도 추진할 계획이다."}
+        style={TA}/>
+      <div style={{display:"flex",alignItems:"center",gap:7,marginTop:7,flexWrap:"wrap"}}>
+        <button className="toggle-btn" onClick={run} disabled={!can} style={btnStyle(can)}>
+          {busy ? "분석 중…" : "🔍 갈라 보기"}
+        </button>
+        {text && <button className="toggle-btn" onClick={()=>{setText("");setRes(null);setErr("");setNote("");}} style={{
+          padding:"4px 11px",borderRadius:4,fontSize:10,fontWeight:700,fontFamily:KR,
+          border:"1px solid #c6d7e6",background:"transparent",color:"#4a6379",cursor:"pointer"}}>지우기</button>}
+        <span style={{marginLeft:"auto",fontSize:9.5,color:"#566f87",fontFamily:KR}}>
+          {!text.trim() ? "원문을 붙여넣어 주세요"
+           : text.trim().length < 20 ? "원문이 너무 짧습니다"
+           : aiUrl && NET ? "서버 AI 연결됨 — 실패 시 로컬 분류" : "로컬 분류 (서버 없이 동작)"}
+        </span>
+      </div>
+      <ErrBox>{err}</ErrBox><NoteBox>{note}</NoteBox>
+
+      {res && res.source === "ai" && (
+        <div style={{marginTop:10}}>
+          <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:7,flexWrap:"wrap"}}>
+            <SrcBadge ai aiText="AI 분석" localText=""/>
+            <span style={{fontSize:9.5,color:"#4a6379",fontFamily:KR}}>{res.model || "Claude"} · {ours} 관점</span>
+          </div>
+          {[["실제 위협인 지점","threats","#9e2a1f"],["과장·마케팅으로 걸러야 할 지점","hype","#7a4405"]].map(([t,k,c])=>(
+            (res[k]||[]).length > 0 && (
+              <div key={k} style={{marginBottom:8}}>
+                <div style={Object.assign({}, LBL9, {color:c})}>{t}</div>
+                {res[k].map((x,i)=>(
+                  <div key={i} style={{padding:"7px 10px",borderRadius:5,marginBottom:4,background:"#eef4fa",
+                    border:"1px solid #c6d7e6",borderLeft:`3px solid ${c}88`}}>
+                    <div style={{fontSize:11.5,color:"#0d2436",fontWeight:700,lineHeight:1.55,fontFamily:KR}}>{x.point}</div>
+                    <div style={{fontSize:10.5,color:"#3d5a72",lineHeight:1.58,fontFamily:KR,marginTop:2}}>{x.why}</div>
+                  </div>
+                ))}
+              </div>
+            )
+          ))}
+          <div style={Object.assign({}, LBL9, {marginTop:10})}>대응안</div>
+          {GROUP.map(([t,k,c])=>(
+            (res.actions && res.actions[k] || []).length > 0 && (
+              <div key={k} style={{marginBottom:5}}>
+                <span style={{padding:"1px 7px",borderRadius:3,fontSize:8.5,fontWeight:800,fontFamily:MONO,
+                  background:c+"14",border:`1px solid ${c}38`,color:c}}>{t}</span>
+                {res.actions[k].map((a,i)=>(
+                  <div key={i} style={{fontSize:11,color:"#0d2436",lineHeight:1.6,fontFamily:KR,marginTop:3,paddingLeft:4}}>· {a}</div>
+                ))}
+              </div>
+            )
+          ))}
+        </div>
+      )}
+
+      {res && res.source === "local" && (
+        <div style={{marginTop:10}}>
+          <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:7,flexWrap:"wrap"}}>
+            <SrcBadge ai={false} aiText="" localText="로컬 분류"/>
+            <span style={{fontSize:9.5,color:"#4a6379",fontFamily:KR}}>
+              {res.stats.sentences}문장 · 검증 가능 {res.stats.fact} · 수식어 {res.stats.hype} · 아직 안 된 것 {res.stats.future}
+            </span>
+          </div>
+          {[["숫자·날짜가 붙은 주장 — 확인 가능","facts","#0f5527","이 문장들은 사실 확인이 됩니다. 우리 수치와 나란히 놓아 보세요."],
+            ["근거 없는 수식어 — 걸러 읽기","hype","#7a4405","제품이 아니라 홍보 문구입니다. 위협 판단에서 빼세요."],
+            ["아직 안 된 것 — 예정·계획","future","#174b85","발표 시점에는 존재하지 않습니다. 지금의 위협과 구분하세요."]].map(([t,k,c,help])=>(
+            <div key={k} style={{marginBottom:9}}>
+              <div style={Object.assign({}, LBL9, {color:c,marginBottom:3})}>{t} ({res[k].length})</div>
+              <div style={{fontSize:9.5,color:"#566f87",fontFamily:KR,marginBottom:4,lineHeight:1.5}}>{help}</div>
+              {res[k].length === 0
+                ? <div style={{fontSize:10.5,color:"#4a6379",fontFamily:KR}}>해당 없음</div>
+                : res[k].map((x,i)=>(
+                    <div key={i} style={{padding:"6px 9px",borderRadius:5,marginBottom:4,background:"#eef4fa",
+                      border:"1px solid #c6d7e6",borderLeft:`3px solid ${c}88`}}>
+                      {k === "hype"
+                        ? <><span style={{fontSize:11,fontWeight:800,color:c,fontFamily:KR}}>"{x.term}"</span>
+                            <div style={{fontSize:10.5,color:"#3d5a72",lineHeight:1.58,fontFamily:KR,marginTop:2}}>{x.text}</div></>
+                        : <><div style={{fontSize:11,color:"#0d2436",lineHeight:1.6,fontFamily:KR}}>{x.text}</div>
+                            {x.nums && x.nums.length > 0 && (
+                              <div style={{display:"flex",gap:4,flexWrap:"wrap",marginTop:4}}>
+                                {x.nums.map((n,j)=>(
+                                  <span key={j} style={{padding:"1px 6px",borderRadius:3,fontSize:9,fontFamily:MONO,
+                                    fontWeight:700,background:"rgba(0,92,74,.09)",border:"1px solid rgba(0,92,74,.28)",color:"#005c4a"}}>{n}</span>
+                                ))}
+                              </div>
+                            )}</>}
+                    </div>
+                  ))}
+            </div>
+          ))}
+          <NoteBox>
+            <b>대응안은 로컬에서 만들지 않습니다.</b> 무엇을 할지는 우리 사정을 아는 사람의 판단이고,
+            낱말만 세는 규칙으로는 흉내낼 수 없습니다. 위 세 갈래를 근거로 직접 쓰거나,
+            ⏰ 시간설정 → ☁️ 서버 동기화에 서버 주소를 넣어 AI 대응안을 받으세요.
+          </NoteBox>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── 카드 6 — 고객 메일 3종 ─────────────────────────────────── */
+function MailTones({aiUrl}) {
+  const [f, setF] = usePersist("mailDraft", {to:"", subject:"", facts:"", ask:""}, vObj);
+  const [busy, setBusy] = useState(false);
+  const [res, setRes] = useState(null);
+  const [err, setErr] = useState("");
+  const [note, setNote] = useState("");
+  const [copied, setCopied] = useState(-1);
+
+  const set = (k,v)=>setF(prev=>Object.assign({}, prev, {[k]:v}));
+  const run = useCallback(async ()=>{
+    setBusy(true); setErr(""); setNote(""); setRes(null);
+    const out = await twoTier({
+      aiUrl, path:"/api/ai/mail-tones",
+      body:{to:f.to, subject:f.subject, facts:f.facts, ask:f.ask},
+      local: ()=>{ try { return buildMails(f); } catch(e) { setErr(e.message); return null; } },
+      setErr, setNote,
+    });
+    if (out) setRes(out);
+    setBusy(false);
+  }, [f, aiUrl]);
+
+  const can = !busy && f.subject && f.subject.trim() && f.facts && f.facts.trim();
+  const FIELDS = [
+    {k:"to", label:"받는 곳", ph:"○○상사", rows:1, hint:"비우면 '고객'으로 씁니다"},
+    {k:"subject", label:"용건", ph:"3월 정기점검 일정 안내", rows:1, hint:"필수 — 한 줄로", req:true},
+    {k:"facts", label:"핵심 사실", ph:"점검일은 3월 14일 오후 2시입니다\n담당 기술자는 2명 방문합니다\n점검 중 30분간 서비스가 중단됩니다", rows:4, hint:"필수 — 한 줄에 하나씩", req:true},
+    {k:"ask", label:"상대에게 바라는 것", ph:"일정 가능 여부를 3월 10일까지 회신 부탁드립니다", rows:2, hint:"비우면 '확인 부탁드립니다'"},
+  ];
+
+  return (
+    <div style={PANEL}>
+      <PanelHead title="여기서 바로 만들기" desc="사실만 적으면 정중형·간결형·설득형 3종이 한 번에 나옵니다."/>
+      {FIELDS.map(fd=>(
+        <div key={fd.k} style={{marginBottom:7}}>
+          <div style={{display:"flex",alignItems:"baseline",gap:6,flexWrap:"wrap",marginBottom:4}}>
+            <span style={Object.assign({}, LBL9, {marginBottom:0})}>{fd.label}</span>
+            {fd.req
+              ? <span style={{fontSize:8.5,fontFamily:MONO,fontWeight:800,color:"#9e2a1f"}}>필수</span>
+              : <span style={{fontSize:8.5,fontFamily:MONO,fontWeight:700,color:"#566f87"}}>선택</span>}
+            <span style={{fontSize:9,color:"#566f87",fontFamily:KR}}>{fd.hint}</span>
+          </div>
+          {fd.rows === 1
+            ? <input value={f[fd.k]||""} onChange={e=>set(fd.k, e.target.value)} placeholder={fd.ph}
+                style={Object.assign({}, TA, {resize:"none",fontSize:11.5})}/>
+            : <textarea value={f[fd.k]||""} onChange={e=>set(fd.k, e.target.value)} rows={fd.rows}
+                placeholder={fd.ph} style={TA}/>}
+        </div>
+      ))}
+      <div style={{display:"flex",alignItems:"center",gap:7,marginTop:8,flexWrap:"wrap"}}>
+        <button className="toggle-btn" onClick={run} disabled={!can} style={btnStyle(can)}>
+          {busy ? "만드는 중…" : "✍️ 3종 만들기"}
+        </button>
+        <span style={{marginLeft:"auto",fontSize:9.5,color:"#566f87",fontFamily:KR}}>
+          {!can ? "용건과 핵심 사실을 채워 주세요"
+           : aiUrl && NET ? "서버 AI 연결됨 — 실패 시 문틀 조립" : "문틀 조립 (서버 없이 동작)"}
+        </span>
+      </div>
+      <ErrBox>{err}</ErrBox><NoteBox>{note}</NoteBox>
+
+      {res && (
+        <div style={{marginTop:10}}>
+          <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:7,flexWrap:"wrap"}}>
+            <SrcBadge ai={res.source==="ai"} aiText="AI 작성" localText="문틀 조립"/>
+            <span style={{fontSize:9.5,color:"#4a6379",fontFamily:KR}}>
+              {res.source==="ai" ? `${res.model || "Claude"} · 사실 밖의 약속은 넣지 않도록 지시했습니다`
+                : "정해진 틀에 사실을 끼운 것입니다 — AI가 쓴 문장이 아닙니다"}
+            </span>
+          </div>
+
+          {res.risks && res.risks.length > 0 && (
+            <div style={{padding:"8px 11px",borderRadius:5,marginBottom:8,
+              background:"rgba(158,42,31,.05)",border:"1px solid rgba(158,42,31,.22)"}}>
+              <div style={{fontSize:9,color:"#9e2a1f",fontFamily:MONO,fontWeight:700,letterSpacing:".8px",marginBottom:5}}>
+                보내기 전에 확인 — 대외 리스크 {res.risks.length}건
+              </div>
+              {res.risks.map((r,i)=>(
+                <div key={i} style={{marginBottom:4}}>
+                  <span style={{fontSize:11,fontWeight:700,color:"#9e2a1f",fontFamily:KR}}>{r.t}</span>
+                  <span style={{fontSize:10.5,color:"#645019",fontFamily:KR,lineHeight:1.55}}> — {r.m}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {(res.tones||[]).map((t,i)=>(
+            <div key={i} style={{marginBottom:8}}>
+              <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4,flexWrap:"wrap"}}>
+                <span style={{fontSize:11.5,fontWeight:800,color:"#005c4a",fontFamily:KR}}>{t.k}</span>
+                <span style={{fontSize:9.5,color:"#566f87",fontFamily:KR}}>{t.desc}</span>
+                <span style={{fontSize:9,color:"#566f87",fontFamily:MONO}}>{t.text.length}자</span>
+                <button className="toggle-btn" onClick={()=>{ if (copyText(t.text)) { setCopied(i); setTimeout(()=>setCopied(-1),1600); } }}
+                  style={{marginLeft:"auto",padding:"2px 9px",borderRadius:4,fontSize:9.5,fontWeight:700,fontFamily:MONO,
+                    border:`1px solid ${copied===i?"rgba(15,85,39,.45)":"rgba(0,92,74,.25)"}`,
+                    background:copied===i?"rgba(15,85,39,.1)":"rgba(0,92,74,.05)",
+                    color:copied===i?"#0f5527":"#005c4a",cursor:"pointer"}}>{copied===i?"✓ 복사됨":"📋 복사"}</button>
+              </div>
+              <pre style={{fontSize:11,color:"#0d2436",lineHeight:1.7,fontFamily:KR,whiteSpace:"pre-wrap",
+                wordBreak:"break-word",margin:0,padding:"9px 11px",borderRadius:5,
+                background:"#eef4fa",border:"1px solid #c6d7e6"}}>{t.text}</pre>
+            </div>
+          ))}
+          {res.source === "local" && (
+            <NoteBox>
+              어투를 다듬는 것은 문틀로 안 됩니다. 문장 자체를 AI가 쓰게 하려면
+              ⏰ 시간설정 → ☁️ 서버 동기화에 서버 주소를 넣어 주세요. 그때도
+              <b> 사실 밖의 약속은 넣지 않도록</b> 지시가 들어갑니다.
+            </NoteBox>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── 카드 7 — 수치 검산 ─────────────────────────────────────── */
+const VERDICT_C = {"일치":"#0f5527", "반올림 차이":"#7a4405", "불일치":"#9e2a1f",
+  "방향 불일치":"#9e2a1f", "판정 불가":"#4b5a6e"};
+
+function NumberCheck({aiUrl}) {
+  const [text, setText] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [res, setRes] = useState(null);
+  const [err, setErr] = useState("");
+  const [note, setNote] = useState("");
+
+  const run = useCallback(async ()=>{
+    setBusy(true); setErr(""); setNote(""); setRes(null);
+    /* 로컬을 먼저 돌린다 — 산수는 모델보다 계산기가 낫다 */
+    let localOut = null;
+    try { localOut = recheckNumbers(text); }
+    catch (e) { setErr(e.message); setBusy(false); return; }
+
+    let aiOut = null;
+    if (NET && aiUrl) {
+      const r = await syncFetch(joinUrl(aiUrl, "/api/ai/recheck"), {method:"POST", body: JSON.stringify({answer: text})});
+      if (r.ok && r.body) aiOut = r.body;
+      else if (r.status === 422 && r.body && r.body.detail) setNote(String(r.body.detail));
+      else if (r.status && r.status !== 503 && r.status !== 404) setNote("서버 AI 호출이 실패했습니다. 아래 로컬 검산 결과는 그대로 유효합니다.");
+    }
+    setRes({local: localOut, ai: aiOut});
+    setBusy(false);
+  }, [text, aiUrl]);
+
+  const can = !busy && text.trim();
+  return (
+    <div style={PANEL}>
+      <PanelHead title="여기서 바로 검산" desc="AI 답변을 붙여넣으면 계산 주장을 직접 다시 계산합니다."/>
+      <div style={{padding:"7px 10px",borderRadius:5,marginBottom:8,
+        background:"rgba(15,85,39,.05)",border:"1px solid rgba(15,85,39,.2)",
+        fontSize:10,lineHeight:1.55,color:"#0f5527",fontFamily:KR}}>
+        <b>이 카드는 서버가 없어도 온전합니다.</b> 산수는 계산하면 끝나는 일이라 모델에게 다시 묻지 않습니다 —
+        브라우저가 직접 계산해 맞는지 틀린지 답합니다.
+      </div>
+      <div style={LBL9}>AI 답변 붙여넣기</div>
+      <textarea value={text} onChange={e=>setText(e.target.value)} rows={7}
+        placeholder={"숫자가 들어간 답변을 그대로 붙여넣으세요.\n\n예)\n1분기 매출은 1,200만원, 2분기는 1,980만원으로 전분기 대비 65% 증가했습니다.\n상반기 합계는 3,280만원입니다.\n원가율은 매출의 32% 로 1,050만원입니다."}
+        style={TA}/>
+      <div style={{display:"flex",alignItems:"center",gap:7,marginTop:7,flexWrap:"wrap"}}>
+        <button className="toggle-btn" onClick={run} disabled={!can} style={btnStyle(can)}>
+          {busy ? "검산 중…" : "🧮 검산하기"}
+        </button>
+        {text && <button className="toggle-btn" onClick={()=>{setText("");setRes(null);setErr("");setNote("");}} style={{
+          padding:"4px 11px",borderRadius:4,fontSize:10,fontWeight:700,fontFamily:KR,
+          border:"1px solid #c6d7e6",background:"transparent",color:"#4a6379",cursor:"pointer"}}>지우기</button>}
+        <span style={{marginLeft:"auto",fontSize:9.5,color:"#566f87",fontFamily:KR}}>
+          {aiUrl && NET ? "로컬 검산 + 서버 AI 교차 확인" : "로컬 검산 (서버 없이 완전 동작)"}
+        </span>
+      </div>
+      <ErrBox>{err}</ErrBox><NoteBox>{note}</NoteBox>
+
+      {res && (
+        <div style={{marginTop:10}}>
+          <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:7,flexWrap:"wrap"}}>
+            <SrcBadge ai={false} aiText="" localText="로컬 검산"/>
+            <span style={{fontSize:9.5,color:"#4a6379",fontFamily:KR}}>
+              {res.local.checked === 0
+                ? "다시 계산할 수 있는 주장을 찾지 못했습니다"
+                : `${res.local.checked}건 검산 · 불일치 ${res.local.bad}건 · 반올림 차이 ${res.local.round}건`}
+            </span>
+          </div>
+
+          {res.local.checked === 0 && (
+            <div style={{fontSize:11,color:"#3d5a72",fontFamily:KR,lineHeight:1.65}}>
+              계산 주장이 보이지 않습니다. 검산은 <b>「A + B = C」</b>, <b>「N% 증가」</b>,
+              <b>「A의 N%」</b>, <b>합계 줄</b>, <b>구성비 합</b>을 찾습니다.
+              AI 답변에 계산 근거가 없다면, 그것부터 요구해야 합니다 — 근거 없는 숫자는 검산할 수도 없습니다.
+            </div>
+          )}
+
+          {res.local.items.map((it,i)=>{
+            const c = VERDICT_C[it.verdict] || "#4b5a6e";
+            const ok = it.verdict === "일치";
+            return (
+              <div key={i} style={{padding:"8px 10px",borderRadius:5,marginBottom:5,
+                background: ok?"#eef4fa":"rgba(158,42,31,.04)",
+                border:`1px solid ${ok?"#c6d7e6":"rgba(158,42,31,.2)"}`,borderLeft:`3px solid ${c}`}}>
+                <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4,flexWrap:"wrap"}}>
+                  <span style={{fontSize:10,fontFamily:MONO,fontWeight:800,color:c}}>{ok?"✓":"✗"} {it.verdict}</span>
+                  <span style={{padding:"1px 6px",borderRadius:3,fontSize:8.5,fontFamily:MONO,fontWeight:700,
+                    background:"rgba(71,85,105,.07)",border:"1px solid rgba(71,85,105,.2)",color:"#4b5a6e"}}>{it.kind}</span>
+                </div>
+                <div style={{fontSize:11,color:"#0d2436",lineHeight:1.6,fontFamily:KR,marginBottom:4}}>{it.claim}</div>
+                <div style={{fontSize:10.5,fontFamily:MONO,color:"#3d5a72",lineHeight:1.6}}>
+                  다시 계산: {it.expr}
+                </div>
+                {!ok && (
+                  <div style={{fontSize:10.5,fontFamily:MONO,color:c,fontWeight:700,marginTop:2}}>
+                    답변의 값 {fnum(it.stated)} · 계산 결과 {fnum(it.computed)}
+                    {it.verdict === "방향 불일치" && " (증감 방향이 반대입니다)"}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
+          {res.local.bad > 0 && (
+            <div style={{marginTop:8,padding:"8px 11px",borderRadius:5,
+              background:"rgba(158,42,31,.05)",border:"1px solid rgba(158,42,31,.22)",
+              fontSize:11,lineHeight:1.6,color:"#9e2a1f",fontFamily:KR}}>
+              <b>불일치 {res.local.bad}건 — 원자료로 직접 확인하세요.</b> 계산기가 틀릴 일은 없지만,
+              답변이 다른 전제로 계산했을 수도 있습니다. 어느 쪽이든 그대로 보고서에 넣으면 안 됩니다.
+            </div>
+          )}
+
+          {res.ai && (
+            <div style={{marginTop:11,paddingTop:10,borderTop:"1px dashed #c6d7e6"}}>
+              <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6,flexWrap:"wrap"}}>
+                <SrcBadge ai aiText="AI 교차 확인" localText=""/>
+                <span style={{fontSize:9.5,color:"#4a6379",fontFamily:KR}}>
+                  {res.ai.model || "Claude"} · 확신도 {res.ai.confidence || "미표기"}
+                </span>
+              </div>
+              {(res.ai.findings||[]).map((x,i)=>(
+                <div key={i} style={{padding:"7px 10px",borderRadius:5,marginBottom:4,
+                  background:"#eef4fa",border:"1px solid #c6d7e6"}}>
+                  <div style={{fontSize:11,color:"#0d2436",fontWeight:700,lineHeight:1.55,fontFamily:KR}}>{x.claim}</div>
+                  <div style={{fontSize:10.5,color:"#3d5a72",lineHeight:1.58,fontFamily:KR,marginTop:2}}>{x.note}</div>
+                </div>
+              ))}
+              <div style={{fontSize:10,color:"#645019",fontFamily:KR,lineHeight:1.55,marginTop:5}}>
+                AI 확인은 <b>맥락·전제</b>를 보는 데 씁니다. 산수 자체는 위 로컬 검산이 정답입니다 —
+                둘이 다르면 로컬을 믿으세요.
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── 카드 8 — 프롬프트 보안 점검 (로컬 전용) ─────────────────── */
+const SEV_C = {"위험":"#9e2a1f", "주의":"#7a4405"};
+
+function SecScan() {
+  const [text, setText] = useState("");
+  const [res, setRes] = useState(null);
+  const [err, setErr] = useState("");
+  const [copied, setCopied] = useState(false);
+
+  const run = ()=>{
+    setErr(""); setRes(null);
+    try { setRes(scanSecrets(text)); } catch(e) { setErr(e.message); }
+  };
+  const verdict = !res ? null
+    : res.risk > 0 ? {t:"외부 AI에 넣지 마세요", c:"#9e2a1f", d:`지우면 안 되는 정보 ${res.risk}종이 들어 있습니다.`}
+    : res.warn > 0 ? {t:"지우고 넣으세요", c:"#7a4405", d:`식별 가능한 정보 ${res.warn}종이 있습니다. 아래 가린 버전을 쓰세요.`}
+    : {t:"패턴상 걸린 것 없음", c:"#0f5527", d:"다만 규칙에 없는 사내 정보(계약 조건, 미공개 일정, 코드명)는 사람만 알 수 있습니다."};
+
+  return (
+    <div style={PANEL}>
+      <PanelHead title="여기서 바로 점검" desc="외부 AI에 넣으려는 프롬프트를 붙여넣으면 민감정보를 찾아 가려 줍니다."/>
+      <div style={{padding:"7px 10px",borderRadius:5,marginBottom:8,
+        background:"rgba(15,85,39,.05)",border:"1px solid rgba(15,85,39,.2)",
+        fontSize:10,lineHeight:1.55,color:"#0f5527",fontFamily:KR}}>
+        <b>이 카드는 아무것도 전송하지 않습니다.</b> 점검 대상이 민감정보 그 자체이니,
+        검사하려고 서버에 보낸다면 이 카드가 가르치려는 것과 정반대입니다.
+        서버 주소를 넣어 두었더라도 <b>이 카드만은 서버를 쓰지 않습니다.</b>
+      </div>
+      <div style={LBL9}>점검할 프롬프트</div>
+      <textarea value={text} onChange={e=>setText(e.target.value)} rows={7}
+        placeholder={"외부 AI에 넣으려던 문장을 그대로 붙여넣으세요.\n\n예)\n김민수 과장(010-1234-5678, minsu@dz.co.kr)이 담당하는\n○○상사 계약 건 검토해줘. 사업자번호 123-45-67890,\n결제 계좌 110-234-567890 이야."}
+        style={TA}/>
+      <div style={{display:"flex",alignItems:"center",gap:7,marginTop:7,flexWrap:"wrap"}}>
+        <button className="toggle-btn" onClick={run} disabled={!text.trim()} style={btnStyle(!!text.trim())}>
+          🛡️ 점검하기
+        </button>
+        {text && <button className="toggle-btn" onClick={()=>{setText("");setRes(null);setErr("");}} style={{
+          padding:"4px 11px",borderRadius:4,fontSize:10,fontWeight:700,fontFamily:KR,
+          border:"1px solid #c6d7e6",background:"transparent",color:"#4a6379",cursor:"pointer"}}>지우기</button>}
+        <span style={{marginLeft:"auto",fontSize:9.5,color:"#566f87",fontFamily:KR}}>
+          브라우저 안에서만 검사 · 전송 없음
+        </span>
+      </div>
+      <ErrBox>{err}</ErrBox>
+
+      {res && (
+        <div style={{marginTop:10}}>
+          <div style={{padding:"9px 11px",borderRadius:5,marginBottom:8,
+            background: verdict.c === "#0f5527" ? "rgba(15,85,39,.05)" : verdict.c === "#7a4405" ? "rgba(122,68,5,.05)" : "rgba(158,42,31,.05)",
+            border:`1px solid ${verdict.c}3a`}}>
+            <div style={{fontSize:12.5,fontWeight:800,color:verdict.c,fontFamily:KR,marginBottom:3}}>{verdict.t}</div>
+            <div style={{fontSize:10.5,color:"#3d5a72",lineHeight:1.6,fontFamily:KR}}>{verdict.d}</div>
+          </div>
+
+          {res.items.length > 0 && (
+            <div style={{marginBottom:9}}>
+              <div style={LBL9}>찾아낸 것 <span style={{fontWeight:400,letterSpacing:0}}>— 원문은 일부만 보여줍니다</span></div>
+              {res.items.map((it,i)=>(
+                <div key={i} style={{display:"flex",alignItems:"center",gap:7,padding:"6px 9px",borderRadius:5,marginBottom:4,
+                  background:"#eef4fa",border:"1px solid #c6d7e6",borderLeft:`3px solid ${SEV_C[it.sev]}`,flexWrap:"wrap"}}>
+                  <span style={{padding:"1px 6px",borderRadius:3,fontSize:8.5,fontFamily:MONO,fontWeight:800,
+                    background:SEV_C[it.sev]+"14",border:`1px solid ${SEV_C[it.sev]}38`,color:SEV_C[it.sev]}}>{it.sev}</span>
+                  <span style={{fontSize:11,fontWeight:700,color:"#0d2436",fontFamily:KR}}>{it.t}</span>
+                  <span style={{fontSize:9.5,color:"#566f87",fontFamily:MONO}}>{it.count}건</span>
+                  <span style={{fontSize:9.5,color:"#4b5a6e",fontFamily:MONO,marginLeft:"auto"}}>{it.samples.join("  ")}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div>
+            <div style={{display:"flex",alignItems:"baseline",gap:7,flexWrap:"wrap",marginBottom:4}}>
+              <span style={Object.assign({}, LBL9, {marginBottom:0})}>가린 버전 — 이걸 넣으세요</span>
+              <button className="toggle-btn" onClick={()=>{ if (copyText(res.masked)) { setCopied(true); setTimeout(()=>setCopied(false),1600); } }}
+                style={{marginLeft:"auto",padding:"2px 9px",borderRadius:4,fontSize:9.5,fontWeight:700,fontFamily:MONO,
+                  border:`1px solid ${copied?"rgba(15,85,39,.45)":"rgba(0,92,74,.25)"}`,
+                  background:copied?"rgba(15,85,39,.1)":"rgba(0,92,74,.05)",
+                  color:copied?"#0f5527":"#005c4a",cursor:"pointer"}}>{copied?"✓ 복사됨":"📋 복사"}</button>
+            </div>
+            <pre style={{fontSize:11,color:"#0d2436",lineHeight:1.68,fontFamily:KR,whiteSpace:"pre-wrap",
+              wordBreak:"break-word",margin:0,padding:"9px 11px",borderRadius:5,maxHeight:280,overflow:"auto",
+              background:"#eef4fa",border:"1px solid #c6d7e6"}}>{res.masked}</pre>
+          </div>
+
+          <NoteBox>
+            <b>규칙으로 잡히는 것만 잡습니다.</b> 형식이 정해진 정보(번호·키·연락처)는 확실히 찾지만,
+            미공개 일정·계약 조건·사내 코드명처럼 <b>모양만 봐서는 알 수 없는 것</b>은 놓칩니다.
+            마지막 판단은 사람이 해야 합니다.
+          </NoteBox>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function AgentBuilder({aiUrl}) {
   const [f, setF] = usePersist("agentDraft",
     {task:"",role:"",input:"",output:"",forbid:""}, vObj);
@@ -3296,6 +4136,10 @@ function ExpCard({x, delay, done, onDone, aiUrl}) {
 
           {x.run === "agent4" && <AgentBuilder aiUrl={aiUrl}/>}
           {x.run === "docqa" && <DocQA aiUrl={aiUrl}/>}
+          {x.run === "rival" && <RivalBrief aiUrl={aiUrl}/>}
+          {x.run === "mail3" && <MailTones aiUrl={aiUrl}/>}
+          {x.run === "recheck" && <NumberCheck aiUrl={aiUrl}/>}
+          {x.run === "secscan" && <SecScan/>}
 
           {x.run === "excel3" && (
             <div style={{
