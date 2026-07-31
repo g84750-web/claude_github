@@ -190,6 +190,8 @@ const DATA = (() => {
       // 구축인력풀 (CAPA 인력마스터)
       people: payload.people || [],
       capaMeta: meta.capaMeta || null,
+      foexMeta: meta.foexMeta || null,
+      extMeta: meta.extMeta || null,
       pms: buildPMs(rows),
       monthly: buildMonthly(rows, asOf),
       byMethod: groupBy(rows, p => p.method),

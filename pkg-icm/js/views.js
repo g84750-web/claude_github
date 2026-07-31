@@ -1158,16 +1158,16 @@ KPI 연계: 2.4 매출 실현율 · 4.1 BU% · 3.3 방법론 준수율`),
 
   /* 가로 막대 — 총원 트랙 위에 가용 인원을 겹쳐 표기.
      avail 이 없으면 인원현황 단독 막대로 그린다 (직급별처럼 가용 구분이 없는 축) */
-  function hbars(rows, accent) {
+  function hbars(rows, accent, unit = '명') {
     const max = Math.max(...rows.map(r => r.total)) || 1;
     const w = v => (v / max * 100).toFixed(1);
     return `<div class="hb">${rows.map(r => {
       const solo = r.avail === undefined;
-      return `<div class="hb-row" title="${esc(r.label)} · 인원 ${r.total}명${solo ? '' : ` / 구축가용 ${r.avail}명`}">
+      return `<div class="hb-row" title="${esc(r.label)} · ${r.total}${unit}${solo ? '' : ` / 구축가용 ${r.avail}명`}">
         <div class="hb-l">${esc(r.label)}</div>
         <div class="hb-t">${solo ? '' : `<div class="hb-b" style="width:${w(r.total)}%"></div>`}
           <div class="hb-a" style="width:${w(solo ? r.total : r.avail)}%;background:${accent}"></div></div>
-        <div class="hb-v">${solo ? `<b>${r.total}</b><span>명</span>` : `<b>${r.avail}</b><span>/${r.total}</span>`}</div>
+        <div class="hb-v">${solo ? `<b>${r.total}</b><span>${unit}</span>` : `<b>${r.avail}</b><span>/${r.total}</span>`}</div>
       </div>`; }).join('')}</div>`;
   }
 
@@ -1713,7 +1713,234 @@ KPI 연계: 2.4 매출 실현율 · 4.1 BU% · 3.3 방법론 준수율`),
     APP.reload({ meta: BK.result.meta, rows: BK.result.rows });
   }
 
-  return { renderExec, renderBulk, bkFile, bkAsOf, bkSheet, bkApply,
+
+  /* ════════ 교육 · AI · 영업 성과 ════════
+     GCMS 외 원천 4종. 기준일이 제각각이므로 블록마다 기준일을 병기한다
+     (작업지침 §2-3 — 값을 맞추지 말고 기준일을 병기). */
+  function renderPerf(D) {
+    const fx = D.foexMeta, ex = D.extMeta || {};
+    if (!fx && !Object.keys(ex).length) {
+      $('v-perf').innerHTML = `<div class="card"><div class="notimpl">
+        <b>성과 원천 미로드</b><br>FoEX 교육실적 엑셀 및 data/ext_perf.json 이 필요합니다.
+        <div class="sch">python update.py &lt;GCMS.xlsx&gt; --foex &lt;FoEX교육실적.xlsx&gt;</div></div></div>`;
+      return;
+    }
+    $('v-perf').innerHTML = `
+      <div class="sec-head"><h2>교육 · AI · 영업 성과</h2>
+        <span class="sub">GCMS 외 원천 4종 · 원천별 기준일 병기</span></div>
+      ${perfFoex(fx, D)}
+      ${perfOneAi(ex.oneai)}
+      ${perfRetention(ex.retention)}
+      ${perfSales(ex.sales)}`;
+  }
+
+  /* 원천 기준일 배지 — GCMS 기준일과 다르면 경고색 */
+  function srcBadge(asOf, gcmsAsOf, source) {
+    const gap = asOf && gcmsAsOf && asOf !== gcmsAsOf;
+    return `<span class="sub">기준일 <b class="${gap ? '' : ''}" style="color:${gap ? 'var(--warn)' : 'var(--tx-h)'}">${esc(asOf || '—')}</b>${
+      gap ? ` <span style="color:var(--warn)">≠ GCMS ${esc(gcmsAsOf)}</span>` : ''}${
+      source ? ` · ${esc(source)}` : ''}</span>`;
+  }
+
+  /* 월 컬럼 매트릭스 — rows: {label, v[], tone, strong, fmt} */
+  function mtx(months, rows, opt = {}) {
+    const nowI = opt.now !== undefined ? opt.now : -1;
+    const tone = { risk: 'var(--risk)', ok: 'var(--ok)', warn: 'var(--warn)', info: 'var(--info)' };
+    const fmtOf = r => r.fmt || (r.dec === 2 ? f2 : r.dec === 1 ? f1 : f0);
+    return `<div class="mtx"><table>
+      <thead><tr><th class="c-item" style="left:0">${esc(opt.head || '구분')}</th>
+        ${months.map((m, i) => `<th class="m${i === nowI ? ' now' : ''}">${esc(m)}</th>`).join('')}
+        ${opt.totalCol ? '<th class="m">계</th>' : ''}</tr></thead>
+      <tbody>${rows.map(r => `<tr class="${r.total ? 'tot' : r.sub ? 'sub' : ''}">
+        <td class="c-item" style="left:0">${r.strong ? `<b>${esc(r.label)}</b>` : esc(r.label)}
+          ${r.note ? `<span style="display:block;font-size:.64rem;color:var(--tx-m);white-space:normal">${esc(r.note)}</span>` : ''}</td>
+        ${months.map((m, i) => {
+          const v = r.v[i];
+          const empty = v === null || v === undefined;
+          return `<td class="m${empty ? ' z' : ''}${i === nowI ? ' now' : ''}"
+            style="${r.tone && !empty ? `color:${tone[r.tone]};` : ''}${r.strong ? 'font-weight:800;' : ''}">${
+            empty ? '·' : fmtOf(r)(v)}</td>`;
+        }).join('')}
+        ${opt.totalCol ? `<td class="m" style="font-weight:800">${fmtOf(r)(r.v.reduce((a, b) => a + (b || 0), 0))}</td>` : ''}
+      </tr>`).join('')}</tbody></table></div>`;
+  }
+
+  /* 단순 세로 막대 — [{l, v}] */
+  function bars(items, color, fmt = f0) {
+    const max = Math.max(...items.map(x => x.v)) || 1;
+    return `<div class="chart" style="height:150px">${items.map(x => `
+      <div class="col" title="${esc(x.l)} · ${fmt(x.v)}">
+        <div class="v" style="color:${color}">${fmt(x.v)}</div>
+        <div class="bars"><div class="b" style="height:${(x.v / max * 100).toFixed(1)}%;background:${color}"></div></div>
+        <div class="l">${esc(x.l)}</div></div>`).join('')}</div>`;
+  }
+
+  const mdCard = (c, l, v, sub) => `<div class="md-card ${c}"><div class="l">${l}</div>
+    <div class="v">${v}</div>${sub ? `<div class="s">${sub}</div>` : ''}</div>`;
+
+  /* ── ① FoEX 교육실적 ── */
+  function perfFoex(fx, D) {
+    if (!fx) return '';
+    const o = fx.oneN, so = fx.solo;
+    // 편성만 있고 완료 실적이 아직 없는 월(예정월)은 컬럼에서 제외한다
+    const keep = fx.months.map((m, i) => fx.totalByMonth[i] > 0);
+    const ms = fx.months.filter((_, i) => keep[i]);
+    const totalByMonth = fx.totalByMonth.filter((_, i) => keep[i]);
+    const lbl = ms.map(m => m.slice(5) + '월');
+    const at = (b, k, m) => b.months.includes(m) ? b[k][b.months.indexOf(m)] : 0;
+    const oneRate = pct(o.total, o.total + o.totalCancel);
+    return `<div class="card" style="margin-bottom:1rem">
+      <div class="sec-head"><h2 style="font-size:.95rem">① FoEX 교육실적</h2>
+        <span class="spacer"></span>${srcBadge(D.asOf, D.asOf, 'FoEX 교육실적 워크북 RowData 직접 집계')}</div>
+      <div class="md-cards" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
+        ${mdCard('c1', '총 교육실적', `${f0(fx.total)}건`, `1:N ${f0(o.total)} + 단독 ${f0(so.total)}`)}
+        ${mdCard('c2', 'FoEX 1:N', `${f0(o.total)}건`, `정규 ${f0(o['정규'].reduce((a, b) => a + b, 0))} · 지원 ${f0(o['지원'].reduce((a, b) => a + b, 0))}`)}
+        ${mdCard('c3', 'FoEX 단독', `${f0(so.total)}건`, `취소 ${f0(so.totalCancel)}건`)}
+        ${mdCard('c4', '1:N 실시율', `${f1(oneRate)}%`, `완료 ${f0(o.total)} / 편성 ${f0(o.total + o.totalCancel)}`)}
+        ${mdCard('c5', '참석 고객사(연)', `${f0(fx.custTotal)}개`, '완료 교육 기준 누적')}
+      </div>
+      ${bars(ms.map((m, i) => ({ l: m.slice(5) + '월', v: totalByMonth[i] })), 'linear-gradient(180deg,#6366F1,#3B4FC8)')}
+      <div style="margin-top:1rem">
+        ${mtx(lbl, [
+          { label: 'FoEX 1:N — 정규교육과정', v: ms.map(m => at(o, '정규', m)) },
+          { label: 'FoEX 1:N — 지원(특별)교육', v: ms.map(m => at(o, '지원', m)), tone: 'info' },
+          { label: 'FoEX 1:N 소계', v: ms.map(m => at(o, 'done', m)), sub: true, strong: true },
+          { label: 'FoEX 단독', v: ms.map(m => at(so, 'done', m)) },
+          { label: '총 교육실적', v: totalByMonth, total: true, strong: true },
+        ], { head: '교육분류', totalCol: true })}
+      </div>
+      <div style="margin-top:.6rem;font-size:.71rem;color:var(--tx-s);line-height:1.7">
+        워크북의 블록 구성을 그대로 따릅니다 — <b>정규교육과정</b> = 기초설정교육 + 관리자교육 + Fast-Track ·
+        <b>지원(특별)교육</b> = Q&amp;A Day(Setting) · Q&amp;A Day(실전적용) · ONE AI.<br>
+        요약 시트가 아닌 <b>RowData 원시행에서 진행상태 '완료' 를 직접 집계</b>합니다
+        (요약 시트는 갱신이 밀리는 경우가 있어 기준으로 삼지 않습니다).
+      </div></div>`;
+  }
+
+  /* ── ② ONE AI 구축실적 ── */
+  function perfOneAi(a) {
+    if (!a) return '';
+    const ms = a.months;
+    const planSum = a.plans.map(p => p.byMonth.reduce((x, y) => x + y, 0));
+    const planAll = planSum.reduce((x, y) => x + y, 0);
+    return `<div class="card" style="margin-bottom:1rem">
+      <div class="sec-head"><h2 style="font-size:.95rem">② ${esc(a.title)}</h2>
+        <span class="spacer"></span>${srcBadge(a.asOf, APP.D.asOf, a.source)}</div>
+      <div class="md-cards" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
+        ${mdCard('c1', '구축 접수(누적)', `${f0(a.recv.total)}건`, `2025 이월 ${f0(a.recv.carry2025)} + 2026 ${f0(a.recv.y2026)}`)}
+        ${mdCard('c2', '구축 완료', `${f0(a.done.total)}건`, `접수 대비 ${f1(pct(a.done.total, a.recv.total))}%`)}
+        ${mdCard('c3', '2026 접수', `${f0(a.recv.byMonth.reduce((x, y) => x + y, 0))}건`, `월평균 ${f0(a.recv.byMonth.reduce((x, y) => x + y, 0) / ms.length)}건`)}
+        ${mdCard('c4', '유상 요금제', `${f0(planAll - planSum[a.plans.length - 1])}건`, `데모 ${f0(planSum[a.plans.length - 1])}건 제외`)}
+      </div>
+      ${mtx(ms, [
+        { label: 'ONE AI 구축 접수', v: a.recv.byMonth, note: '신규 접수 중 ONE AI 동시 계약' },
+        { label: 'ONE AI 구축 완료', v: a.done.byMonth, note: '오픈 완료확인서 시 과금개시일 수령', strong: true, tone: 'info' },
+        ...a.plans.map(p => ({ label: '　└ ' + p.name, v: p.byMonth })),
+        { label: '요금제 합계', v: ms.map((_, i) => a.plans.reduce((x, p) => x + p.byMonth[i], 0)), total: true, strong: true },
+      ], { head: '구분', totalCol: true })}
+      <div style="margin-top:.55rem;font-size:.71rem;color:var(--warn);line-height:1.7">
+        ⚠ ${esc(a.planNote)} (PDF 총계 ${f0(a.planTotalPdf)} → 월별 합 ${f0(planAll)})
+      </div>
+
+      <div style="font-size:.74rem;font-weight:800;color:var(--tx-s);margin:1.1rem 0 .5rem">ONE AI 월별 사용량</div>
+      ${mtx(ms, a.usage.flatMap(u => [
+        { label: `${u.seg} — 대상 고객수`, v: u.cust, note: u.note, strong: true },
+        { label: '　└ 총 사용량(크레딧)', v: u.credit },
+        { label: '　└ 고객별 평균', v: u.avg, tone: 'info' },
+      ]), { head: '사용 구분' })}
+    </div>`;
+  }
+
+  /* ── ③ ONE AI 해지방어 ── */
+  function perfRetention(r) {
+    if (!r) return '';
+    const last = i => r.rows.find(x => x.label.includes(i));
+    const mg = last('관리 대상 고객사 수'), lu = last('금주 저사용'), rc = last('회복률');
+    const L = a => a.v[a.v.length - 1];
+    return `<div class="card" style="margin-bottom:1rem">
+      <div class="sec-head"><h2 style="font-size:.95rem">③ ${esc(r.title)}</h2>
+        <span class="spacer"></span>${srcBadge(r.asOf, APP.D.asOf, r.source)}</div>
+      <div class="md-cards" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
+        ${mdCard('c1', '관리 대상', `${f0(L(mg))}개사`, '구축진행 + 완료 2개월 이내')}
+        ${mdCard('c3', '저사용 고객', `${f0(L(lu))}개사`, `대상 대비 ${f1(pct(L(lu), L(mg)))}%`)}
+        ${mdCard('c2', '회복률', `${f1(L(rc))}%`, `회복 ${f0(L(last('회복 고객사')))}개사`)}
+        ${mdCard('c4', '방문교육', `${f0(L(r.actions.find(x => x.label.includes('방문'))))}건`, '4주차')}
+      </div>
+      <div class="g2 eq">
+        <div class="card" style="box-shadow:none;border-color:var(--bd-light)">
+          <div class="sec-head"><h2 style="font-size:.85rem">주차별 관리 실적</h2></div>
+          ${mtx(r.weeks, r.rows, { head: '구분', now: r.weeks.length - 1 })}
+          <div class="spacer" style="flex:1"></div>
+          <div style="margin-top:.6rem;font-size:.71rem;color:var(--tx-s);line-height:1.6">
+            저사용 기준 — <b>${esc(r.lowUseStd)}</b></div>
+        </div>
+        <div class="card" style="box-shadow:none;border-color:var(--bd-light)">
+          <div class="sec-head"><h2 style="font-size:.85rem">코호트 사용량 회복</h2>
+            <span class="sub">동일 집단 연속 추적</span></div>
+          ${r.cohorts.map(c => `<div style="margin-bottom:.8rem;padding:.7rem .8rem;background:var(--ok-bg);border-radius:8px">
+            <div style="font-size:.75rem;font-weight:800;color:var(--tx-h)">${esc(c.name)} · ${f0(c.cust)}개사</div>
+            <div style="display:flex;align-items:baseline;gap:.5rem;margin-top:.35rem">
+              <span style="font-size:.95rem;font-weight:800;color:var(--tx-m)">${f2(c.before)}C</span>
+              <span style="color:var(--tx-m)">→</span>
+              <span style="font-size:1.35rem;font-weight:900;color:var(--ok)">${f2(c.after)}C</span>
+              <span class="judge ok">${f0(c.after / c.before)}배</span></div>
+            <div style="font-size:.69rem;color:var(--tx-s);margin-top:.25rem">
+              총 사용량 ${f0(c.beforeSum)} → ${f0(c.afterSum)} 크레딧 (고객당 평균)</div>
+          </div>`).join('')}
+          <div style="font-size:.74rem;font-weight:800;color:var(--tx-s);margin:.4rem 0 .45rem">주차별 실행현황</div>
+          ${mtx(r.weeks, r.actions, { head: '활동', now: r.weeks.length - 1 })}
+          <div class="spacer" style="flex:1"></div>
+        </div>
+      </div></div>`;
+  }
+
+  /* ── ④ 영업지원 ── */
+  function perfSales(s) {
+    if (!s) return '';
+    const eok = v => `${f1(v / 100000000)}억`;
+    return `<div class="card">
+      <div class="sec-head"><h2 style="font-size:.95rem">④ ${esc(s.title)}</h2>
+        <span class="spacer"></span>${srcBadge(s.asOf, APP.D.asOf, s.source)}</div>
+      <div class="md-cards" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
+        ${mdCard('c1', '영업지원', `${f0(s.support)}건`, `업무지원 ${f0(s.biz)}건 별도`)}
+        ${mdCard('c2', '계약 전환', `${f0(s.contract)}건`, `전환율 ${f1(pct(s.contract, s.support))}%`)}
+        ${mdCard('c3', '계약(수주)금액', eok(s.amount), `건당 ${f0(s.amount / s.contract / 1000000)}백만`)}
+        ${mdCard('c4', '진행 중', `${f0(s.support - s.contract)}건`, '견적·커스터마이징 단계')}
+      </div>
+      ${mtx(s.months, [
+        { label: '영업지원 접수', v: s.byMonth.support },
+        { label: '계약 전환', v: s.byMonth.contract, tone: 'ok', strong: true },
+        { label: '계약금액(백만원)', v: s.byMonth.amount.map(v => v / 1000000) },
+      ], { head: '구분', totalCol: true })}
+      <div class="g2 eq" style="margin-top:1rem">
+        <div class="card" style="box-shadow:none;border-color:var(--bd-light)">
+          <div class="sec-head"><h2 style="font-size:.85rem">지원유형별 실적</h2></div>
+          <div class="tbl-wrap"><table>
+            <thead><tr><th>유형</th><th class="num">지원</th><th class="num">계약</th>
+              <th class="num">전환율</th><th class="num">계약금액</th></tr></thead>
+            <tbody>${s.byType.map(t => `<tr>
+              <td class="strong">${esc(t.name)}</td><td class="num">${f0(t.support)}</td>
+              <td class="num strong" style="color:var(--ok)">${f0(t.contract)}</td>
+              <td class="num">${f1(pct(t.contract, t.support))}%</td>
+              <td class="num">${eok(t.amount)}</td></tr>`).join('')}
+            <tr style="background:#F7F9FC;font-weight:800">
+              <td>계</td><td class="num">${f0(s.support)}</td><td class="num">${f0(s.contract)}</td>
+              <td class="num">${f1(pct(s.contract, s.support))}%</td><td class="num">${eok(s.amount)}</td></tr>
+            </tbody></table></div>
+          <div class="spacer" style="flex:1"></div>
+        </div>
+        <div class="card" style="box-shadow:none;border-color:var(--bd-light)">
+          <div class="sec-head"><h2 style="font-size:.85rem">진행상태 분포</h2></div>
+          ${hbars(s.state.map(x => ({ label: x.label, total: x.v })), 'linear-gradient(90deg,#818CF8,#3B4FC8)', '건')}
+          <div class="spacer" style="flex:1"></div>
+          <div style="margin-top:.7rem;font-size:.71rem;color:var(--tx-s);line-height:1.6">
+            진행상태는 중복 계상됩니다(한 건이 커스터마이징 지원과 계약완료를 동시에 가질 수 있음).
+            합계는 지원 건수 ${f0(s.support)}건과 일치하지 않습니다.</div>
+        </div>
+      </div></div>`;
+  }
+
+  return { renderExec, renderBulk, renderPerf, bkFile, bkAsOf, bkSheet, bkApply,
     renderPool, goPL, plNew, plEdit, plCancel, plSave, plStatus, plRemove, plReset,
     renderBook, renderProjectShell, renderStatus, renderCapa, renderAudit, renderBench,
     renderIngest, selectPJ, goPJ, goTab, goCP,

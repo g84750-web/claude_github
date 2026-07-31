@@ -4,7 +4,8 @@ PKG 구축통합관리 — 주간 갱신 원클릭 파이프라인
 원본 엑셀 → 데이터 갱신 → 실행본 생성 → 배포본 생성 을 한 번에 수행한다.
 
 사용법
-  python update.py <GCMS.xlsx> [--assignee <담당자별.xlsx>] [--capa <CAPA.xlsx>] [--asof YYYY-MM-DD]
+  python update.py <GCMS.xlsx> [--assignee <담당자별.xlsx>] [--capa <CAPA.xlsx>]
+                   [--foex <FoEX교육실적.xlsx>] [--ext <ext_perf.json>] [--asof YYYY-MM-DD]
 
 예시
   python update.py 2026년_솔루션구축센터_구축총괄실적현황_통합__PKG사업본부_260731.xlsx \
@@ -56,6 +57,10 @@ def main():
         etl_args += ['--assignee', os.path.abspath(argv[argv.index('--assignee') + 1])]
     if '--capa' in argv:
         etl_args += ['--capa', os.path.abspath(argv[argv.index('--capa') + 1])]
+    if '--foex' in argv:
+        etl_args += ['--foex', os.path.abspath(argv[argv.index('--foex') + 1])]
+    if '--ext' in argv:
+        etl_args += ['--ext', os.path.abspath(argv[argv.index('--ext') + 1])]
 
     total = len(STEPS)
     for i, (title, script, pass_args) in enumerate(STEPS, 1):

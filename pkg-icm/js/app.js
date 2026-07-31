@@ -10,6 +10,7 @@ const APP = (() => {
     { id: 'status',  label: '📈 접수·완료 현황',  render: D => VIEWS.renderStatus(D), once: true },
     { id: 'capa',    label: '👥 공수현황(개인)',  render: D => VIEWS.renderCapa(D), once: true },
     { id: 'pool',    label: '🧑‍🔧 구축CAPA관리', render: D => VIEWS.renderPool(D), once: true },
+    { id: 'perf',    label: '🎓 교육·AI·영업 성과', render: D => VIEWS.renderPerf(D), once: true },
     { id: 'bulk',    label: '📤 프로젝트 일괄등록', render: D => VIEWS.renderBulk(D) },
     { id: 'ingest',  label: '📥 데이터 입력(3종)', render: D => VIEWS.renderIngest(D) },
     { id: 'audit',   label: '🔍 별첨·정합성 검증', render: (D, K) => VIEWS.renderAudit(D, K) },
@@ -91,7 +92,9 @@ const APP = (() => {
     const merged = {
       meta: { ...payload.meta,
               assigneeMeta: prev.meta.assigneeMeta || null,
-              capaMeta: prev.meta.capaMeta || null },
+              capaMeta: prev.meta.capaMeta || null,
+              foexMeta: prev.meta.foexMeta || null,
+              extMeta: prev.meta.extMeta || null },
       rows: payload.rows,
       assignees: prev.rawAssignees || [],
       people: prev.people || [],

@@ -15,6 +15,7 @@ from collections import Counter, defaultdict
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(BASE, 'data', 'gcms_full.json')
+EXT_DEFAULT = os.path.join(BASE, 'data', 'ext_perf.json')   # ONE AI·해지방어·영업지원 산출값
 SHEET = 'GCMS A10(통합)구축진행현황'
 
 # ── 부록 A. GCMS 컬럼 레퍼런스 (0-based) ────────────────────────
@@ -474,11 +475,116 @@ def load_capa(path, gcms_asof):
     )
 
 
+# ══════════════════════════════════════════════════════════════════
+#  FoEX 교육실적 (--foex)
+#
+#  「FoEX 교육실적」 워크북의 RowData 원시행에서 직접 집계한다.
+#  요약 시트는 갱신 시점이 뒤처지는 경우가 있어 원시행을 기준으로 삼는다.
+#
+#  교육분류는 워크북의 블록 구성을 그대로 따른다 —
+#    정규교육과정 : 기초설정교육 + 관리자교육 + Fast-Track
+#    지원(특별)교육 : Q&A Day(Setting) · Q&A Day(실전적용) · ONE AI
+#  ※ Fast-Track 은 워크북에서 정규교육과정 소계에 포함된다 (지원교육 아님)
+# ══════════════════════════════════════════════════════════════════
+F_1N, F_SOLO = '00. RowData(1N)', '00. RowData(단독)'
+F_SUPPORT = ('Q&A', 'ONE AI')          # 지원(특별)교육 판별 — Fast-Track 은 정규
+F_COL = dict(no=0, product=1, kind=2, center=3, room=4, title=5, when=6,
+             note=7, seats=8, custCnt=9, state=10)
+
+
+def open_no_pivot(path):
+    """피벗캐시가 깨진 워크북을 열기 위해 pivot 파트를 제거한 사본을 만든다.
+
+    openpyxl 이 pivotCacheDefinition 파싱에서 실패하는 파일이 있어,
+    시트 데이터만 남긴 임시 사본을 만들어 연다. (원본은 건드리지 않는다)
+    """
+    import zipfile, tempfile
+    tmp = tempfile.NamedTemporaryFile(suffix='.xlsx', delete=False)
+    tmp.close()
+    with zipfile.ZipFile(path) as zin, \
+         zipfile.ZipFile(tmp.name, 'w', zipfile.ZIP_DEFLATED) as zout:
+        for it in zin.infolist():
+            if 'pivotCache' in it.filename or 'pivotTable' in it.filename:
+                continue
+            data = zin.read(it.filename)
+            if it.filename.endswith(('.xml', '.rels')):
+                t = data.decode('utf-8')
+                t = re.sub(r'<pivotCaches>.*?</pivotCaches>', '', t, flags=re.S)
+                t = re.sub(r'<Relationship\b[^>]*(pivotCache|pivotTable)[^>]*/>', '', t)
+                t = re.sub(r'<Override\b[^>]*pivot[^>]*/>', '', t)
+                data = t.encode('utf-8')
+            zout.writestr(it, data)
+    return openpyxl.load_workbook(tmp.name, data_only=True), tmp.name
+
+
+def foex_rows(ws):
+    out = []
+    for r in ws.iter_rows(min_row=2, values_only=True):
+        if not r or r[F_COL['no']] is None:
+            continue
+        when = s(r[F_COL['when']])
+        out.append(dict(
+            kind=s(r[F_COL['kind']]), center=s(r[F_COL['center']]),
+            state=s(r[F_COL['state']]), ym=when[:7],
+            custCnt=n(r[F_COL['custCnt']]),
+        ))
+    return out
+
+
+def foex_block(rows, split=False):
+    """월별 완료·취소 집계. split=True 면 정규/지원 분류를 함께 낸다."""
+    months = sorted({r['ym'] for r in rows if re.fullmatch(r'\d{4}-\d{2}', r['ym'])})
+    cls = lambda r: '지원' if any(t in r['kind'] for t in F_SUPPORT) else '정규'
+    at = lambda ym, f: [r for r in rows if r['ym'] == ym and f(r)]
+
+    out = dict(months=months,
+               done=[len(at(m, lambda r: r['state'] == '완료')) for m in months],
+               cancel=[len(at(m, lambda r: r['state'] == '취소')) for m in months],
+               cust=[round(sum(r['custCnt'] for r in at(m, lambda r: r['state'] == '완료'))) for m in months])
+    if split:
+        for k in ('정규', '지원'):
+            out[k] = [len(at(m, lambda r, k=k: r['state'] == '완료' and cls(r) == k)) for m in months]
+    done = [r for r in rows if r['state'] == '완료']
+    out['total'] = len(done)
+    out['totalCancel'] = sum(1 for r in rows if r['state'] == '취소')
+    out['byCenter'] = dict(Counter(r['center'] for r in done))
+    out['byKind'] = dict(Counter(r['kind'] for r in done).most_common())
+    return out
+
+
+def load_foex(path):
+    wb, tmp = open_no_pivot(path)
+    try:
+        if F_1N not in wb.sheetnames or F_SOLO not in wb.sheetnames:
+            raise SystemExit(f'FoEX 시트 없음 (보유: {wb.sheetnames})')
+        one = foex_block(foex_rows(wb[F_1N]), split=True)
+        solo = foex_block(foex_rows(wb[F_SOLO]))
+    finally:
+        wb.close()
+        try: os.unlink(tmp)
+        except OSError: pass
+
+    months = sorted(set(one['months']) | set(solo['months']))
+    pick = (lambda b, k, m: b[k][b['months'].index(m)] if m in b['months'] else 0)
+    return dict(
+        months=months, oneN=one, solo=solo,
+        total=one['total'] + solo['total'],
+        totalByMonth=[pick(one, 'done', m) + pick(solo, 'done', m) for m in months],
+        custTotal=sum(one['cust']) + sum(solo['cust']),
+    )
+
+
+def load_ext(path):
+    """ONE AI 구축실적 · 해지방어 · 영업지원 — 리포트 산출값 (블록별 기준일 병기)."""
+    with open(path, encoding='utf-8') as f:
+        return json.load(f)
+
+
 def main():
     if len(sys.argv) < 2:
         raise SystemExit(__doc__)
     argv = [a for a in sys.argv[1:] if not a.startswith('--')]
-    apath = cpath = None
+    apath = cpath = fpath = epath = None
     for i, a in enumerate(sys.argv):
         if a == '--assignee' and i + 1 < len(sys.argv):
             apath = sys.argv[i + 1]
@@ -486,6 +592,15 @@ def main():
         if a == '--capa' and i + 1 < len(sys.argv):
             cpath = sys.argv[i + 1]
             argv = [x for x in argv if x != cpath]
+        if a == '--foex' and i + 1 < len(sys.argv):
+            fpath = sys.argv[i + 1]
+            argv = [x for x in argv if x != fpath]
+        if a == '--ext' and i + 1 < len(sys.argv):
+            epath = sys.argv[i + 1]
+            argv = [x for x in argv if x != epath]
+    # 별도 지정이 없으면 기본 성과 원천을 자동으로 집어온다
+    if epath is None and os.path.exists(EXT_DEFAULT):
+        epath = EXT_DEFAULT
     src = argv[0]
     today = dt.date.fromisoformat(argv[1]) if len(argv) > 1 else None
     if not today:                                   # 파일명 YYMMDD → 기준일
@@ -546,8 +661,29 @@ def main():
             print(f'  ※ 현행 CAPA 스킬값 {v["headcount"]}명과 {capa["available"] - v["headcount"]:+d}명 차이 '
                   f'— 확정 실측값 재현을 위해 KPI 산출에는 {v["headcount"]}명을 유지하고 인력풀 값은 참고로 병기')
 
+    foex = None
+    if fpath:
+        foex = load_foex(fpath)
+        o, so = foex['oneN'], foex['solo']
+        print(f'\n[FoEX 교육실적] 총 {foex["total"]:,}건 = 1:N {o["total"]:,} + 단독 {so["total"]:,}')
+        print(f'  1:N   정규 {sum(o["정규"]):,} + 지원(특별) {sum(o["지원"]):,} · 취소 {o["totalCancel"]:,}')
+        print(f'  월별  {" ".join(f"{m[5:]}월 {c}" for m, c in zip(foex["months"], foex["totalByMonth"]))}')
+
+    ext = None
+    if epath:
+        ext = load_ext(epath)
+        for key, blk in ext.items():
+            if isinstance(blk, dict) and blk.get('asOf'):
+                print(f'\n[{blk.get("title", key)}] 기준일 {blk["asOf"]}')
+                for ln in blk.get('headline', []):
+                    print(f'  {ln["label"]} {ln["value"]}')
+                if blk['asOf'] != today.isoformat():
+                    print(f'  ※ 기준일 불일치 (GCMS {today} vs {blk["asOf"]}) — 화면에 기준일 병기')
+
     v['assigneeMeta'] = aMeta
     v['capaMeta'] = ({k: val for k, val in capa.items() if k != 'people'} if capa else None)
+    v['foexMeta'] = foex
+    v['extMeta'] = ext
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     payload = dict(meta=v, rows=rows)
     if assignees:
