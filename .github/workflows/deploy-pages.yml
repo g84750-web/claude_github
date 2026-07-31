@@ -1,0 +1,87 @@
+name: Deploy ERP AI Platform to Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'douzone-erp-ai-platform/**'
+      - '.github/workflows/deploy-pages.yml'
+  workflow_dispatch:
+
+# gh-pages 브랜치에 직접 커밋하므로 쓰기 권한이 필요하다.
+# Pages 게시 자체는 저장소에 이미 설정된 브랜치 소스(gh-pages)가 담당한다.
+permissions:
+  contents: write
+
+# 같은 브랜치에 순차 커밋해야 하므로 동시 실행을 막되, 진행 중인 배포는 취소하지 않는다
+concurrency:
+  group: gh-pages-erp-ai
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: douzone-erp-ai-platform/package-lock.json
+
+      - name: Install
+        working-directory: douzone-erp-ai-platform
+        run: npm ci
+
+      - name: Test
+        working-directory: douzone-erp-ai-platform
+        run: npm run test
+
+      # build 스크립트에 절대 제약 검증·데이터 정합성·타입 체크가 포함되어 있다.
+      # 기존 사이트와 공존하기 위해 /<repo>/erp-ai/ 하위에 게시하므로 base 를 맞춘다.
+      - name: Build
+        working-directory: douzone-erp-ai-platform
+        env:
+          VITE_BASE: /${{ github.event.repository.name }}/erp-ai/
+        run: npm run build
+
+      # 사내망 공유·오프라인 시연용 단일 파일도 함께 내려받을 수 있게 동봉한다
+      - name: Build single-file bundle
+        working-directory: douzone-erp-ai-platform
+        run: npx tsx scripts/build-singlefile.ts
+
+      # gh-pages 루트에는 기존 사이트(업종별 ERP 시뮬레이션 툴)가 있다.
+      # erp-ai/ 하위만 교체하고 나머지는 손대지 않는다.
+      - name: Publish to gh-pages/erp-ai
+        run: |
+          set -euo pipefail
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git fetch --depth=1 origin gh-pages
+          git worktree add ghp origin/gh-pages
+
+          rm -rf ghp/erp-ai
+          mkdir -p ghp/erp-ai
+          cp -R douzone-erp-ai-platform/dist/. ghp/erp-ai/
+
+          cd ghp
+          git add -A erp-ai
+          if git diff --cached --quiet; then
+            echo "산출물 변경 없음 — 배포를 생략한다"
+          else
+            git commit -m "Deploy ERP AI 자동화 플랫폼 → /erp-ai/ (${GITHUB_SHA::7})"
+            git push origin HEAD:gh-pages
+          fi
+
+      - name: Summary
+        run: |
+          {
+            echo "### 배포 완료"
+            echo
+            echo "- 앱: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/erp-ai/"
+            echo "- 단일 파일: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/erp-ai/standalone.html"
+            echo
+            echo "기존 gh-pages 루트 사이트는 변경하지 않았다."
+          } >> "$GITHUB_STEP_SUMMARY"
