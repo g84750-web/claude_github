@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>구축진척관리 솔루션 - Douzone Bizon</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Malgun Gothic',sans-serif;background:#f0f2f5;color:#333}
+    /* ── 헤더 ── */
+    .app-header{background:linear-gradient(135deg,#2563eb 0%,#7c3aed 100%);color:#fff;padding:1.25rem 2rem;box-shadow:0 4px 12px rgba(0,0,0,.15);display:flex;align-items:center;justify-content:space-between}
+    .app-header h1{font-size:1.5rem;font-weight:700;letter-spacing:-.5px}
+    .app-header p{font-size:.8rem;color:rgba(255,255,255,.8);margin-top:.2rem}
+    .header-badge{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:.3rem .9rem;font-size:.75rem;font-weight:600}
+    /* ── 탭 ── */
+    .tabs{background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.08);display:flex;gap:0;padding:0 1.5rem;overflow-x:auto}
+    .tab-button{padding:.9rem 1.4rem;border:none;background:transparent;cursor:pointer;border-bottom:3px solid transparent;font-weight:600;font-size:.875rem;white-space:nowrap;color:#64748b;transition:all .2s}
+    .tab-button:hover{color:#2563eb}
+    .tab-button.active{border-bottom-color:#2563eb;color:#2563eb}
+    /* ── 컨테이너 ── */
+    .container{max-width:1440px;margin:0 auto;padding:1.5rem 2rem}
+    .tab-content{display:none}
+    .tab-content.active{display:block}
+    /* ── 카드 ── */
+    .card{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.07);padding:1.5rem}
+    /* ── KPI 그리드 ── */
+    .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:1.5rem}
+    .kpi-card{background:#fff;border-radius:12px;padding:1.25rem 1.5rem;box-shadow:0 2px 8px rgba(0,0,0,.07);border-top:4px solid #e2e8f0;transition:transform .2s,box-shadow .2s;cursor:default}
+    .kpi-card:hover{transform:translateY(-3px);box-shadow:0 8px 20px rgba(0,0,0,.12)}
+    .kpi-card.blue{border-top-color:#2563eb} .kpi-card.green{border-top-color:#16a34a}
+    .kpi-card.orange{border-top-color:#ea580c} .kpi-card.red{border-top-color:#dc2626}
+    .kpi-card.purple{border-top-color:#7c3aed} .kpi-card.cyan{border-top-color:#0891b2}
+    .kpi-label{font-size:.75rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:.4rem}
+    .kpi-value{font-size:2rem;font-weight:800;line-height:1;margin-bottom:.4rem}
+    .kpi-value.blue{color:#2563eb} .kpi-value.green{color:#16a34a}
+    .kpi-value.orange{color:#ea580c} .kpi-value.red{color:#dc2626}
+    .kpi-value.purple{color:#7c3aed} .kpi-value.cyan{color:#0891b2}
+    .kpi-sub{font-size:.8rem;color:#94a3b8}
+    /* ── 진행바 ── */
+    .progress-wrap{margin-top:.6rem}
+    .progress-bar{height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden}
+    .progress-fill{height:100%;background:linear-gradient(90deg,#2563eb,#7c3aed);border-radius:3px;transition:width .6s}
+    .progress-fill.green{background:linear-gradient(90deg,#16a34a,#4ade80)}
+    .progress-fill.orange{background:linear-gradient(90deg,#ea580c,#fb923c)}
+    .progress-fill.red{background:linear-gradient(90deg,#dc2626,#f87171)}
+    /* ── 경보 섹션 ── */
+    .alert-row{display:flex;justify-content:space-between;align-items:center;padding:.7rem 1rem;border-radius:8px;margin-bottom:.4rem;font-size:.875rem}
+    .alert-row.delayed{background:#fef2f2;border-left:3px solid #dc2626}
+    .alert-row.held{background:#fffbeb;border-left:3px solid #f59e0b}
+    .alert-row.returned{background:#fdf4ff;border-left:3px solid #a855f7}
+    /* ── 배지 ── */
+    .badge{display:inline-block;padding:.2rem .65rem;border-radius:10px;font-size:.7rem;font-weight:700}
+    .badge-완료{background:#dcfce7;color:#15803d}
+    .badge-진행{background:#dbeafe;color:#1d4ed8}
+    .badge-지연{background:#fee2e2;color:#b91c1c}
+    .badge-보류{background:#fef9c3;color:#a16207}
+    .badge-반품{background:#fae8ff;color:#86198f}
+    /* ── 검색/필터 ── */
+    .search-section{background:#fff;border-radius:12px;padding:1.25rem 1.5rem;margin-bottom:1rem;box-shadow:0 2px 8px rgba(0,0,0,.07)}
+    .search-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:.75rem;margin-bottom:.75rem}
+    .form-group label{display:block;font-size:.75rem;font-weight:700;color:#64748b;margin-bottom:.35rem}
+    .form-control{width:100%;padding:.6rem .9rem;border:1.5px solid #e2e8f0;border-radius:8px;font-size:.875rem;background:#f8fafc;transition:border-color .2s}
+    .form-control:focus{outline:none;border-color:#2563eb;background:#fff}
+    .search-info{font-size:.8rem;color:#64748b}
+    /* ── 프로젝트 목록 ── */
+    .project-list{max-height:620px;overflow-y:auto}
+    .project-card{background:#fff;padding:1rem 1.25rem;margin-bottom:.5rem;border-radius:8px;border-left:4px solid #e2e8f0;cursor:pointer;transition:all .2s;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+    .project-card:hover{border-left-color:#2563eb;box-shadow:0 4px 12px rgba(37,99,235,.12);transform:translateX(2px)}
+    .project-card.delayed{border-left-color:#dc2626}
+    .project-code{font-size:.8rem;color:#2563eb;font-weight:700;font-family:monospace}
+    .project-customer{font-size:1rem;font-weight:700;margin:.15rem 0 .3rem}
+    .project-meta{font-size:.78rem;color:#64748b}
+    .project-progress-num{font-size:1.5rem;font-weight:800;color:#2563eb;text-align:right}
+    .project-hours{font-size:.75rem;color:#94a3b8;text-align:right}
+    /* ── 페이지네이션 ── */
+    .pagination{display:flex;justify-content:center;align-items:center;gap:.5rem;padding:1rem 0}
+    .page-btn{padding:.4rem .85rem;border:1.5px solid #e2e8f0;background:#fff;border-radius:6px;font-size:.8rem;cursor:pointer;font-weight:600;transition:all .2s}
+    .page-btn:hover,.page-btn.active{background:#2563eb;color:#fff;border-color:#2563eb}
+    .page-btn:disabled{opacity:.4;cursor:not-allowed}
+    /* ── 모달 ── */
+    .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;padding:1rem;overflow-y:auto}
+    .modal.active{display:flex;align-items:flex-start;justify-content:center;padding-top:4vh}
+    .modal-content{background:#fff;border-radius:16px;padding:2rem;max-width:720px;width:100%;max-height:88vh;overflow-y:auto}
+    .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1.5px solid #f1f5f9}
+    .modal-title{font-size:1.25rem;font-weight:800;font-family:monospace;color:#2563eb}
+    .close-btn{background:none;border:none;font-size:1.75rem;cursor:pointer;color:#94a3b8;line-height:1;transition:color .2s}
+    .close-btn:hover{color:#dc2626}
+    .modal-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1rem;margin-bottom:1.5rem}
+    .modal-field .label{font-size:.72rem;font-weight:700;color:#94a3b8;text-transform:uppercase;margin-bottom:.25rem}
+    .modal-field .value{font-weight:600;font-size:.9rem}
+    .hours-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin:1rem 0}
+    .hours-card{text-align:center;padding:.9rem;border-radius:10px}
+    .hours-card.exp{background:#eff6ff} .hours-card.inv{background:#f0fdf4} .hours-card.rem{background:#fff7ed}
+    .hours-card .h-label{font-size:.72rem;color:#64748b;margin-bottom:.3rem}
+    .hours-card .h-val{font-size:1.4rem;font-weight:800}
+    .hours-card.exp .h-val{color:#2563eb} .hours-card.inv .h-val{color:#16a34a} .hours-card.rem .h-val{color:#ea580c}
+    /* ── 분석 탭 ── */
+    .analysis-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:1.5rem;margin-bottom:1.5rem}
+    .type-item{padding:1rem 1.25rem;border-radius:8px;background:#f8fafc;margin-bottom:.75rem;border:1px solid #e2e8f0}
+    .type-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem}
+    .type-name{font-weight:700;font-size:.9rem}
+    .type-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem;font-size:.78rem;margin-bottom:.5rem}
+    .type-stat-item .ts-label{color:#94a3b8;margin-bottom:.15rem}
+    .type-stat-item .ts-val{font-weight:700;font-size:.9rem}
+    /* ── CAPA 탭 ── */
+    .capa-table-wrap{overflow-x:auto}
+    table{width:100%;border-collapse:collapse;font-size:.82rem}
+    th{background:#f1f5f9;padding:.65rem .85rem;text-align:left;font-weight:700;font-size:.75rem;text-transform:uppercase;color:#64748b;border-bottom:2px solid #e2e8f0;white-space:nowrap}
+    td{padding:.6rem .85rem;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+    tr:hover td{background:#f8fafc}
+    .prod-bar{display:flex;align-items:center;gap:.5rem}
+    .prod-fill{height:8px;border-radius:4px;background:linear-gradient(90deg,#2563eb,#7c3aed);min-width:2px}
+    /* ── 성과측정 탭 ── */
+    .kpi-basis-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:1.5rem;margin-bottom:1.5rem}
+    .basis-card{background:#fff;border-radius:12px;padding:1.5rem;box-shadow:0 2px 8px rgba(0,0,0,.07)}
+    .basis-card h3{font-size:1rem;font-weight:700;color:#1e293b;margin-bottom:.3rem}
+    .basis-card .formula{background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:8px;padding:.75rem 1rem;font-family:monospace;font-size:.85rem;color:#2563eb;margin:.75rem 0}
+    .basis-card .desc{font-size:.8rem;color:#64748b;line-height:1.6}
+    .basis-card .result{font-size:1.5rem;font-weight:800;color:#2563eb;margin-top:.75rem}
+    /* ── 월별 차트 (bar) ── */
+    .bar-chart{display:flex;align-items:flex-end;gap:4px;height:140px;padding:0 0 4px}
+    .bar-col{display:flex;flex-direction:column;align-items:center;flex:1;gap:2px}
+    .bar-fill{background:linear-gradient(0deg,#2563eb,#7c3aed);border-radius:3px 3px 0 0;transition:height .5s;min-height:2px}
+    .bar-label{font-size:.6rem;color:#94a3b8;writing-mode:vertical-rl;text-orientation:mixed;transform:rotate(180deg);white-space:nowrap}
+    .bar-val{font-size:.6rem;font-weight:700;color:#2563eb}
+    /* ── 반응형 ── */
+    @media(max-width:768px){
+      .kpi-grid{grid-template-columns:repeat(2,1fr)}
+      .search-grid{grid-template-columns:1fr 1fr}
+      .modal-grid,.hours-grid{grid-template-columns:1fr}
+      .type-stats{grid-template-columns:repeat(2,1fr)}
+    }
+    /* ── 스크롤바 ── */
+    ::-webkit-scrollbar{width:6px;height:6px}
+    ::-webkit-scrollbar-track{background:#f1f5f9}
+    ::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px}
+    ::-webkit-scrollbar-thumb:hover{background:#94a3b8}
+  </style>
+</head>
+<body>
+
+<div class="app-header">
+  <div>
+    <h1>구축진척관리 솔루션</h1>
+    <p>Douzone Bizon · PKG사업본부 솔루션구축센터</p>
+  </div>
+  <div class="header-badge" id="last-update">로딩 중...</div>
+</div>
+
+<div class="tabs">
+  <button class="tab-button active" onclick="switchTab('kpi',this)">📊 KPI 대시보드</button>
+  <button class="tab-button" onclick="switchTab('projects',this)">📋 프로젝트 관리</button>
+  <button class="tab-button" onclick="switchTab('analysis',this)">📈 실적 분석</button>
+  <button class="tab-button" onclick="switchTab('capa',this)">👥 구축자 CAPA</button>
+  <button class="tab-button" onclick="switchTab('basis',this)">📐 성과측정 산출근거</button>
+</div>
+
+<div class="container">
+
+  <!-- ═══ KPI 대시보드 ═══ -->
+  <div id="kpi-tab" class="tab-content active">
+    <div class="kpi-grid" id="kpi-cards"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem">
+      <div class="card">
+        <h3 style="font-size:.95rem;font-weight:700;margin-bottom:1rem;color:#1e293b">📅 월별 접수 추이 (최근 12개월)</h3>
+        <div class="bar-chart" id="monthly-chart"></div>
+      </div>
+      <div class="card">
+        <h3 style="font-size:.95rem;font-weight:700;margin-bottom:1rem;color:#1e293b">🏢 부서별 프로젝트 현황</h3>
+        <div id="dept-chart"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3 style="font-size:.95rem;font-weight:700;margin-bottom:1rem;color:#dc2626">⚠️ 주의 필요 프로젝트 (지연·보류·반품)</h3>
+      <div id="alert-section"></div>
+    </div>
+  </div>
+
+  <!-- ═══ 프로젝트 관리 ═══ -->
+  <div id="projects-tab" class="tab-content">
+    <div class="search-section">
+      <div class="search-grid">
+        <div class="form-group">
+          <label>🔍 검색 (프로젝트코드 · 고객사 · PM)</label>
+          <input type="text" class="form-control" id="search-input" placeholder="검색어 입력...">
+        </div>
+        <div class="form-group">
+          <label>상태</label>
+          <select class="form-control" id="status-filter">
+            <option value="">전체</option>
+            <option>진행</option><option>완료</option><option>지연</option><option>보류</option><option>반품</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>부서</label>
+          <select class="form-control" id="dept-filter"><option value="">전체</option></select>
+        </div>
+        <div class="form-group">
+          <label>구축유형</label>
+          <select class="form-control" id="type-filter"><option value="">전체</option></select>
+        </div>
+        <div class="form-group">
+          <label>제품구분</label>
+          <select class="form-control" id="product-filter">
+            <option value="">전체</option>
+            <option>Amaranth10</option>
+            <option>Amaranth10 SaaS</option>
+          </select>
+        </div>
+      </div>
+      <div class="search-info" id="search-info"></div>
+    </div>
+    <div class="project-list" id="project-list"></div>
+    <div class="pagination" id="pagination"></div>
+  </div>
+
+  <!-- ═══ 실적 분석 ═══ -->
+  <div id="analysis-tab" class="tab-content">
+    <div class="analysis-grid">
+      <div class="card">
+        <h3 style="font-size:.95rem;font-weight:700;margin-bottom:1rem">🏗️ 구축유형별 실적</h3>
+        <div id="type-analysis"></div>
+      </div>
+      <div class="card">
+        <h3 style="font-size:.95rem;font-weight:700;margin-bottom:1rem">🏢 부서별 실적</h3>
+        <div id="dept-analysis"></div>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:1.5rem">
+      <h3 style="font-size:.95rem;font-weight:700;margin-bottom:1rem">👤 PM별 실적 현황 (상위 20)</h3>
+      <div class="capa-table-wrap">
+        <table id="pm-table">
+          <thead>
+            <tr>
+              <th>PM</th><th>담당건수</th><th>완료</th><th>진행</th><th>지연</th><th>완료율</th>
+              <th>표준공수(MD)</th><th>투입공수(MD)</th><th>생산성</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ 구축자 CAPA ═══ -->
+  <div id="capa-tab" class="tab-content">
+    <div class="card" style="margin-bottom:1rem">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+        <h3 style="font-size:.95rem;font-weight:700">👥 구축자별 담당 현황 및 역량 분석</h3>
+        <input type="text" class="form-control" id="capa-search" placeholder="구축자 이름 검색..." style="width:220px">
+      </div>
+      <div class="capa-table-wrap">
+        <table id="capa-table">
+          <thead>
+            <tr>
+              <th>구축자</th><th>담당건수</th><th>표준공수(MD)</th><th>투입공수(MD)</th>
+              <th>잔여공수(MD)</th><th>생산성</th><th>주요 모듈</th><th>소속부서</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="pagination" id="capa-pagination"></div>
+    </div>
+  </div>
+
+  <!-- ═══ 성과측정 산출근거 ═══ -->
+  <div id="basis-tab" class="tab-content">
+    <div class="kpi-basis-grid">
+      <div class="basis-card">
+        <h3>📊 생산성 (Productivity)</h3>
+        <div class="formula">생산성 = (표준공수 합계 / 투입공수 합계) × 100 (%)</div>
+        <div class="desc">완료 프로젝트 기준으로 표준공수(계약 기준 소요 공수) 대비 실제 투입공수의 효율을 측정합니다.<br>100% 초과 = 표준보다 적은 공수로 완료 (효율적), 100% 미만 = 초과 공수 투입.</div>
+        <div class="result" id="basis-prod"></div>
+      </div>
+      <div class="basis-card">
+        <h3>✅ 완료율 (Completion Rate)</h3>
+        <div class="formula">완료율 = (완료 건수 / 전체 건수) × 100 (%)</div>
+        <div class="desc">접수된 전체 프로젝트 중 상태가 '완료'인 건의 비율입니다. 진행 중인 프로젝트는 완료 예정일 기준으로 달성 가능성을 모니터링합니다.</div>
+        <div class="result" id="basis-done"></div>
+      </div>
+      <div class="basis-card">
+        <h3>⚠️ 지연율 (Delay Rate)</h3>
+        <div class="formula">지연율 = (지연 건수 / 전체 건수) × 100 (%)</div>
+        <div class="desc">완료 예정일을 초과하여 진행 중인 프로젝트의 비율입니다. 지연율이 높을수록 구축자 CAPA 또는 고객 응대 이슈가 있음을 의미합니다.</div>
+        <div class="result" id="basis-delay"></div>
+      </div>
+      <div class="basis-card">
+        <h3>⚙️ 공수효율 (Man-day Efficiency)</h3>
+        <div class="formula">공수효율 = (표준공수 / 예상공수) × 100 (%)</div>
+        <div class="desc">PM이 산정한 예상공수 대비 표준공수 비율입니다. 1 미만 = 예상공수를 표준보다 크게 잡음(보수적 산정), 1 초과 = 표준보다 적게 잡음(공격적 산정).</div>
+        <div class="result" id="basis-eff"></div>
+      </div>
+      <div class="basis-card">
+        <h3>📈 평균 진행률 (Avg. Progress)</h3>
+        <div class="formula">평균 진행률 = Σ(각 프로젝트 진행률) / 전체 건수 (%)</div>
+        <div class="desc">현재 진행 중인 모든 프로젝트의 투입공수 기반 평균 진행률입니다. 단, 진행률=0인 미착수 건도 포함하여 평균을 산출합니다.</div>
+        <div class="result" id="basis-avg"></div>
+      </div>
+      <div class="basis-card">
+        <h3>💹 구축자 1인당 평균 공수</h3>
+        <div class="formula">1인당 공수 = 총 투입공수 / 구축 참여 인원 수 (MD)</div>
+        <div class="desc">전체 프로젝트에 구축자로 참여한 인원 수 기준으로 1인당 평균 투입공수를 산출합니다. CAPA 계획 수립 및 인력 배분 기준으로 활용합니다.</div>
+        <div class="result" id="basis-percap"></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:1.5rem">
+      <h3 style="font-size:.95rem;font-weight:700;margin-bottom:1.25rem">📋 KPI 종합 현황표 (기준일 기준)</h3>
+      <div class="capa-table-wrap">
+        <table id="kpi-summary-table">
+          <thead>
+            <tr>
+              <th>KPI 항목</th><th>산출공식</th><th>목표</th><th>실적</th><th>달성여부</th><th>비고</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 style="font-size:.95rem;font-weight:700;margin-bottom:1rem">🗓️ 연도별·구축유형별 누적 실적</h3>
+      <div class="capa-table-wrap">
+        <table id="yearly-table">
+          <thead>
+            <tr>
+              <th>연도</th><th>방문구축</th><th>FoEX(단독)</th><th>FoEX(1:N)</th><th>FoEX+방문</th><th>합계</th><th>완료율</th><th>생산성</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<!-- 프로젝트 상세 모달 -->
+<div class="modal" id="project-modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="modal-code"></div>
+        <div id="modal-badge" style="margin-top:.3rem"></div>
+      </div>
+      <button class="close-btn" onclick="closeModal()">×</button>
+    </div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<div style="background:#1e293b;color:#94a3b8;text-align:center;padding:1.25rem;margin-top:2rem;font-size:.78rem">
+  <span>© 2026 Douzone Bizon. All rights reserved. &nbsp;|&nbsp; PKG사업본부 솔루션구축센터</span>
+  &nbsp;&nbsp;<span id="footer-info"></span>
+</div>
+
+<script>
+/* ════════════════════════════════
+   DATA LOAD & GLOBALS
+════════════════════════════════ */
+let ALL_DATA = [];
+let filteredData = [];
+let currentPage = 1;
+const PAGE_SIZE = 50;
+let capaData = [];
+let capaPage = 1;
+const CAPA_PAGE_SIZE = 30;
+
+// 탭 전환
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  document.getElementById(name + '-tab').classList.add('active');
+}
+
+// 데이터 로드
+fetch('gcms_data.json')
+  .then(r => r.json())
+  .then(data => {
+    ALL_DATA = data;
+    filteredData = [...data];
+    init();
+  })
+  .catch(() => {
+    document.querySelector('.container').innerHTML = '<div class="card" style="color:#dc2626;padding:2rem;">⚠️ gcms_data.json 파일을 불러올 수 없습니다. 웹서버 환경에서 실행해주세요.</div>';
+  });
+
+function init() {
+  const total = ALL_DATA.length;
+  const now = new Date();
+  document.getElementById('last-update').textContent = `총 ${total.toLocaleString()}건 | ${now.toLocaleDateString('ko-KR')} 기준`;
+  document.getElementById('footer-info').textContent = `총 ${total.toLocaleString()}개 프로젝트 | 마지막 접수: ${ALL_DATA[ALL_DATA.length-1]?.receipt_date || '-'}`;
+
+  populateFilters();
+  renderKPI();
+  renderMonthlyChart();
+  renderDeptChart();
+  renderAlerts();
+  renderProjects();
+  renderTypeAnalysis();
+  renderDeptAnalysis();
+  renderPMTable();
+  buildCapaData();
+  renderCapaTable();
+  renderBasis();
+  renderKPISummary();
+  renderYearlyTable();
+}
+
+/* ════════════════════════════════
+   UTILS
+════════════════════════════════ */
+const statusColor = s => ({'완료':'green','진행':'진행','지연':'red','보류':'orange','반품':'purple'}[s] || '');
+const byStatus = s => ALL_DATA.filter(p => p.status === s).length;
+const sumField = (arr, f) => arr.reduce((a,p) => a + (p[f] || 0), 0);
+
+function prodClass(v) {
+  if(v >= 130) return 'style="color:#16a34a;font-weight:800"';
+  if(v >= 100) return 'style="color:#2563eb;font-weight:700"';
+  return 'style="color:#dc2626;font-weight:700"';
+}
+
+/* ════════════════════════════════
+   KPI DASHBOARD
+════════════════════════════════ */
+function renderKPI() {
+  const total = ALL_DATA.length;
+  const completed = byStatus('완료');
+  const inProgress = byStatus('진행');
+  const delayed = byStatus('지연');
+  const held = byStatus('보류');
+  const returned = byStatus('반품');
+
+  const doneArr = ALL_DATA.filter(p => p.status === '완료' && p.invested_hours > 0 && p.standard_hours > 0);
+  const totalStd = sumField(doneArr, 'standard_hours');
+  const totalInv = sumField(doneArr, 'invested_hours');
+  const productivity = totalInv > 0 ? (totalStd / totalInv * 100) : 0;
+  const doneRate = (completed / total * 100);
+  const delayRate = (delayed / total * 100);
+  const allStd = sumField(ALL_DATA, 'standard_hours');
+  const allExp = sumField(ALL_DATA, 'expected_hours');
+  const allInvAll = sumField(ALL_DATA, 'invested_hours');
+  const avgProgress = ALL_DATA.reduce((a,p)=>a+(p.progress_rate||0),0) / total;
+
+  document.getElementById('kpi-cards').innerHTML = `
+    <div class="kpi-card blue">
+      <div class="kpi-label">총 프로젝트</div>
+      <div class="kpi-value blue">${total.toLocaleString()}</div>
+      <div class="kpi-sub">신규 ${ALL_DATA.filter(p=>p.project_type==='신규').length}건 | 추가 ${ALL_DATA.filter(p=>p.project_type==='추가').length}건</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label">완료율</div>
+      <div class="kpi-value green">${doneRate.toFixed(1)}%</div>
+      <div class="kpi-sub">완료 ${completed}건 | 목표 50%</div>
+      <div class="progress-wrap"><div class="progress-bar"><div class="progress-fill green" style="width:${Math.min(doneRate,100)}%"></div></div></div>
+    </div>
+    <div class="kpi-card purple">
+      <div class="kpi-label">생산성 (완료건 기준)</div>
+      <div class="kpi-value purple">${productivity.toFixed(1)}%</div>
+      <div class="kpi-sub">표준 ${totalStd}MD / 투입 ${totalInv}MD</div>
+    </div>
+    <div class="kpi-card orange">
+      <div class="kpi-label">진행중</div>
+      <div class="kpi-value orange">${inProgress}</div>
+      <div class="kpi-sub">평균진행률 ${avgProgress.toFixed(1)}%</div>
+      <div class="progress-wrap"><div class="progress-bar"><div class="progress-fill orange" style="width:${avgProgress}%"></div></div></div>
+    </div>
+    <div class="kpi-card red">
+      <div class="kpi-label">지연율</div>
+      <div class="kpi-value red">${delayRate.toFixed(1)}%</div>
+      <div class="kpi-sub">지연 ${delayed}건 | 보류 ${held}건 | 반품 ${returned}건</div>
+    </div>
+    <div class="kpi-card cyan">
+      <div class="kpi-label">총 표준공수</div>
+      <div class="kpi-value cyan">${allStd.toLocaleString()}</div>
+      <div class="kpi-sub">예상 ${allExp.toLocaleString()}MD | 투입 ${allInvAll.toLocaleString()}MD</div>
+    </div>
+  `;
+}
+
+function renderMonthlyChart() {
+  const monthly = {};
+  ALL_DATA.forEach(p => {
+    if(p.receipt_date) {
+      const ym = p.receipt_date.slice(0,7);
+      monthly[ym] = (monthly[ym]||0)+1;
+    }
+  });
+  const keys = Object.keys(monthly).sort().slice(-12);
+  const vals = keys.map(k => monthly[k]);
+  const maxV = Math.max(...vals) || 1;
+  const html = keys.map((k,i) => {
+    const pct = (vals[i]/maxV*120);
+    return `<div class="bar-col">
+      <div class="bar-val">${vals[i]}</div>
+      <div class="bar-fill" style="height:${pct}px;width:100%"></div>
+      <div class="bar-label">${k.slice(2)}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('monthly-chart').innerHTML = html;
+}
+
+function renderDeptChart() {
+  const deptMap = {};
+  ALL_DATA.forEach(p => {
+    const d = (p.department||'').replace('본사(','').replace(')','');
+    deptMap[d] = (deptMap[d]||{count:0,done:0});
+    deptMap[d].count++;
+    if(p.status==='완료') deptMap[d].done++;
+  });
+  const sorted = Object.entries(deptMap).sort((a,b)=>b[1].count-a[1].count);
+  const max = sorted[0][1].count;
+  const html = sorted.map(([d,s]) => `
+    <div style="margin-bottom:.6rem">
+      <div style="display:flex;justify-content:space-between;font-size:.8rem;margin-bottom:.2rem">
+        <span style="font-weight:600">${d}</span>
+        <span style="color:#64748b">${s.count}건 | 완료 ${s.done}건 (${(s.done/s.count*100).toFixed(0)}%)</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" style="width:${s.count/max*100}%"></div>
+      </div>
+    </div>`).join('');
+  document.getElementById('dept-chart').innerHTML = html;
+}
+
+function renderAlerts() {
+  const watchList = ALL_DATA.filter(p => ['지연','보류','반품'].includes(p.status));
+  const typeClass = {지연:'delayed',보류:'held',반품:'returned'};
+  const html = watchList.slice(0,20).map(p => `
+    <div class="alert-row ${typeClass[p.status]}" onclick="showDetail(${p.no})" style="cursor:pointer">
+      <div>
+        <span style="font-weight:700;font-family:monospace;font-size:.8rem">${p.project_code}</span>
+        <span style="color:#64748b;font-size:.8rem;margin-left:.5rem">${p.customer}</span>
+        <span style="color:#94a3b8;font-size:.75rem;margin-left:.5rem">PM: ${p.pm}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:.5rem">
+        <span style="font-size:.78rem;color:#64748b">${p.progress_rate.toFixed(1)}%</span>
+        <span class="badge badge-${p.status}">${p.status}</span>
+      </div>
+    </div>`).join('');
+  const more = watchList.length > 20 ? `<div style="text-align:center;color:#94a3b8;font-size:.8rem;padding:.5rem">외 ${watchList.length-20}건...</div>` : '';
+  document.getElementById('alert-section').innerHTML = html + more || '<p style="color:#94a3b8;font-size:.9rem">주의 프로젝트가 없습니다.</p>';
+}
+
+/* ════════════════════════════════
+   PROJECT LIST
+════════════════════════════════ */
+function populateFilters() {
+  const depts = [...new Set(ALL_DATA.map(p=>p.department).filter(Boolean))].sort();
+  const deptSel = document.getElementById('dept-filter');
+  depts.forEach(d => { const o=document.createElement('option'); o.textContent=d.replace('본사(','').replace(')',''); o.value=d; deptSel.appendChild(o); });
+  const types = [...new Set(ALL_DATA.map(p=>p.construction_type).filter(Boolean))].sort();
+  const typeSel = document.getElementById('type-filter');
+  types.forEach(t => { const o=document.createElement('option'); o.textContent=t; o.value=t; typeSel.appendChild(o); });
+
+  ['search-input','status-filter','dept-filter','type-filter','product-filter'].forEach(id => {
+    document.getElementById(id).addEventListener('input', applyFilters);
+    document.getElementById(id).addEventListener('change', applyFilters);
+  });
+}
+
+function applyFilters() {
+  const q = document.getElementById('search-input').value.toLowerCase();
+  const st = document.getElementById('status-filter').value;
+  const dept = document.getElementById('dept-filter').value;
+  const type = document.getElementById('type-filter').value;
+  const prod = document.getElementById('product-filter').value;
+  filteredData = ALL_DATA.filter(p => {
+    if(q && !p.project_code?.toLowerCase().includes(q) && !p.customer?.toLowerCase().includes(q) && !p.pm?.toLowerCase().includes(q)) return false;
+    if(st && p.status !== st) return false;
+    if(dept && p.department !== dept) return false;
+    if(type && p.construction_type !== type) return false;
+    if(prod && p.product_type !== prod) return false;
+    return true;
+  });
+  currentPage = 1;
+  renderProjects();
+}
+
+function renderProjects() {
+  const total = filteredData.length;
+  const pages = Math.ceil(total/PAGE_SIZE);
+  const slice = filteredData.slice((currentPage-1)*PAGE_SIZE, currentPage*PAGE_SIZE);
+
+  document.getElementById('search-info').textContent = `검색결과: ${total.toLocaleString()}건 (${currentPage}/${pages} 페이지)`;
+
+  const html = slice.map(p => {
+    const rem = (p.expected_hours||0) - (p.invested_hours||0);
+    return `<div class="project-card ${p.status==='지연'?'delayed':''}" onclick="showDetail(${p.no})">
+      <div style="display:flex;justify-content:space-between;align-items:start">
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.2rem">
+            <span class="project-code">${p.project_code}</span>
+            <span class="badge badge-${p.status}">${p.status}</span>
+            <span style="font-size:.7rem;color:#94a3b8">${p.construction_type}</span>
+          </div>
+          <div class="project-customer">${p.customer}</div>
+          <div class="project-meta">PM: ${p.pm} &nbsp;|&nbsp; ${(p.department||'').replace('본사(','').replace(')','')} &nbsp;|&nbsp; 접수: ${p.receipt_date} &nbsp;|&nbsp; 완료예정: ${p.expected_completion}</div>
+        </div>
+        <div style="text-align:right;margin-left:1rem;min-width:80px">
+          <div class="project-progress-num">${p.progress_rate.toFixed(1)}%</div>
+          <div class="project-hours">${p.invested_hours}/${p.expected_hours} MD</div>
+          <div style="font-size:.7rem;color:#94a3b8">잔여 ${rem}MD</div>
+        </div>
+      </div>
+      <div class="progress-bar" style="margin-top:.6rem">
+        <div class="progress-fill ${p.status==='지연'?'red':''}" style="width:${p.progress_rate}%"></div>
+      </div>
+    </div>`;
+  }).join('') || '<div style="text-align:center;color:#94a3b8;padding:2rem">검색 결과가 없습니다.</div>';
+
+  document.getElementById('project-list').innerHTML = html;
+  renderPagination(pages, 'pagination', currentPage, (p) => { currentPage=p; renderProjects(); });
+}
+
+function renderPagination(pages, id, cur, cb) {
+  if(pages <= 1) { document.getElementById(id).innerHTML=''; return; }
+  const btns = [];
+  btns.push(`<button class="page-btn" onclick="(${cb.toString()})(${cur-1})" ${cur===1?'disabled':''}>◀ 이전</button>`);
+  const start = Math.max(1, cur-2), end = Math.min(pages, cur+2);
+  if(start>1) btns.push(`<button class="page-btn" onclick="(${cb.toString()})(1)">1</button>`);
+  if(start>2) btns.push(`<span style="color:#94a3b8;padding:0 .25rem">…</span>`);
+  for(let i=start;i<=end;i++) btns.push(`<button class="page-btn ${i===cur?'active':''}" onclick="(${cb.toString()})(${i})">${i}</button>`);
+  if(end<pages-1) btns.push(`<span style="color:#94a3b8;padding:0 .25rem">…</span>`);
+  if(end<pages) btns.push(`<button class="page-btn" onclick="(${cb.toString()})(${pages})">${pages}</button>`);
+  btns.push(`<button class="page-btn" onclick="(${cb.toString()})(${cur+1})" ${cur===pages?'disabled':''}>다음 ▶</button>`);
+  document.getElementById(id).innerHTML = btns.join('');
+}
+
+/* ════════════════════════════════
+   PROJECT DETAIL MODAL
+════════════════════════════════ */
+function showDetail(no) {
+  const p = ALL_DATA.find(x => x.no === no);
+  if(!p) return;
+  document.getElementById('modal-code').textContent = p.project_code;
+  document.getElementById('modal-badge').innerHTML = `<span class="badge badge-${p.status}">${p.status}</span> <span style="font-size:.78rem;color:#64748b;margin-left:.4rem">${p.construction_type} · ${p.product_type}</span>`;
+  const rem = (p.expected_hours||0)-(p.invested_hours||0);
+  const prod = p.invested_hours > 0 ? (p.standard_hours/p.invested_hours*100).toFixed(1) : '-';
+  document.getElementById('modal-body').innerHTML = `
+    <div class="modal-grid">
+      <div class="modal-field"><div class="label">고객사</div><div class="value">${p.customer}</div></div>
+      <div class="modal-field"><div class="label">PM</div><div class="value">${p.pm}</div></div>
+      <div class="modal-field"><div class="label">구축부서</div><div class="value">${p.department}</div></div>
+      <div class="modal-field"><div class="label">프로젝트유형</div><div class="value">${p.project_type}</div></div>
+      <div class="modal-field"><div class="label">접수일</div><div class="value">${p.receipt_date}</div></div>
+      <div class="modal-field"><div class="label">완료예정일</div><div class="value">${p.expected_completion}</div></div>
+    </div>
+    <div class="hours-grid">
+      <div class="hours-card exp"><div class="h-label">표준공수</div><div class="h-val">${p.standard_hours} MD</div></div>
+      <div class="hours-card inv"><div class="h-label">투입공수</div><div class="h-val">${p.invested_hours} MD</div></div>
+      <div class="hours-card rem"><div class="h-label">잔여공수</div><div class="h-val">${rem} MD</div></div>
+    </div>
+    <div style="border-top:1.5px solid #f1f5f9;padding-top:1rem;margin-top:.5rem">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+        <span style="font-size:.8rem;color:#64748b;font-weight:700">진행률</span>
+        <span style="font-size:.8rem;color:#64748b">생산성: ${prod}%</span>
+      </div>
+      <div style="font-size:2rem;font-weight:800;color:#2563eb;margin-bottom:.5rem">${p.progress_rate.toFixed(1)}%</div>
+      <div class="progress-bar" style="height:10px"><div class="progress-fill ${p.status==='지연'?'red':''}" style="width:${p.progress_rate}%"></div></div>
+    </div>
+    <div style="border-top:1.5px solid #f1f5f9;padding-top:1rem;margin-top:1rem">
+      <div style="font-size:.78rem;color:#94a3b8;font-weight:700;margin-bottom:.4rem">구축자</div>
+      <div style="font-size:.9rem;font-weight:600;line-height:1.8">${(p.constructors||'-').split('/').join('<br>')}</div>
+    </div>`;
+  document.getElementById('project-modal').classList.add('active');
+}
+function closeModal() { document.getElementById('project-modal').classList.remove('active'); }
+document.getElementById('project-modal').addEventListener('click', e => { if(e.target===e.currentTarget) closeModal(); });
+
+/* ════════════════════════════════
+   분석 탭
+════════════════════════════════ */
+function renderTypeAnalysis() {
+  const map = {};
+  ALL_DATA.forEach(p => {
+    const t = p.construction_type;
+    if(!map[t]) map[t]={count:0,std:0,inv:0,done:0,delayed:0};
+    map[t].count++;
+    map[t].std += p.standard_hours||0;
+    map[t].inv += p.invested_hours||0;
+    if(p.status==='완료') map[t].done++;
+    if(p.status==='지연') map[t].delayed++;
+  });
+  const html = Object.entries(map).sort((a,b)=>b[1].count-a[1].count).map(([t,s]) => {
+    const prod = s.inv > 0 ? (s.std/s.inv*100).toFixed(0) : '-';
+    const doneRate = (s.done/s.count*100).toFixed(0);
+    return `<div class="type-item">
+      <div class="type-header">
+        <div class="type-name">${t}</div>
+        <span style="font-size:.75rem;color:#64748b">${s.count}건</span>
+      </div>
+      <div class="type-stats">
+        <div class="type-stat-item"><div class="ts-label">완료율</div><div class="ts-val" style="color:#16a34a">${doneRate}%</div></div>
+        <div class="type-stat-item"><div class="ts-label">지연</div><div class="ts-val" style="color:#dc2626">${s.delayed}건</div></div>
+        <div class="type-stat-item"><div class="ts-label">표준(MD)</div><div class="ts-val">${s.std}</div></div>
+        <div class="type-stat-item"><div class="ts-label">생산성</div><div class="ts-val" ${prodClass(Number(prod))}>${prod}%</div></div>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${doneRate}%"></div></div>
+    </div>`;
+  }).join('');
+  document.getElementById('type-analysis').innerHTML = html;
+}
+
+function renderDeptAnalysis() {
+  const map = {};
+  ALL_DATA.forEach(p => {
+    const d = (p.department||'').replace('본사(','').replace(')','');
+    if(!map[d]) map[d]={count:0,std:0,inv:0,done:0,delayed:0};
+    map[d].count++;
+    map[d].std += p.standard_hours||0;
+    map[d].inv += p.invested_hours||0;
+    if(p.status==='완료') map[d].done++;
+    if(p.status==='지연') map[d].delayed++;
+  });
+  const html = Object.entries(map).sort((a,b)=>b[1].count-a[1].count).map(([d,s]) => {
+    const prod = s.inv > 0 ? (s.std/s.inv*100).toFixed(0) : '-';
+    const doneRate = (s.done/s.count*100).toFixed(0);
+    return `<div class="type-item">
+      <div class="type-header">
+        <div class="type-name">${d}</div>
+        <span style="font-size:.75rem;color:#64748b">${s.count}건</span>
+      </div>
+      <div class="type-stats">
+        <div class="type-stat-item"><div class="ts-label">완료율</div><div class="ts-val" style="color:#16a34a">${doneRate}%</div></div>
+        <div class="type-stat-item"><div class="ts-label">지연</div><div class="ts-val" style="color:#dc2626">${s.delayed}건</div></div>
+        <div class="type-stat-item"><div class="ts-label">표준(MD)</div><div class="ts-val">${s.std}</div></div>
+        <div class="type-stat-item"><div class="ts-label">생산성</div><div class="ts-val" ${prodClass(Number(prod))}>${prod}%</div></div>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${doneRate}%"></div></div>
+    </div>`;
+  }).join('');
+  document.getElementById('dept-analysis').innerHTML = html;
+}
+
+function renderPMTable() {
+  const map = {};
+  ALL_DATA.forEach(p => {
+    if(!map[p.pm]) map[p.pm]={count:0,done:0,inprog:0,delayed:0,std:0,inv:0};
+    map[p.pm].count++;
+    map[p.pm].std += p.standard_hours||0;
+    map[p.pm].inv += p.invested_hours||0;
+    if(p.status==='완료') map[p.pm].done++;
+    if(p.status==='진행') map[p.pm].inprog++;
+    if(p.status==='지연') map[p.pm].delayed++;
+  });
+  const sorted = Object.entries(map).sort((a,b)=>b[1].count-a[1].count).slice(0,20);
+  const rows = sorted.map(([pm,s]) => {
+    const doneRate = (s.done/s.count*100).toFixed(0);
+    const prod = s.inv > 0 ? (s.std/s.inv*100).toFixed(0) : '-';
+    return `<tr>
+      <td style="font-weight:700">${pm}</td>
+      <td style="text-align:center">${s.count}</td>
+      <td style="text-align:center;color:#16a34a;font-weight:600">${s.done}</td>
+      <td style="text-align:center;color:#2563eb">${s.inprog}</td>
+      <td style="text-align:center;color:${s.delayed>0?'#dc2626':'#94a3b8'};font-weight:${s.delayed>0?700:400}">${s.delayed}</td>
+      <td><div class="prod-bar"><div class="prod-fill" style="width:${Math.min(Number(doneRate),100)*1.2}px;background:linear-gradient(90deg,#16a34a,#4ade80)"></div><span style="font-size:.8rem;font-weight:700;color:#16a34a">${doneRate}%</span></div></td>
+      <td style="text-align:right">${s.std}</td>
+      <td style="text-align:right">${s.inv}</td>
+      <td><span ${prodClass(Number(prod))}>${prod}%</span></td>
+    </tr>`;
+  }).join('');
+  document.querySelector('#pm-table tbody').innerHTML = rows;
+}
+
+/* ════════════════════════════════
+   CAPA 탭
+════════════════════════════════ */
+function buildCapaData() {
+  const map = {};
+  ALL_DATA.forEach(p => {
+    const parts = (p.constructors||'').split('/');
+    parts.forEach(part => {
+      const m = part.trim().match(/^(.+?)\((.+)\)$/);
+      if(!m) return;
+      const name = m[1].trim();
+      const mods = m[2].split(',').map(x=>x.trim());
+      if(!map[name]) map[name] = {projects:0,std:0,inv:0,modules:{},depts:new Set()};
+      map[name].projects++;
+      map[name].std += p.standard_hours||0;
+      map[name].inv += p.invested_hours||0;
+      map[name].depts.add((p.department||'').replace('본사(','').replace(')',''));
+      mods.forEach(mod => { map[name].modules[mod] = (map[name].modules[mod]||0)+1; });
+    });
+  });
+  capaData = Object.entries(map)
+    .map(([name,s]) => ({
+      name,
+      projects: s.projects,
+      std: s.std,
+      inv: s.inv,
+      rem: s.std - s.inv,
+      prod: s.inv > 0 ? (s.std/s.inv*100) : 0,
+      topMods: Object.entries(s.modules).sort((a,b)=>b[1]-a[1]).slice(0,4).map(([m,c])=>`${m}(${c})`).join(', '),
+      dept: [...s.depts].join(', ')
+    }))
+    .sort((a,b) => b.projects - a.projects);
+
+  document.getElementById('capa-search').addEventListener('input', e => {
+    const q = e.target.value.toLowerCase();
+    const filtered = q ? capaData.filter(x => x.name.toLowerCase().includes(q)) : capaData;
+    capaPage = 1;
+    renderCapaRows(filtered);
+  });
+}
+
+function renderCapaTable() { renderCapaRows(capaData); }
+function renderCapaRows(data) {
+  const pages = Math.ceil(data.length/CAPA_PAGE_SIZE);
+  const slice = data.slice((capaPage-1)*CAPA_PAGE_SIZE, capaPage*CAPA_PAGE_SIZE);
+  const rows = slice.map(s => {
+    const prodStr = s.prod > 0 ? s.prod.toFixed(0)+'%' : '-';
+    return `<tr>
+      <td style="font-weight:700">${s.name}</td>
+      <td style="text-align:center">${s.projects}</td>
+      <td style="text-align:right">${s.std}</td>
+      <td style="text-align:right;color:#16a34a;font-weight:600">${s.inv}</td>
+      <td style="text-align:right;color:#ea580c">${s.rem}</td>
+      <td><div class="prod-bar"><div class="prod-fill" style="width:${Math.min(s.prod,200)/2}px"></div><span ${prodClass(s.prod)}>${prodStr}</span></div></td>
+      <td style="font-size:.75rem;color:#64748b">${s.topMods}</td>
+      <td style="font-size:.75rem;color:#94a3b8">${s.dept}</td>
+    </tr>`;
+  }).join('');
+  document.querySelector('#capa-table tbody').innerHTML = rows;
+  renderPagination(pages, 'capa-pagination', capaPage, (p) => { capaPage=p; renderCapaRows(data); });
+}
+
+/* ════════════════════════════════
+   성과측정 산출근거 탭
+════════════════════════════════ */
+function renderBasis() {
+  const total = ALL_DATA.length;
+  const completed = byStatus('완료');
+  const delayed = byStatus('지연');
+  const doneArr = ALL_DATA.filter(p => p.status==='완료' && p.invested_hours>0 && p.standard_hours>0);
+  const totalStd = sumField(doneArr,'standard_hours');
+  const totalInv = sumField(doneArr,'invested_hours');
+  const prod = totalInv > 0 ? (totalStd/totalInv*100) : 0;
+  const avgProg = ALL_DATA.reduce((a,p)=>a+(p.progress_rate||0),0)/total;
+  const allStd = sumField(ALL_DATA,'standard_hours');
+  const allExp = sumField(ALL_DATA,'expected_hours');
+  const constSet = new Set();
+  ALL_DATA.forEach(p => { (p.constructors||'').split('/').forEach(part => { const m=part.match(/^(.+?)\(/); if(m) constSet.add(m[1].trim()); }); });
+  const allInv = sumField(ALL_DATA,'invested_hours');
+  const perCap = constSet.size > 0 ? (allInv/constSet.size) : 0;
+  const effStr = allExp > 0 ? (allStd/allExp*100).toFixed(1)+'%' : '-';
+
+  document.getElementById('basis-prod').textContent = prod.toFixed(1)+'%';
+  document.getElementById('basis-done').textContent = (completed/total*100).toFixed(1)+'% (' + completed + '/' + total + ')';
+  document.getElementById('basis-delay').textContent = (delayed/total*100).toFixed(1)+'% (' + delayed + '건)';
+  document.getElementById('basis-eff').textContent = effStr;
+  document.getElementById('basis-avg').textContent = avgProg.toFixed(1)+'%';
+  document.getElementById('basis-percap').textContent = perCap.toFixed(1)+' MD (' + constSet.size + '명)';
+}
+
+function renderKPISummary() {
+  const total = ALL_DATA.length;
+  const completed = byStatus('완료');
+  const delayed = byStatus('지연');
+  const doneArr = ALL_DATA.filter(p => p.status==='완료' && p.invested_hours>0 && p.standard_hours>0);
+  const std = sumField(doneArr,'standard_hours');
+  const inv = sumField(doneArr,'invested_hours');
+  const prod = inv > 0 ? (std/inv*100) : 0;
+  const doneRate = completed/total*100;
+  const delayRate = delayed/total*100;
+  const avgProg = ALL_DATA.reduce((a,p)=>a+(p.progress_rate||0),0)/total;
+
+  const rows = [
+    {kpi:'완료율', formula:'완료건수/전체건수×100', target:'≥ 50%', actual:doneRate.toFixed(1)+'%', ok: doneRate>=50, note:`완료 ${completed}건 / 전체 ${total}건`},
+    {kpi:'생산성', formula:'표준공수/투입공수×100', target:'≥ 120%', actual:prod.toFixed(1)+'%', ok: prod>=120, note:`완료프로젝트 기준 (${doneArr.length}건)`},
+    {kpi:'지연율', formula:'지연건수/전체건수×100', target:'≤ 5%', actual:delayRate.toFixed(1)+'%', ok: delayRate<=5, note:`지연 ${delayed}건`},
+    {kpi:'평균진행률', formula:'Σ진행률/전체건수', target:'≥ 60%', actual:avgProg.toFixed(1)+'%', ok: avgProg>=60, note:'진행중+완료 포함 전체 평균'},
+    {kpi:'공수효율', formula:'표준공수/예상공수×100', target:'≥ 90%', actual: (()=>{const as=sumField(ALL_DATA,'standard_hours');const ae=sumField(ALL_DATA,'expected_hours');return ae>0?(as/ae*100).toFixed(1)+'%':'-'})(), ok: (()=>{const as=sumField(ALL_DATA,'standard_hours');const ae=sumField(ALL_DATA,'expected_hours');return ae>0&&(as/ae*100)>=90})(), note:'예상공수 0인 건 제외'},
+  ].map(r => `<tr>
+    <td style="font-weight:700">${r.kpi}</td>
+    <td style="font-family:monospace;font-size:.8rem;color:#2563eb">${r.formula}</td>
+    <td style="text-align:center;font-weight:700">${r.target}</td>
+    <td style="text-align:center;font-weight:800;font-size:1rem;color:${r.ok?'#16a34a':'#dc2626'}">${r.actual}</td>
+    <td style="text-align:center;font-size:1.1rem">${r.ok?'✅':'❌'}</td>
+    <td style="font-size:.78rem;color:#64748b">${r.note}</td>
+  </tr>`).join('');
+  document.querySelector('#kpi-summary-table tbody').innerHTML = rows;
+}
+
+function renderYearlyTable() {
+  const years = {};
+  ALL_DATA.forEach(p => {
+    const yr = (p.receipt_date||'').slice(0,4);
+    if(!yr || yr==='') return;
+    if(!years[yr]) years[yr] = {방문구축:{c:0,d:0,std:0,inv:0},'FoEX교육(단독)':{c:0,d:0,std:0,inv:0},'FoEX교육(1:N)':{c:0,d:0,std:0,inv:0},'FoEX교육(1:N)+방문':{c:0,d:0,std:0,inv:0}};
+    const t = p.construction_type;
+    if(years[yr][t]) {
+      years[yr][t].c++;
+      if(p.status==='완료') years[yr][t].d++;
+      years[yr][t].std += p.standard_hours||0;
+      years[yr][t].inv += p.invested_hours||0;
+    }
+  });
+  const rows = Object.entries(years).sort().map(([yr,tmap]) => {
+    const total = Object.values(tmap).reduce((a,x)=>a+x.c,0);
+    const done = Object.values(tmap).reduce((a,x)=>a+x.d,0);
+    const std = Object.values(tmap).reduce((a,x)=>a+x.std,0);
+    const inv = Object.values(tmap).reduce((a,x)=>a+x.inv,0);
+    const doneRate = total>0?(done/total*100).toFixed(0):'0';
+    const prod = inv>0?(std/inv*100).toFixed(0):'-';
+    return `<tr>
+      <td style="font-weight:700">${yr}</td>
+      <td style="text-align:center">${tmap['방문구축'].c}</td>
+      <td style="text-align:center">${tmap['FoEX교육(단독)'].c}</td>
+      <td style="text-align:center">${tmap['FoEX교육(1:N)'].c}</td>
+      <td style="text-align:center">${tmap['FoEX교육(1:N)+방문'].c}</td>
+      <td style="text-align:center;font-weight:700">${total}</td>
+      <td style="text-align:center;color:#16a34a;font-weight:700">${doneRate}%</td>
+      <td><span ${prodClass(Number(prod))}>${prod}%</span></td>
+    </tr>`;
+  }).join('');
+  document.querySelector('#yearly-table tbody').innerHTML = rows;
+}
+</script>
+</body>
+</html>
