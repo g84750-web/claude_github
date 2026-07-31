@@ -13,6 +13,26 @@ npm run test       # Vitest 단위 테스트
 npm run validate:constraints  # 절대 제약사항 정적 검증
 ```
 
+## 배포
+
+`main` 에 머지되면 `.github/workflows/deploy-pages.yml` 이 테스트 → 빌드 → 게시를 수행한다.
+
+| 대상 | 주소 |
+|------|------|
+| 앱 | `https://g84750-web.github.io/claude_github/erp-ai/` |
+| 단일 파일 | `https://g84750-web.github.io/claude_github/erp-ai/standalone.html` |
+
+`gh-pages` 브랜치 루트에는 별도 사이트가 이미 게시되어 있으므로 `erp-ai/` 하위만 교체한다.
+프로젝트 페이지는 `/<repo>/erp-ai/` 경로에 놓이므로 워크플로가 `VITE_BASE` 를 주입하며,
+값이 없으면 `'/'` 이므로 로컬 `dev` · `preview` 는 영향을 받지 않는다.
+
+```bash
+npm run build:single   # dist/standalone.html — 정적 호스팅 없이 파일 하나로 실행
+```
+
+API 키 없이 열면 시뮬레이션 모드로 209항목이 모두 동작한다. 키는 브라우저에 노출되는
+구조이므로 공개 주소에서 개인 키 입력은 권장하지 않는다.
+
 ## 절대 제약사항
 
 | # | 제약 | 구현 |
