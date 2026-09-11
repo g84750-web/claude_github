@@ -1,0 +1,7 @@
+# SQLite 데이터 파일 — 런타임 산출물
+*.db
+*.db-wal
+*.db-shm
+*.log
+__pycache__/
+.pytest_cache/
